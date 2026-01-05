@@ -35,11 +35,11 @@ pub fn render(frame: &mut Frame, app: &mut App) {
     let show_graph = app.config.user_config.show_graph;
 
     let (battery_height, power_height, graph_height) = if content_area.height < 28 {
-        (10, 3, if show_graph { 8 } else { 0 })
+        (5, 3, if show_graph { 8 } else { 0 })
     } else if content_area.height < 38 {
-        (12, 4, if show_graph { 12 } else { 0 })
+        (6, 4, if show_graph { 12 } else { 0 })
     } else {
-        (14, 5, if show_graph { 14 } else { 0 })
+        (7, 5, if show_graph { 14 } else { 0 })
     };
 
     let constraints = if show_graph {

@@ -149,10 +149,16 @@ pub fn render(frame: &mut Frame, area: Rect, app: &mut App, theme: &Theme) {
                 Style::default().fg(theme.muted)
             };
 
+            let display_name = if *depth > 0 {
+                &process.command
+            } else {
+                &process.name
+            };
+
             let cells = vec![
                 Span::styled(format!("{}{}", indent, expand_icon), style),
                 Span::styled(process.pid.to_string(), style),
-                Span::styled(truncate_name(&process.name, 30), style),
+                Span::styled(truncate_name(display_name, 30), style),
                 Span::styled(format!("{:.1}", process.cpu_usage), style),
                 Span::styled(format!("{:.1}MB", process.memory_mb), style),
                 Span::styled(format!("{:.1}", process.energy_impact), style),

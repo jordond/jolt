@@ -10,6 +10,7 @@ use crate::config::cache_dir;
 pub struct ProcessInfo {
     pub pid: u32,
     pub name: String,
+    pub command: String,
     pub cpu_usage: f32,
     pub memory_mb: f64,
     pub energy_impact: f32,
@@ -110,6 +111,7 @@ impl ProcessData {
             let info = ProcessInfo {
                 pid: pid_u32,
                 name: display_name,
+                command: binary_name.clone(),
                 cpu_usage: cpu,
                 memory_mb,
                 energy_impact,

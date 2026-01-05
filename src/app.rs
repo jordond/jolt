@@ -470,6 +470,7 @@ impl App {
                     pid: process.pid,
                     parent_pid: process.parent_pid,
                     name: base_name.clone(),
+                    command: process.command.clone(),
                     cpu_usage: process.cpu_usage,
                     memory_mb: process.memory_mb,
                     energy_impact: process.energy_impact,
