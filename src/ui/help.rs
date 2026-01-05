@@ -30,7 +30,7 @@ pub fn render_help(frame: &mut Frame, app: &App, theme: &Theme) {
         .title(" Help ")
         .borders(Borders::ALL)
         .border_style(Style::default().fg(theme.accent))
-        .style(Style::default().bg(theme.bg));
+        .style(Style::default().bg(theme.dialog_bg));
 
     let inner = block.inner(area);
     frame.render_widget(block, area);
@@ -86,7 +86,7 @@ pub fn render_kill_confirm(frame: &mut Frame, app: &App, theme: &Theme) {
         .title(" Kill Process? ")
         .borders(Borders::ALL)
         .border_style(Style::default().fg(theme.danger))
-        .style(Style::default().bg(theme.bg));
+        .style(Style::default().bg(theme.dialog_bg));
 
     let inner = block.inner(area);
     frame.render_widget(block, area);
@@ -166,7 +166,7 @@ pub fn render_about(frame: &mut Frame, _app: &App, theme: &Theme) {
         .title(" About ")
         .borders(Borders::ALL)
         .border_style(Style::default().fg(theme.accent))
-        .style(Style::default().bg(theme.bg));
+        .style(Style::default().bg(theme.dialog_bg));
 
     let inner = block.inner(area);
     frame.render_widget(block, area);

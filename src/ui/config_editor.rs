@@ -28,7 +28,7 @@ pub fn render(frame: &mut Frame, app: &App, theme: &Theme) {
         .title(" Configuration ")
         .borders(Borders::ALL)
         .border_style(Style::default().fg(theme.accent))
-        .style(Style::default().bg(theme.bg));
+        .style(Style::default().bg(theme.dialog_bg));
 
     let inner = block.inner(area);
     frame.render_widget(block, area);

@@ -42,6 +42,7 @@ impl ThemeMode {
 #[derive(Debug, Clone, Copy)]
 pub struct Theme {
     pub bg: Color,
+    pub dialog_bg: Color,
     pub fg: Color,
     pub accent: Color,
     pub accent_secondary: Color,
@@ -60,6 +61,7 @@ impl Theme {
     pub fn dark() -> Self {
         Self {
             bg: Color::Rgb(22, 22, 30),
+            dialog_bg: Color::Rgb(35, 35, 45),
             fg: Color::Rgb(230, 230, 240),
             accent: Color::Rgb(138, 180, 248),
             accent_secondary: Color::Rgb(187, 134, 252),
@@ -78,6 +80,7 @@ impl Theme {
     pub fn light() -> Self {
         Self {
             bg: Color::Rgb(250, 250, 252),
+            dialog_bg: Color::Rgb(255, 255, 255),
             fg: Color::Rgb(30, 30, 40),
             accent: Color::Rgb(25, 118, 210),
             accent_secondary: Color::Rgb(123, 31, 162),
