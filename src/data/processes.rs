@@ -128,6 +128,7 @@ impl ProcessData {
         Ok(())
     }
 
+    #[allow(dead_code)]
     pub fn get_process(&self, pid: u32) -> Option<&ProcessInfo> {
         self.processes.iter().find(|p| p.pid == pid)
     }

@@ -93,16 +93,17 @@ pub fn render(frame: &mut Frame, area: Rect, app: &mut App, theme: &Theme) {
         Constraint::Length(8),
     ];
 
-    let table = Table::new(rows, widths)
-        .header(header)
-        .highlight_style(
-            Style::default()
-                .bg(theme.selection_bg)
-                .add_modifier(Modifier::BOLD),
-        );
+    let table = Table::new(rows, widths).header(header).highlight_style(
+        Style::default()
+            .bg(theme.selection_bg)
+            .add_modifier(Modifier::BOLD),
+    );
 
     let mut state = TableState::default();
-    state.select(Some(app.selected_process_index.saturating_sub(app.process_scroll_offset)));
+    state.select(Some(
+        app.selected_process_index
+            .saturating_sub(app.process_scroll_offset),
+    ));
 
     frame.render_stateful_widget(table, inner, &mut state);
 }

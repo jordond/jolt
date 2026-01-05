@@ -48,9 +48,7 @@ fn render_battery_gauge(frame: &mut Frame, area: Rect, app: &App, theme: &Theme)
         .ratio(ratio as f64)
         .label(Span::styled(
             label,
-            Style::default()
-                .fg(theme.fg)
-                .add_modifier(Modifier::BOLD),
+            Style::default().fg(theme.fg).add_modifier(Modifier::BOLD),
         ));
 
     frame.render_widget(gauge, area);
@@ -90,7 +88,9 @@ fn render_battery_info(frame: &mut Frame, area: Rect, app: &App, theme: &Theme) 
     let health_text = format!(
         "Health: {:.0}%  Cycles: {}",
         app.battery.health_percent(),
-        app.battery.cycle_count().map_or("N/A".to_string(), |c| c.to_string())
+        app.battery
+            .cycle_count()
+            .map_or("N/A".to_string(), |c| c.to_string())
     );
 
     let left = Paragraph::new(Line::from(vec![Span::styled(

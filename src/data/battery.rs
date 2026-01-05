@@ -54,7 +54,7 @@ impl BatteryData {
 
     fn parse_pmset_output(&mut self, output: &str) {
         for line in output.lines() {
-            if line.contains("InternalBattery") || line.contains("%") {
+            if line.contains("InternalBattery") || line.contains('%') {
                 if let Some(percent_pos) = line.find('%') {
                     let start = line[..percent_pos]
                         .rfind(char::is_whitespace)
@@ -75,7 +75,9 @@ impl BatteryData {
                     self.state = ChargeState::NotCharging;
                 }
 
-                if let Some(time_start) = line.find(|c: char| c.is_ascii_digit() && line.contains(':')) {
+                if let Some(time_start) =
+                    line.find(|c: char| c.is_ascii_digit() && line.contains(':'))
+                {
                     let remaining = &line[time_start..];
                     if let Some(colon_pos) = remaining.find(':') {
                         let hours_str = &remaining[..colon_pos];
@@ -86,7 +88,9 @@ impl BatteryData {
                             .unwrap_or(remaining.len());
                         let mins_str = &remaining[mins_start..mins_end];
 
-                        if let (Ok(hours), Ok(mins)) = (hours_str.parse::<u64>(), mins_str.parse::<u64>()) {
+                        if let (Ok(hours), Ok(mins)) =
+                            (hours_str.parse::<u64>(), mins_str.parse::<u64>())
+                        {
                             let duration = Duration::from_secs(hours * 3600 + mins * 60);
                             if self.state == ChargeState::Charging {
                                 self.time_to_full = Some(duration);
@@ -138,10 +142,12 @@ impl BatteryData {
         self.current_charge
     }
 
+    #[allow(dead_code)]
     pub fn max_capacity_wh(&self) -> f32 {
         self.max_capacity
     }
 
+    #[allow(dead_code)]
     pub fn design_capacity_wh(&self) -> f32 {
         self.design_capacity
     }
@@ -194,6 +200,7 @@ impl BatteryData {
         matches!(self.state, ChargeState::Charging)
     }
 
+    #[allow(dead_code)]
     pub fn is_on_ac(&self) -> bool {
         matches!(
             self.state,
@@ -203,9 +210,5 @@ impl BatteryData {
 }
 
 fn extract_number(line: &str) -> Option<i64> {
-    line.split('=')
-        .nth(1)?
-        .trim()
-        .parse::<i64>()
-        .ok()
+    line.split('=').nth(1)?.trim().parse::<i64>().ok()
 }

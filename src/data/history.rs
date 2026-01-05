@@ -1,5 +1,5 @@
-use std::collections::VecDeque;
 use chrono::{DateTime, Local};
+use std::collections::VecDeque;
 
 const MAX_HISTORY_POINTS: usize = 120;
 
@@ -84,10 +84,12 @@ impl HistoryData {
         }
     }
 
+    #[allow(dead_code)]
     pub fn latest(&self) -> Option<&DataPoint> {
         self.points.back()
     }
 
+    #[allow(dead_code)]
     pub fn average_power(&self) -> f32 {
         if self.points.is_empty() {
             return 0.0;
@@ -97,6 +99,7 @@ impl HistoryData {
         sum / self.points.len() as f32
     }
 
+    #[allow(dead_code)]
     pub fn battery_trend(&self) -> Option<f32> {
         if self.points.len() < 10 {
             return None;

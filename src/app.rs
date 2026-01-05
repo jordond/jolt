@@ -7,8 +7,6 @@ use crate::data::{BatteryData, HistoryData, PowerData, ProcessData, ProcessInfo}
 pub enum Action {
     Quit,
     ToggleHelp,
-    ScrollUp,
-    ScrollDown,
     SelectNext,
     SelectPrevious,
     ToggleExpand,
@@ -84,13 +82,13 @@ impl App {
                     _ => AppView::Help,
                 };
             }
-            Action::ScrollUp | Action::SelectPrevious => {
+            Action::SelectPrevious => {
                 if self.selected_process_index > 0 {
                     self.selected_process_index -= 1;
                     self.adjust_scroll();
                 }
             }
-            Action::ScrollDown | Action::SelectNext => {
+            Action::SelectNext => {
                 let visible_count = self.visible_process_count();
                 if visible_count > 0 && self.selected_process_index < visible_count - 1 {
                     self.selected_process_index += 1;

@@ -38,7 +38,10 @@ pub fn render_help(frame: &mut Frame, app: &App, theme: &Theme) {
                 .add_modifier(Modifier::BOLD),
         )]),
         Line::from(vec![Span::styled(
-            format!("Theme: {} (press 't' to change)", app.config.theme_mode_label()),
+            format!(
+                "Theme: {} (press 't' to change)",
+                app.config.theme_mode_label()
+            ),
             Style::default().fg(theme.muted),
         )]),
     ])
@@ -87,9 +90,7 @@ pub fn render_kill_confirm(frame: &mut Frame, app: &App, theme: &Theme) {
                 Span::styled("Process: ", Style::default().fg(theme.muted)),
                 Span::styled(
                     &process.name,
-                    Style::default()
-                        .fg(theme.fg)
-                        .add_modifier(Modifier::BOLD),
+                    Style::default().fg(theme.fg).add_modifier(Modifier::BOLD),
                 ),
             ]),
             Line::from(vec![

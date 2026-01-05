@@ -19,7 +19,11 @@ use ratatui::prelude::*;
 
 #[derive(Parser, Debug)]
 #[command(name = "jolt")]
-#[command(author, version, about = "Beautiful battery & energy monitor for macOS")]
+#[command(
+    author,
+    version,
+    about = "Beautiful battery & energy monitor for macOS"
+)]
 struct Args {
     #[arg(short, long, default_value = "1000")]
     refresh_ms: u64,
