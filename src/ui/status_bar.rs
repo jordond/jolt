@@ -8,15 +8,32 @@ use ratatui::{
 
 use crate::app::App;
 use crate::config::Theme;
+use crate::data::SystemInfo;
 
-pub fn render_title_bar(frame: &mut Frame, area: Rect, theme: &Theme) {
+pub fn render_title_bar(frame: &mut Frame, area: Rect, system_info: &SystemInfo, theme: &Theme) {
     let version = super::VERSION;
-    let title = Line::from(vec![
+
+    let left_spans = vec![
         Span::styled("⚡️jolt ", Style::default().fg(theme.accent)),
         Span::styled(format!("v{}", version), Style::default().fg(theme.muted)),
-    ]);
+    ];
 
-    let bar = Paragraph::new(title).style(Style::default().bg(theme.bg));
+    let right_text = format!(
+        "{} · macOS {} · {} ",
+        system_info.chip,
+        system_info.os_version,
+        system_info.cores_display()
+    );
+
+    let left_width: usize = left_spans.iter().map(|s| s.width()).sum();
+    let right_width = right_text.chars().count();
+    let padding = (area.width as usize).saturating_sub(left_width + right_width);
+
+    let mut spans = left_spans;
+    spans.push(Span::raw(" ".repeat(padding)));
+    spans.push(Span::styled(right_text, Style::default().fg(theme.muted)));
+
+    let bar = Paragraph::new(Line::from(spans)).style(Style::default().bg(theme.bg));
     frame.render_widget(bar, area);
 }
 

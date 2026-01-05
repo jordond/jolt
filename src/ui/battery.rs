@@ -133,13 +133,8 @@ impl Widget for ThickGauge {
             }
         }
 
-        let label_with_padding = format!(" {} ", self.label);
-        let label_len = label_with_padding.len() as u16;
-        let label_x = if filled_width >= label_len {
-            bar_start + filled_width - label_len
-        } else {
-            bar_start + filled_width
-        };
+        let label_with_padding = format!(" {}", self.label);
+        let label_x = bar_start + filled_width;
 
         for (i, ch) in label_with_padding.chars().enumerate() {
             let x = label_x + i as u16;

@@ -1,7 +1,9 @@
 use color_eyre::eyre::Result;
 
 use crate::config::{GraphMetric, RuntimeConfig, UserConfig};
-use crate::data::{BatteryData, HistoryData, HistoryMetric, PowerData, ProcessData, ProcessInfo};
+use crate::data::{
+    BatteryData, HistoryData, HistoryMetric, PowerData, ProcessData, ProcessInfo, SystemInfo,
+};
 
 fn get_base_process_name(name: &str) -> String {
     let name = name
@@ -92,6 +94,7 @@ pub enum AppView {
 pub struct App {
     pub config: RuntimeConfig,
     pub view: AppView,
+    pub system_info: SystemInfo,
     pub battery: BatteryData,
     pub power: PowerData,
     pub processes: ProcessData,
@@ -129,6 +132,7 @@ impl App {
         Ok(Self {
             config,
             view: AppView::Main,
+            system_info: SystemInfo::new(),
             battery: BatteryData::new()?,
             power: PowerData::new()?,
             processes: ProcessData::with_exclusions(excluded)?,

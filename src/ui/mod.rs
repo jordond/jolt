@@ -28,7 +28,7 @@ pub fn render(frame: &mut Frame, app: &mut App) {
         ])
         .split(area);
 
-    status_bar::render_title_bar(frame, outer_chunks[0], &theme);
+    status_bar::render_title_bar(frame, outer_chunks[0], &app.system_info, &theme);
     status_bar::render_status_bar(frame, outer_chunks[2], app, &theme);
 
     let content_area = outer_chunks[1];
