@@ -1,0 +1,53 @@
+[package]
+name = "jolt"
+version = "0.1.0"
+edition = "2021"
+authors = ["Jordon"]
+description = "A beautiful TUI for monitoring battery and energy usage on macOS"
+license = "MIT"
+repository = "https://github.com/jordon/jolt"
+keywords = ["tui", "battery", "macos", "energy", "monitoring"]
+categories = ["command-line-utilities"]
+
+[dependencies]
+# TUI framework
+ratatui = { version = "0.26", features = ["crossterm"] }
+crossterm = "0.27"
+
+# Async runtime
+tokio = { version = "1", features = ["full"] }
+tokio-stream = "0.1"
+futures = "0.3"
+
+# Error handling
+color-eyre = "0.6"
+thiserror = "2"
+
+# System info
+sysinfo = "0.30"
+
+# macOS specific
+core-foundation = "0.10"
+core-foundation-sys = "0.8"
+libc = "0.2"
+mach2 = "0.4"
+
+# Data handling
+chrono = { version = "0.4", features = ["serde"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+# CLI
+clap = { version = "4", features = ["derive"] }
+
+# Logging (optional, for debugging)
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+[build-dependencies]
+# For linking IOKit framework
+
+[profile.release]
+lto = true
+codegen-units = 1
+strip = true
