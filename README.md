@@ -161,12 +161,23 @@ cargo clippy
 jolt collects system metrics using macOS-native tools and APIs:
 
 - **Battery Data** - Parsed from `pmset -g batt` and `ioreg -r -c AppleSmartBattery`
-- **Power Metrics** - CPU usage sampled via sysinfo, estimated power draw
+- **Power Metrics** - Real-time energy data via IOReport framework (CPU, GPU, ANE power in watts)
 - **Process Info** - Collected via the [sysinfo](https://crates.io/crates/sysinfo) crate
 - **Terminal UI** - Built with [ratatui](https://crates.io/crates/ratatui) and [crossterm](https://crates.io/crates/crossterm)
 - **System Theme** - Detected via `defaults read -g AppleInterfaceStyle`
 
-The IOReport framework bindings are included for future direct access to Apple's power metrics (similar to `powermetrics` command).
+## Contributing
+
+1. Fork and clone the repo
+2. Create a branch and make your changes
+3. Ensure your code passes checks:
+   ```bash
+   cargo fmt --check
+   cargo clippy -- -D warnings
+   cargo build
+   ```
+4. Commit using [conventional commits](https://www.conventionalcommits.org/) (feat, fix, docs, etc)
+5. Open a PR targeting `main`
 
 ## License
 
