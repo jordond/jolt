@@ -22,7 +22,7 @@ fn centered_fixed_rect(area: Rect, width: u16, height: u16) -> Rect {
 pub fn render_help(frame: &mut Frame, app: &App, theme: &Theme) {
     let content_height = KEY_BINDINGS.len() as u16 + 8;
     let content_width = 55;
-    let area = centered_fixed_rect(frame.size(), content_width, content_height);
+    let area = centered_fixed_rect(frame.area(), content_width, content_height);
 
     frame.render_widget(Clear, area);
 
@@ -78,7 +78,7 @@ pub fn render_help(frame: &mut Frame, app: &App, theme: &Theme) {
 }
 
 pub fn render_kill_confirm(frame: &mut Frame, app: &App, theme: &Theme) {
-    let area = centered_fixed_rect(frame.size(), 50, 14);
+    let area = centered_fixed_rect(frame.area(), 50, 14);
 
     frame.render_widget(Clear, area);
 
@@ -158,7 +158,7 @@ pub fn render_kill_confirm(frame: &mut Frame, app: &App, theme: &Theme) {
 }
 
 pub fn render_about(frame: &mut Frame, _app: &App, theme: &Theme) {
-    let area = centered_fixed_rect(frame.size(), 60, 16);
+    let area = centered_fixed_rect(frame.area(), 60, 16);
 
     frame.render_widget(Clear, area);
 

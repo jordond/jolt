@@ -124,12 +124,12 @@ struct KeyData {
     bytes: [u8; 32],
 }
 
-struct SMC {
+struct Smc {
     conn: u32,
     keys: HashMap<u32, KeyInfo>,
 }
 
-impl SMC {
+impl Smc {
     fn new() -> Option<Self> {
         let service_name = std::ffi::CString::new("AppleSMC").ok()?;
 
@@ -152,14 +152,14 @@ impl SMC {
                     let name_str = std::ffi::CStr::from_ptr(name.as_ptr())
                         .to_string_lossy()
                         .to_string();
-                    if name_str == "AppleSMCKeysEndpoint" {
-                        if IOServiceOpen(device, mach_task_self(), 0, &mut conn) == 0 {
-                            IOObjectRelease(existing);
-                            return Some(Self {
-                                conn,
-                                keys: HashMap::new(),
-                            });
-                        }
+                    if name_str == "AppleSMCKeysEndpoint"
+                        && IOServiceOpen(device, mach_task_self(), 0, &mut conn) == 0
+                    {
+                        IOObjectRelease(existing);
+                        return Some(Self {
+                            conn,
+                            keys: HashMap::new(),
+                        });
                     }
                 }
             }
@@ -176,7 +176,14 @@ impl SMC {
         let mut olen = size_of::<KeyData>();
 
         let rs = unsafe {
-            IOConnectCallStructMethod(self.conn, 2, ival, ilen, &mut oval as *mut _ as _, &mut olen)
+            IOConnectCallStructMethod(
+                self.conn,
+                2,
+                ival,
+                ilen,
+                &mut oval as *mut _ as _,
+                &mut olen,
+            )
         };
 
         if rs != 0 || oval.result != 0 {
@@ -231,7 +238,7 @@ impl SMC {
     }
 }
 
-impl Drop for SMC {
+impl Drop for Smc {
     fn drop(&mut self) {
         unsafe {
             IOServiceClose(self.conn);
@@ -331,8 +338,7 @@ impl Iterator for IOReportIterator {
             return None;
         }
 
-        let item =
-            unsafe { CFArrayGetValueAtIndex(self.items, self.index) } as CFDictionaryRef;
+        let item = unsafe { CFArrayGetValueAtIndex(self.items, self.index) } as CFDictionaryRef;
         self.index += 1;
 
         if item.is_null() {
@@ -401,8 +407,7 @@ impl IOReportSubscription {
     }
 
     fn sample(&self) -> Option<CFDictionaryRef> {
-        let sample =
-            unsafe { IOReportCreateSamples(self.subscription, self.channels, null()) };
+        let sample = unsafe { IOReportCreateSamples(self.subscription, self.channels, null()) };
         if sample.is_null() {
             None
         } else {
@@ -421,7 +426,7 @@ impl Drop for IOReportSubscription {
 
 pub struct PowerData {
     subscription: Option<IOReportSubscription>,
-    smc: Option<SMC>,
+    smc: Option<Smc>,
     last_sample: Option<CFDictionaryRef>,
     last_sample_time: Option<Instant>,
     cpu_power: f32,
@@ -435,7 +440,7 @@ pub struct PowerData {
 impl PowerData {
     pub fn new() -> Result<Self> {
         let subscription = IOReportSubscription::new();
-        let smc = SMC::new();
+        let smc = Smc::new();
 
         let mut data = Self {
             subscription,
@@ -497,8 +502,7 @@ impl PowerData {
             return;
         };
 
-        let (Some(prev_sample), Some(prev_time)) = (self.last_sample, self.last_sample_time)
-        else {
+        let (Some(prev_sample), Some(prev_time)) = (self.last_sample, self.last_sample_time) else {
             self.last_sample = Some(current_sample);
             self.last_sample_time = Some(Instant::now());
             return;

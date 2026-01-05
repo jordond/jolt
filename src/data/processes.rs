@@ -2,7 +2,7 @@ use color_eyre::eyre::Result;
 use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
-use sysinfo::System;
+use sysinfo::{ProcessesToUpdate, System};
 
 use crate::config::cache_dir;
 
@@ -17,8 +17,6 @@ pub struct ProcessInfo {
     pub children: Option<Vec<ProcessInfo>>,
     pub is_killable: bool,
 }
-
-
 
 pub struct ProcessData {
     system: System,
@@ -69,14 +67,14 @@ impl ProcessData {
     }
 
     pub fn refresh(&mut self) -> Result<()> {
-        self.system.refresh_processes();
+        self.system.refresh_processes(ProcessesToUpdate::All, true);
 
         let mut process_map: HashMap<u32, ProcessInfo> = HashMap::new();
         let mut children_map: HashMap<u32, Vec<ProcessInfo>> = HashMap::new();
 
         for (pid, process) in self.system.processes() {
             let pid_u32 = pid.as_u32();
-            let binary_name = process.name().to_string();
+            let binary_name = process.name().to_string_lossy().to_string();
 
             if self.is_excluded(&binary_name, pid_u32) {
                 continue;
@@ -89,7 +87,7 @@ impl ProcessData {
 
             let energy_impact = calculate_energy_impact(cpu, memory_mb as f32);
             let exe_path = process.exe().map(|p| p.to_path_buf());
-            
+
             let (display_name, cache_updated) = if let Some(ref path) = exe_path {
                 let path_str = path.to_string_lossy().to_string();
                 if let Some(cached) = self.display_name_cache.get(&path_str) {
@@ -102,11 +100,11 @@ impl ProcessData {
             } else {
                 (binary_name.clone(), false)
             };
-            
+
             if cache_updated {
                 save_display_name_cache(&self.display_name_cache);
             }
-            
+
             let is_killable = is_process_killable(pid_u32, &binary_name);
 
             let info = ProcessInfo {
@@ -170,11 +168,6 @@ impl ProcessData {
             .output()?;
 
         Ok(())
-    }
-
-    #[allow(dead_code)]
-    pub fn get_process(&self, pid: u32) -> Option<&ProcessInfo> {
-        self.processes.iter().find(|p| p.pid == pid)
     }
 }
 
@@ -324,7 +317,7 @@ fn load_display_name_cache() -> HashMap<String, String> {
     if !path.exists() {
         return HashMap::new();
     }
-    
+
     match fs::read_to_string(&path) {
         Ok(content) => serde_json::from_str(&content).unwrap_or_default(),
         Err(_) => HashMap::new(),
@@ -336,7 +329,7 @@ fn save_display_name_cache(cache: &HashMap<String, String>) {
     if let Some(parent) = path.parent() {
         let _ = fs::create_dir_all(parent);
     }
-    
+
     if let Ok(content) = serde_json::to_string(cache) {
         let _ = fs::write(path, content);
     }

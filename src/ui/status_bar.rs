@@ -21,7 +21,7 @@ pub fn render_title_bar(frame: &mut Frame, area: Rect, theme: &Theme) {
 }
 
 pub fn render_status_bar(frame: &mut Frame, area: Rect, app: &App, theme: &Theme) {
-    let hints = vec![
+    let hints = [
         ("?", "help"),
         ("C", "config"),
         ("t", "theme"),

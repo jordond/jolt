@@ -20,7 +20,7 @@ fn centered_fixed_rect(area: Rect, width: u16, height: u16) -> Rect {
 pub fn render(frame: &mut Frame, app: &App, theme: &Theme) {
     let content_height = App::CONFIG_ITEMS.len() as u16 + 8;
     let content_width = 50;
-    let area = centered_fixed_rect(frame.size(), content_width, content_height);
+    let area = centered_fixed_rect(frame.area(), content_width, content_height);
 
     frame.render_widget(Clear, area);
 
@@ -44,12 +44,10 @@ pub fn render(frame: &mut Frame, app: &App, theme: &Theme) {
         .split(inner);
 
     let path_str = config_path().to_string_lossy().to_string();
-    let header = Paragraph::new(vec![
-        Line::from(vec![Span::styled(
-            "Use ↑↓ to select, ←→ or Enter to change",
-            Style::default().fg(theme.muted),
-        )]),
-    ])
+    let header = Paragraph::new(vec![Line::from(vec![Span::styled(
+        "Use ↑↓ to select, ←→ or Enter to change",
+        Style::default().fg(theme.muted),
+    )])])
     .centered();
     frame.render_widget(header, chunks[0]);
 
@@ -96,7 +94,7 @@ pub fn render(frame: &mut Frame, app: &App, theme: &Theme) {
             Span::styled(" Close", Style::default().fg(theme.muted)),
         ]),
         Line::from(vec![Span::styled(
-            format!("{}", path_str),
+            path_str,
             Style::default().fg(theme.muted),
         )]),
     ])

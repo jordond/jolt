@@ -17,7 +17,7 @@ pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 pub fn render(frame: &mut Frame, app: &mut App) {
     let theme = app.config.theme();
-    let area = frame.size();
+    let area = frame.area();
 
     let outer_chunks = Layout::default()
         .direction(Direction::Vertical)

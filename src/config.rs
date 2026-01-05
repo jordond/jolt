@@ -54,7 +54,6 @@ pub struct Theme {
     pub selection_bg: Color,
     pub selection_fg: Color,
     pub graph_line: Color,
-    pub graph_fill: Color,
 }
 
 impl Theme {
@@ -73,7 +72,6 @@ impl Theme {
             selection_bg: Color::Rgb(50, 50, 70),
             selection_fg: Color::Rgb(255, 255, 255),
             graph_line: Color::Rgb(138, 180, 248),
-            graph_fill: Color::Rgb(60, 90, 140),
         }
     }
 
@@ -92,7 +90,6 @@ impl Theme {
             selection_bg: Color::Rgb(220, 230, 245),
             selection_fg: Color::Rgb(0, 0, 0),
             graph_line: Color::Rgb(25, 118, 210),
-            graph_fill: Color::Rgb(180, 210, 240),
         }
     }
 }
@@ -127,8 +124,6 @@ impl Default for UserConfig {
         }
     }
 }
-
-
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "lowercase")]
@@ -176,13 +171,17 @@ impl UserConfig {
     pub fn save(&self) -> std::io::Result<()> {
         let _ = ensure_dirs();
         let path = config_path();
-        let content = toml::to_string_pretty(self).map_err(|e| {
-            std::io::Error::new(std::io::ErrorKind::InvalidData, e.to_string())
-        })?;
+        let content = toml::to_string_pretty(self)
+            .map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidData, e.to_string()))?;
         fs::write(path, content)
     }
 
-    pub fn merge_with_args(&mut self, theme: Option<&str>, refresh_ms: Option<u64>, low_power: bool) -> bool {
+    pub fn merge_with_args(
+        &mut self,
+        theme: Option<&str>,
+        refresh_ms: Option<u64>,
+        low_power: bool,
+    ) -> bool {
         if let Some(t) = theme {
             self.theme = ThemeMode::from_str(t);
         }

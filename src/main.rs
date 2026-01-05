@@ -17,7 +17,7 @@ use crossterm::{
 };
 use ratatui::prelude::*;
 
-use config::{UserConfig, config_path, ensure_dirs};
+use config::{config_path, ensure_dirs, UserConfig};
 
 #[derive(Debug, Subcommand)]
 enum Commands {
@@ -100,23 +100,26 @@ fn main() -> Result<()> {
     let cli = Cli::parse();
 
     match cli.command {
-        Some(Commands::Pipe { samples, interval, compact }) => {
-            run_pipe(samples, interval, compact)
-        }
-        Some(Commands::Debug) => {
-            run_debug()
-        }
-        Some(Commands::Config { path, reset, edit }) => {
-            run_config(path, reset, edit)
-        }
-        Some(Commands::Ui { refresh_ms, theme, low_power }) => {
+        Some(Commands::Pipe {
+            samples,
+            interval,
+            compact,
+        }) => run_pipe(samples, interval, compact),
+        Some(Commands::Debug) => run_debug(),
+        Some(Commands::Config { path, reset, edit }) => run_config(path, reset, edit),
+        Some(Commands::Ui {
+            refresh_ms,
+            theme,
+            low_power,
+        }) => {
             let mut config = UserConfig::load();
             let refresh_from_cli = config.merge_with_args(theme.as_deref(), refresh_ms, low_power);
             run_tui(config, refresh_from_cli)
         }
         None => {
             let mut config = UserConfig::load();
-            let refresh_from_cli = config.merge_with_args(cli.theme.as_deref(), cli.refresh_ms, cli.low_power);
+            let refresh_from_cli =
+                config.merge_with_args(cli.theme.as_deref(), cli.refresh_ms, cli.low_power);
             run_tui(config, refresh_from_cli)
         }
     }
@@ -194,15 +197,20 @@ fn run_pipe(samples: u32, interval: u64, compact: bool) -> Result<()> {
         power.refresh()?;
         processes.refresh()?;
 
-        let top_processes: Vec<_> = processes.processes.iter().take(10).map(|p| {
-            json!({
-                "pid": p.pid,
-                "name": p.name,
-                "cpu": p.cpu_usage,
-                "memory_mb": p.memory_mb,
-                "energy": p.energy_impact,
+        let top_processes: Vec<_> = processes
+            .processes
+            .iter()
+            .take(10)
+            .map(|p| {
+                json!({
+                    "pid": p.pid,
+                    "name": p.name,
+                    "cpu": p.cpu_usage,
+                    "memory_mb": p.memory_mb,
+                    "energy": p.energy_impact,
+                })
             })
-        }).collect();
+            .collect();
 
         let doc = json!({
             "timestamp": chrono::Utc::now().to_rfc3339(),
@@ -253,9 +261,24 @@ fn run_debug() -> Result<()> {
     {
         if let Ok(json) = serde_json::from_slice::<serde_json::Value>(&output.stdout) {
             if let Some(hw) = json.get("SPHardwareDataType").and_then(|v| v.get(0)) {
-                println!("Chip: {}", hw.get("chip_type").and_then(|v| v.as_str()).unwrap_or("Unknown"));
-                println!("Model: {}", hw.get("machine_model").and_then(|v| v.as_str()).unwrap_or("Unknown"));
-                println!("Cores: {}", hw.get("number_processors").and_then(|v| v.as_str()).unwrap_or("Unknown"));
+                println!(
+                    "Chip: {}",
+                    hw.get("chip_type")
+                        .and_then(|v| v.as_str())
+                        .unwrap_or("Unknown")
+                );
+                println!(
+                    "Model: {}",
+                    hw.get("machine_model")
+                        .and_then(|v| v.as_str())
+                        .unwrap_or("Unknown")
+                );
+                println!(
+                    "Cores: {}",
+                    hw.get("number_processors")
+                        .and_then(|v| v.as_str())
+                        .unwrap_or("Unknown")
+                );
             }
         }
     }
@@ -316,16 +339,16 @@ fn run_config(path: bool, reset: bool, edit: bool) -> Result<()> {
 
     if edit {
         let editor = std::env::var("EDITOR").unwrap_or_else(|_| "nano".to_string());
-        
+
         if !config_file.exists() {
             let config = UserConfig::default();
             config.save()?;
         }
-        
-        std::process::Command::new(&editor)
+
+        std::process::Command::new(editor)
             .arg(&config_file)
             .status()?;
-        
+
         return Ok(());
     }
 

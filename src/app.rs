@@ -162,7 +162,7 @@ impl App {
         let should_refresh_processes = if self.selection_mode {
             false
         } else if self.low_power_mode() {
-            self.tick_count % 3 == 0
+            self.tick_count.is_multiple_of(3)
         } else {
             true
         };
@@ -321,7 +321,10 @@ impl App {
                 }
             }
             Action::DecreaseRefreshRate => {
-                self.refresh_ms = self.refresh_ms.saturating_sub(REFRESH_STEP_MS).max(MIN_REFRESH_MS);
+                self.refresh_ms = self
+                    .refresh_ms
+                    .saturating_sub(REFRESH_STEP_MS)
+                    .max(MIN_REFRESH_MS);
                 if !self.config.refresh_from_cli {
                     self.config.user_config.refresh_ms = self.refresh_ms;
                     let _ = self.config.user_config.save();
@@ -377,23 +380,52 @@ impl App {
         let asc = self.sort_ascending;
         match self.sort_column {
             SortColumn::Pid => sorted.sort_by(|a, b| {
-                if asc { a.pid.cmp(&b.pid) } else { b.pid.cmp(&a.pid) }
+                if asc {
+                    a.pid.cmp(&b.pid)
+                } else {
+                    b.pid.cmp(&a.pid)
+                }
             }),
             SortColumn::Name => sorted.sort_by(|a, b| {
                 let cmp = a.name.to_lowercase().cmp(&b.name.to_lowercase());
-                if asc { cmp } else { cmp.reverse() }
+                if asc {
+                    cmp
+                } else {
+                    cmp.reverse()
+                }
             }),
             SortColumn::Cpu => sorted.sort_by(|a, b| {
-                let cmp = a.cpu_usage.partial_cmp(&b.cpu_usage).unwrap_or(std::cmp::Ordering::Equal);
-                if asc { cmp } else { cmp.reverse() }
+                let cmp = a
+                    .cpu_usage
+                    .partial_cmp(&b.cpu_usage)
+                    .unwrap_or(std::cmp::Ordering::Equal);
+                if asc {
+                    cmp
+                } else {
+                    cmp.reverse()
+                }
             }),
             SortColumn::Memory => sorted.sort_by(|a, b| {
-                let cmp = a.memory_mb.partial_cmp(&b.memory_mb).unwrap_or(std::cmp::Ordering::Equal);
-                if asc { cmp } else { cmp.reverse() }
+                let cmp = a
+                    .memory_mb
+                    .partial_cmp(&b.memory_mb)
+                    .unwrap_or(std::cmp::Ordering::Equal);
+                if asc {
+                    cmp
+                } else {
+                    cmp.reverse()
+                }
             }),
             SortColumn::Energy => sorted.sort_by(|a, b| {
-                let cmp = a.energy_impact.partial_cmp(&b.energy_impact).unwrap_or(std::cmp::Ordering::Equal);
-                if asc { cmp } else { cmp.reverse() }
+                let cmp = a
+                    .energy_impact
+                    .partial_cmp(&b.energy_impact)
+                    .unwrap_or(std::cmp::Ordering::Equal);
+                if asc {
+                    cmp
+                } else {
+                    cmp.reverse()
+                }
             }),
         }
 
@@ -422,7 +454,7 @@ impl App {
         for mut process in processes {
             let original_name = process.name.clone();
             let base_name = get_base_process_name(&original_name);
-            
+
             process.children = None;
 
             if let Some(existing) = merged.get_mut(&base_name) {
@@ -504,8 +536,18 @@ impl App {
         match index {
             0 => self.config.user_config.theme.label().to_string(),
             1 => self.refresh_ms.to_string(),
-            2 => if self.config.user_config.low_power_mode { "On" } else { "Off" }.to_string(),
-            3 => if self.config.user_config.show_graph { "On" } else { "Off" }.to_string(),
+            2 => if self.config.user_config.low_power_mode {
+                "On"
+            } else {
+                "Off"
+            }
+            .to_string(),
+            3 => if self.config.user_config.show_graph {
+                "On"
+            } else {
+                "Off"
+            }
+            .to_string(),
             4 => if self.merge_mode { "On" } else { "Off" }.to_string(),
             5 => self.config.user_config.process_count.to_string(),
             6 => format!("{:.1}", self.config.user_config.energy_threshold),
@@ -544,11 +586,13 @@ impl App {
                 }
             }
             5 => {
-                self.config.user_config.process_count = (self.config.user_config.process_count + 10).min(200);
+                self.config.user_config.process_count =
+                    (self.config.user_config.process_count + 10).min(200);
                 let _ = self.config.user_config.save();
             }
             6 => {
-                self.config.user_config.energy_threshold = (self.config.user_config.energy_threshold + 0.5).min(10.0);
+                self.config.user_config.energy_threshold =
+                    (self.config.user_config.energy_threshold + 0.5).min(10.0);
                 let _ = self.config.user_config.save();
             }
             _ => {}
@@ -559,18 +603,27 @@ impl App {
         match self.config_selected_item {
             0 => self.config.cycle_theme(),
             1 => {
-                self.refresh_ms = self.refresh_ms.saturating_sub(REFRESH_STEP_MS).max(MIN_REFRESH_MS);
+                self.refresh_ms = self
+                    .refresh_ms
+                    .saturating_sub(REFRESH_STEP_MS)
+                    .max(MIN_REFRESH_MS);
                 if !self.config.refresh_from_cli {
                     self.config.user_config.refresh_ms = self.refresh_ms;
                     let _ = self.config.user_config.save();
                 }
             }
             5 => {
-                self.config.user_config.process_count = self.config.user_config.process_count.saturating_sub(10).max(10);
+                self.config.user_config.process_count = self
+                    .config
+                    .user_config
+                    .process_count
+                    .saturating_sub(10)
+                    .max(10);
                 let _ = self.config.user_config.save();
             }
             6 => {
-                self.config.user_config.energy_threshold = (self.config.user_config.energy_threshold - 0.5).max(0.0);
+                self.config.user_config.energy_threshold =
+                    (self.config.user_config.energy_threshold - 0.5).max(0.0);
                 let _ = self.config.user_config.save();
             }
             _ => {}

@@ -76,8 +76,18 @@ pub fn render(frame: &mut Frame, area: Rect, app: &mut App, theme: &Theme) {
         format_header("PID", SortColumn::Pid, app.sort_column, sort_indicator),
         format_header("Name", SortColumn::Name, app.sort_column, sort_indicator),
         format_header("CPU %", SortColumn::Cpu, app.sort_column, sort_indicator),
-        format_header("Memory", SortColumn::Memory, app.sort_column, sort_indicator),
-        format_header("Impact", SortColumn::Energy, app.sort_column, sort_indicator),
+        format_header(
+            "Memory",
+            SortColumn::Memory,
+            app.sort_column,
+            sort_indicator,
+        ),
+        format_header(
+            "Impact",
+            SortColumn::Energy,
+            app.sort_column,
+            sort_indicator,
+        ),
         "Kill".to_string(),
     ];
     let header = Row::new(header_cells.iter().map(|h| {

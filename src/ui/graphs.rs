@@ -23,22 +23,34 @@ fn render_single(frame: &mut Frame, area: Rect, app: &App, theme: &Theme) {
     let is_battery = app.history.current_metric == HistoryMetric::Battery;
 
     let current_value = if is_battery {
-        app.history.points.back().map(|p| format!("{:.0}%", p.battery_percent))
+        app.history
+            .points
+            .back()
+            .map(|p| format!("{:.0}%", p.battery_percent))
     } else {
-        app.history.points.back().map(|p| format!("{:.1}W", p.power_watts))
+        app.history
+            .points
+            .back()
+            .map(|p| format!("{:.1}W", p.power_watts))
     };
 
     let avg_value = if is_battery {
         let sum: f32 = app.history.points.iter().map(|p| p.battery_percent).sum();
         if !app.history.points.is_empty() {
-            Some(format!("avg: {:.0}%", sum / app.history.points.len() as f32))
+            Some(format!(
+                "avg: {:.0}%",
+                sum / app.history.points.len() as f32
+            ))
         } else {
             None
         }
     } else {
         let sum: f32 = app.history.points.iter().map(|p| p.power_watts).sum();
         if !app.history.points.is_empty() {
-            Some(format!("avg: {:.1}W", sum / app.history.points.len() as f32))
+            Some(format!(
+                "avg: {:.1}W",
+                sum / app.history.points.len() as f32
+            ))
         } else {
             None
         }
@@ -47,7 +59,9 @@ fn render_single(frame: &mut Frame, area: Rect, app: &App, theme: &Theme) {
     let title_line = Line::from(vec![
         Span::styled(
             format!(" {} ", app.history.metric_label()),
-            Style::default().fg(theme.accent).add_modifier(Modifier::BOLD),
+            Style::default()
+                .fg(theme.accent)
+                .add_modifier(Modifier::BOLD),
         ),
         Span::styled(
             current_value.unwrap_or_default(),
@@ -58,10 +72,7 @@ fn render_single(frame: &mut Frame, area: Rect, app: &App, theme: &Theme) {
             avg_value.unwrap_or_default(),
             Style::default().fg(theme.muted),
         ),
-        Span::styled(
-            " (g: toggle) ",
-            Style::default().fg(theme.muted),
-        ),
+        Span::styled(" (g: toggle) ", Style::default().fg(theme.muted)),
     ]);
 
     let block = Block::default()
@@ -88,15 +99,27 @@ fn render_single(frame: &mut Frame, area: Rect, app: &App, theme: &Theme) {
 
     let x_labels = vec![
         Span::styled("now", Style::default().fg(theme.muted)),
-        Span::styled(format!("-{}s", max_x as i32), Style::default().fg(theme.muted)),
+        Span::styled(
+            format!("-{}s", max_x as i32),
+            Style::default().fg(theme.muted),
+        ),
     ];
 
     let quarter = (max_y - min_y) / 4.0;
     let y_labels = vec![
         Span::styled(format!("{:.0}", min_y), Style::default().fg(theme.muted)),
-        Span::styled(format!("{:.0}", min_y + quarter), Style::default().fg(theme.muted)),
-        Span::styled(format!("{:.0}", min_y + quarter * 2.0), Style::default().fg(theme.muted)),
-        Span::styled(format!("{:.0}", min_y + quarter * 3.0), Style::default().fg(theme.muted)),
+        Span::styled(
+            format!("{:.0}", min_y + quarter),
+            Style::default().fg(theme.muted),
+        ),
+        Span::styled(
+            format!("{:.0}", min_y + quarter * 2.0),
+            Style::default().fg(theme.muted),
+        ),
+        Span::styled(
+            format!("{:.0}", min_y + quarter * 3.0),
+            Style::default().fg(theme.muted),
+        ),
         Span::styled(format!("{:.0}", max_y), Style::default().fg(theme.muted)),
     ];
 
@@ -156,14 +179,35 @@ fn render_battery_markers(
 }
 
 fn render_merged(frame: &mut Frame, area: Rect, app: &App, theme: &Theme) {
-    let power_val = app.history.points.back().map(|p| p.power_watts).unwrap_or(0.0);
-    let battery_val = app.history.points.back().map(|p| p.battery_percent).unwrap_or(0.0);
+    let power_val = app
+        .history
+        .points
+        .back()
+        .map(|p| p.power_watts)
+        .unwrap_or(0.0);
+    let battery_val = app
+        .history
+        .points
+        .back()
+        .map(|p| p.battery_percent)
+        .unwrap_or(0.0);
 
     let title_line = Line::from(vec![
-        Span::styled(" Combined ", Style::default().fg(theme.accent).add_modifier(Modifier::BOLD)),
-        Span::styled(format!("{:.1}W", power_val), Style::default().fg(theme.graph_line)),
+        Span::styled(
+            " Combined ",
+            Style::default()
+                .fg(theme.accent)
+                .add_modifier(Modifier::BOLD),
+        ),
+        Span::styled(
+            format!("{:.1}W", power_val),
+            Style::default().fg(theme.graph_line),
+        ),
         Span::styled(" │ ", Style::default().fg(theme.border)),
-        Span::styled(format!("{:.0}%", battery_val), Style::default().fg(theme.accent_secondary)),
+        Span::styled(
+            format!("{:.0}%", battery_val),
+            Style::default().fg(theme.accent_secondary),
+        ),
         Span::styled(" (g: toggle) ", Style::default().fg(theme.muted)),
     ]);
 
@@ -205,13 +249,19 @@ fn render_merged(frame: &mut Frame, area: Rect, app: &App, theme: &Theme) {
 
     let x_labels = vec![
         Span::styled("now", Style::default().fg(theme.muted)),
-        Span::styled(format!("-{}s", max_x as i32), Style::default().fg(theme.muted)),
+        Span::styled(
+            format!("-{}s", max_x as i32),
+            Style::default().fg(theme.muted),
+        ),
     ];
 
     let quarter = (max_y - min_y) / 4.0;
     let y_labels = vec![
         Span::styled(format!("{:.0}W", min_y), Style::default().fg(theme.muted)),
-        Span::styled(format!("{:.0}W", min_y + quarter * 2.0), Style::default().fg(theme.muted)),
+        Span::styled(
+            format!("{:.0}W", min_y + quarter * 2.0),
+            Style::default().fg(theme.muted),
+        ),
         Span::styled(format!("{:.0}W", max_y), Style::default().fg(theme.muted)),
     ];
 

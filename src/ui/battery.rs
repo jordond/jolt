@@ -23,10 +23,7 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App, theme: &Theme) {
 
     let chunks = Layout::default()
         .direction(Direction::Vertical)
-        .constraints([
-            Constraint::Min(5),
-            Constraint::Length(1),
-        ])
+        .constraints([Constraint::Min(5), Constraint::Length(1)])
         .split(inner);
 
     render_battery_gauge(frame, chunks[0], app, theme);
@@ -78,7 +75,7 @@ impl Widget for ThickGauge {
             .borders(Borders::ALL)
             .border_style(Style::default().fg(self.border_color))
             .style(Style::default().bg(self.bg_color));
-        
+
         let inner = block.inner(area);
         block.render(area, buf);
 
@@ -89,7 +86,7 @@ impl Widget for ThickGauge {
         let bar_start = inner.x + 3;
         let bar_end = inner.x + inner.width - 5;
         let bar_width = bar_end.saturating_sub(bar_start);
-        
+
         if bar_width < 5 {
             return;
         }
@@ -98,10 +95,10 @@ impl Widget for ThickGauge {
 
         for y in inner.y..inner.y + inner.height {
             for x in bar_start..bar_end {
-                let cell = buf.get_mut(x, y);
+                let cell = buf.cell_mut((x, y)).unwrap();
                 let rel_x = x - bar_start;
                 let is_last_filled = rel_x == filled_width.saturating_sub(1) && filled_width > 0;
-                
+
                 if rel_x < filled_width {
                     if is_last_filled && filled_width < bar_width {
                         cell.set_char('▌');
@@ -116,26 +113,26 @@ impl Widget for ThickGauge {
         }
 
         let label_y = inner.y + inner.height / 2;
-        
+
         for (i, ch) in "0%".chars().enumerate() {
             let x = inner.x + i as u16;
             if x < bar_start {
-                let cell = buf.get_mut(x, label_y);
+                let cell = buf.cell_mut((x, label_y)).unwrap();
                 cell.set_char(ch);
                 cell.set_fg(self.border_color);
             }
         }
-        
+
         let end_label = "100%";
         for (i, ch) in end_label.chars().enumerate() {
             let x = bar_end + i as u16;
             if x < inner.x + inner.width {
-                let cell = buf.get_mut(x, label_y);
+                let cell = buf.cell_mut((x, label_y)).unwrap();
                 cell.set_char(ch);
                 cell.set_fg(self.border_color);
             }
         }
-        
+
         let label_with_padding = format!(" {} ", self.label);
         let label_len = label_with_padding.len() as u16;
         let label_x = if filled_width >= label_len {
@@ -143,11 +140,11 @@ impl Widget for ThickGauge {
         } else {
             bar_start + filled_width
         };
-        
+
         for (i, ch) in label_with_padding.chars().enumerate() {
             let x = label_x + i as u16;
             if x >= bar_start && x < bar_end {
-                let cell = buf.get_mut(x, label_y);
+                let cell = buf.cell_mut((x, label_y)).unwrap();
                 cell.set_char(ch);
                 cell.set_fg(self.label_color);
                 cell.set_bg(self.bg_color);
@@ -177,7 +174,10 @@ fn render_battery_info(frame: &mut Frame, area: Rect, app: &App, theme: &Theme) 
 
     let power_info = if app.battery.is_charging() {
         if let Some(watts) = app.battery.charging_watts() {
-            let charger = app.battery.charger_watts().map_or(String::new(), |w| format!("/{}W", w));
+            let charger = app
+                .battery
+                .charger_watts()
+                .map_or(String::new(), |w| format!("/{}W", w));
             format!(" ({:.1}W{})", watts, charger)
         } else {
             String::new()

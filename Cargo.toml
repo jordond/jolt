@@ -10,26 +10,26 @@ keywords = ["tui", "battery", "macos", "energy", "monitoring"]
 categories = ["command-line-utilities"]
 
 [dependencies]
-ratatui = { version = "0.26", features = ["crossterm"] }
-crossterm = "0.27"
+ratatui = { version = "0.30", features = ["crossterm"] }
+crossterm = "0.29"
 tokio = { version = "1", features = ["full"] }
 tokio-stream = "0.1"
 futures = "0.3"
 color-eyre = "0.6"
 thiserror = "2"
-sysinfo = "0.30"
+sysinfo = "0.37"
 core-foundation = "0.10"
 core-foundation-sys = "0.8"
 libc = "0.2"
-mach2 = "0.4"
+mach2 = "0.6"
 chrono = { version = "0.4", features = ["serde"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 clap = { version = "4", features = ["derive"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
-toml = "0.8"
-dirs = "5"
+toml = "0.9.8"
+dirs = "6"
 
 [profile.release]
 lto = true

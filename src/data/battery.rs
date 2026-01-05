@@ -123,7 +123,10 @@ impl BatteryData {
                 if let Some(val) = extract_number(line) {
                     design_capacity = Some(val as f32);
                 }
-            } else if line.contains("\"CycleCount\"") && !line.contains("DesignCycleCount") && !line.contains("Lifetime") {
+            } else if line.contains("\"CycleCount\"")
+                && !line.contains("DesignCycleCount")
+                && !line.contains("Lifetime")
+            {
                 if let Some(val) = extract_number(line) {
                     self.cycle_count = Some(val as u32);
                 }
@@ -196,11 +199,6 @@ impl BatteryData {
         self.max_capacity * (self.voltage_mv as f32 / 1000.0) / 1000.0
     }
 
-    #[allow(dead_code)]
-    pub fn design_capacity_wh(&self) -> f32 {
-        self.design_capacity * (self.voltage_mv as f32 / 1000.0) / 1000.0
-    }
-
     pub fn state(&self) -> ChargeState {
         self.state
     }
@@ -253,11 +251,6 @@ impl BatteryData {
         matches!(self.state, ChargeState::Charging)
     }
 
-    #[allow(dead_code)]
-    pub fn is_on_ac(&self) -> bool {
-        self.external_connected
-    }
-
     pub fn charging_watts(&self) -> Option<f32> {
         if self.state == ChargeState::Charging && self.amperage_ma > 0 {
             let watts = (self.amperage_ma as f32 / 1000.0) * (self.voltage_mv as f32 / 1000.0);
@@ -273,7 +266,8 @@ impl BatteryData {
 
     pub fn discharge_watts(&self) -> Option<f32> {
         if self.state == ChargeState::Discharging && self.amperage_ma < 0 {
-            let watts = (self.amperage_ma.abs() as f32 / 1000.0) * (self.voltage_mv as f32 / 1000.0);
+            let watts =
+                (self.amperage_ma.abs() as f32 / 1000.0) * (self.voltage_mv as f32 / 1000.0);
             Some(watts)
         } else {
             None

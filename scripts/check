@@ -1,0 +1,65 @@
+#!/usr/bin/env bash
+set -e
+
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[0;33m'
+NC='\033[0m'
+
+print_step() {
+	echo -e "\n${YELLOW}==>${NC} $1"
+}
+
+print_success() {
+	echo -e "${GREEN}✓${NC} $1"
+}
+
+print_error() {
+	echo -e "${RED}✗${NC} $1"
+}
+
+cd "$(dirname "$0")/.."
+
+print_step "Checking format..."
+if cargo fmt --all --check; then
+	print_success "Format OK"
+else
+	print_error "Format issues found. Run 'cargo fmt --all' to fix."
+	exit 1
+fi
+
+print_step "Running clippy..."
+if cargo clippy --all-targets --all-features -- -D warnings; then
+	print_success "Clippy OK"
+else
+	print_error "Clippy found issues"
+	exit 1
+fi
+
+print_step "Checking compilation..."
+if cargo check --all-targets --all-features; then
+	print_success "Check OK"
+else
+	print_error "Compilation errors"
+	exit 1
+fi
+
+print_step "Building release..."
+if cargo build --release; then
+	print_success "Build OK"
+else
+	print_error "Build failed"
+	exit 1
+fi
+
+if [ "$1" = "--test" ] || [ "$1" = "-t" ]; then
+	print_step "Running tests..."
+	if cargo test; then
+		print_success "Tests OK"
+	else
+		print_error "Tests failed"
+		exit 1
+	fi
+fi
+
+echo -e "\n${GREEN}All checks passed!${NC}"

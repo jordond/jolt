@@ -1,4 +1,3 @@
-use chrono::{DateTime, Local};
 use std::collections::VecDeque;
 
 const MAX_HISTORY_POINTS: usize = 120;
@@ -11,9 +10,8 @@ pub enum HistoryMetric {
     Merged,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub struct DataPoint {
-    pub timestamp: DateTime<Local>,
     pub battery_percent: f32,
     pub power_watts: f32,
 }
@@ -32,10 +30,6 @@ pub struct HistoryData {
 }
 
 impl HistoryData {
-    pub fn new() -> Self {
-        Self::with_metric(HistoryMetric::Power)
-    }
-
     pub fn with_metric(metric: HistoryMetric) -> Self {
         Self {
             points: VecDeque::with_capacity(MAX_HISTORY_POINTS),
@@ -47,7 +41,6 @@ impl HistoryData {
 
     pub fn record(&mut self, battery_percent: f32, power_watts: f32) {
         let point = DataPoint {
-            timestamp: Local::now(),
             battery_percent,
             power_watts,
         };
@@ -148,40 +141,5 @@ impl HistoryData {
             .map(|p| p.power_watts)
             .fold(20.0_f32, f32::max);
         (0.0, (max * 1.2) as f64)
-    }
-
-    #[allow(dead_code)]
-    pub fn latest(&self) -> Option<&DataPoint> {
-        self.points.back()
-    }
-
-    #[allow(dead_code)]
-    pub fn average_power(&self) -> f32 {
-        if self.points.is_empty() {
-            return 0.0;
-        }
-
-        let sum: f32 = self.points.iter().map(|p| p.power_watts).sum();
-        sum / self.points.len() as f32
-    }
-
-    #[allow(dead_code)]
-    pub fn battery_trend(&self) -> Option<f32> {
-        if self.points.len() < 10 {
-            return None;
-        }
-
-        let recent: Vec<f32> = self
-            .points
-            .iter()
-            .rev()
-            .take(10)
-            .map(|p| p.battery_percent)
-            .collect();
-
-        let first = recent.last()?;
-        let last = recent.first()?;
-
-        Some(last - first)
     }
 }
