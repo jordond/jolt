@@ -845,10 +845,7 @@ pub fn current_hour_start() -> i64 {
 /// Helper to get the start of the current day as Unix timestamp
 #[allow(dead_code)]
 pub fn current_day_start() -> i64 {
-    Utc::now()
-        .date_naive()
-        .and_hms_opt(0, 0, 0)
-        .unwrap()
-        .and_utc()
-        .timestamp()
+    let date = Utc::now().date_naive();
+    let time = chrono::NaiveTime::from_hms_opt(0, 0, 0).unwrap();
+    date.and_time(time).and_utc().timestamp()
 }

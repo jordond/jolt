@@ -163,7 +163,7 @@ fn handle_kill_confirm_keys(key: KeyEvent) -> Action {
 
 fn handle_history_keys(key: KeyEvent) -> Action {
     match key.code {
-        KeyCode::Esc | KeyCode::Char('h') | KeyCode::Char('q') => Action::ToggleHistory,
+        KeyCode::Esc | KeyCode::Char('q') => Action::ToggleHistory,
         KeyCode::Left | KeyCode::Char('[') => Action::HistoryPrevPeriod,
         KeyCode::Right | KeyCode::Char(']') => Action::HistoryNextPeriod,
         KeyCode::Tab => Action::HistoryNextPeriod,

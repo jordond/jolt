@@ -933,7 +933,17 @@ fn run_daemon_command(command: DaemonCommands) -> Result<()> {
                 println!("Starting daemon...");
                 run_daemon(false).map_err(|e| color_eyre::eyre::eyre!("{}", e))?;
                 std::thread::sleep(Duration::from_millis(500));
-                if is_daemon_running() {
+
+                let mut started = false;
+                for _ in 0..3 {
+                    if is_daemon_running() {
+                        started = true;
+                        break;
+                    }
+                    std::thread::sleep(Duration::from_millis(200));
+                }
+
+                if started {
                     println!("Daemon started successfully.");
                     println!("Socket: {:?}", socket_path());
                 } else {
@@ -1035,7 +1045,12 @@ fn run_daemon_command(command: DaemonCommands) -> Result<()> {
     <key>RunAtLoad</key>
     <true/>
     <key>KeepAlive</key>
-    <true/>
+    <dict>
+        <key>SuccessfulExit</key>
+        <false/>
+    </dict>
+    <key>ThrottleInterval</key>
+    <integer>10</integer>
     <key>StandardErrorPath</key>
     <string>{}/jolt-daemon-stderr.log</string>
     <key>StandardOutPath</key>
@@ -1191,10 +1206,16 @@ fn run_history_command(command: Option<HistoryCommands>) -> Result<()> {
                 store
                     .get_samples(
                         chrono::NaiveDate::parse_from_str(&from_date, "%Y-%m-%d")
-                            .map(|d| d.and_hms_opt(0, 0, 0).unwrap().and_utc().timestamp())
+                            .map(|d| {
+                                let time = chrono::NaiveTime::from_hms_opt(0, 0, 0).unwrap();
+                                d.and_time(time).and_utc().timestamp()
+                            })
                             .unwrap_or(0),
                         chrono::NaiveDate::parse_from_str(&to_date, "%Y-%m-%d")
-                            .map(|d| d.and_hms_opt(23, 59, 59).unwrap().and_utc().timestamp())
+                            .map(|d| {
+                                let time = chrono::NaiveTime::from_hms_opt(23, 59, 59).unwrap();
+                                d.and_time(time).and_utc().timestamp()
+                            })
                             .unwrap_or(i64::MAX),
                     )
                     .unwrap_or_default()
@@ -1251,7 +1272,10 @@ fn run_history_command(command: Option<HistoryCommands>) -> Result<()> {
             }
 
             let before_ts = chrono::NaiveDate::parse_from_str(&before_date, "%Y-%m-%d")
-                .map(|d| d.and_hms_opt(0, 0, 0).unwrap().and_utc().timestamp())
+                .map(|d| {
+                    let time = chrono::NaiveTime::from_hms_opt(0, 0, 0).unwrap();
+                    d.and_time(time).and_utc().timestamp()
+                })
                 .unwrap_or(0);
 
             let deleted_samples = store.delete_samples_before(before_ts).unwrap_or(0);
@@ -1285,7 +1309,7 @@ fn get_date_range(period: &str) -> (String, String) {
         "today" => (today.clone(), today),
         "week" => (data::history_store::days_ago_date_string(7), today),
         "month" => (data::history_store::days_ago_date_string(30), today),
-        "all" => ("1970-01-01".to_string(), today),
+        "all" => ("2000-01-01".to_string(), today),
         _ => (data::history_store::days_ago_date_string(7), today),
     }
 }
@@ -1387,7 +1411,8 @@ fn export_to_csv(
 
 fn escape_csv(s: &str) -> String {
     if s.contains(',') || s.contains('"') || s.contains('\n') {
-        format!("\"{}\"", s.replace('"', "\"\""))
+        let escaped = s.replace('"', "\"\"").replace('\n', " ");
+        format!("\"{}\"", escaped)
     } else {
         s.to_string()
     }

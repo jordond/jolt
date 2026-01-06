@@ -1269,15 +1269,29 @@ impl App {
         // Spawn a separate process to start the daemon
         // We can't call run_daemon directly because daemonize causes the parent to exit
         if let Ok(exe) = std::env::current_exe() {
-            let _ = std::process::Command::new(exe)
+            match std::process::Command::new(exe)
                 .args(["daemon", "start"])
                 .stdout(std::process::Stdio::null())
                 .stderr(std::process::Stdio::null())
-                .spawn();
-
-            std::thread::sleep(std::time::Duration::from_millis(500));
+                .spawn()
+            {
+                Ok(_child) => {
+                    std::thread::sleep(std::time::Duration::from_millis(500));
+                    for _ in 0..3 {
+                        self.refresh_daemon_status();
+                        if self.daemon_connected {
+                            break;
+                        }
+                        std::thread::sleep(std::time::Duration::from_millis(200));
+                    }
+                }
+                Err(_) => {
+                    self.refresh_daemon_status();
+                }
+            }
+        } else {
+            self.refresh_daemon_status();
         }
-        self.refresh_daemon_status();
     }
 
     fn stop_daemon(&mut self) {

@@ -265,10 +265,7 @@ fn render_sparklines(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColo
     } else {
         app.history_daily_stats
             .iter()
-            .map(|d| {
-                let energy_per_day = d.total_energy_wh;
-                (energy_per_day * 10.0).min(1000.0) as u64
-            })
+            .map(|d| (d.total_energy_wh * 10.0) as u64)
             .collect()
     };
 
@@ -464,10 +461,13 @@ fn render_top_processes(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeC
 }
 
 fn power_level_color(power: f32, max_power: f32, theme: &ThemeColors) -> ratatui::style::Color {
-    if max_power <= 0.0 {
-        return theme.fg;
-    }
-    let ratio = power / max_power;
+    const EPS: f32 = 1e-6;
+    let effective_max = if max_power.abs() < EPS {
+        EPS
+    } else {
+        max_power
+    };
+    let ratio = power / effective_max;
     if ratio >= 0.7 {
         theme.danger
     } else if ratio >= 0.4 {

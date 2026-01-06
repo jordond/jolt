@@ -197,10 +197,13 @@ impl<'a> Aggregator<'a> {
                 if stats.oldest_sample.is_some() {
                     let target_size = max_bytes * 80 / 100;
                     let ratio = target_size as f64 / current_size as f64;
-                    let days_to_keep = (stats.sample_count as f64 * ratio) as i64
-                        / (86400 / self.config.sample_interval_secs as i64);
+                    let samples_per_day =
+                        (86400_f64 / self.config.sample_interval_secs as f64).max(1.0);
+                    let estimated_days = (stats.sample_count as f64 * ratio) / samples_per_day;
+                    let min_retention_days: i64 = 7;
+                    let days_to_keep = (estimated_days.floor() as i64).max(min_retention_days);
 
-                    let cutoff = now - Duration::days(days_to_keep.max(1));
+                    let cutoff = now - Duration::days(days_to_keep);
                     let cutoff_ts = cutoff.timestamp();
                     result.samples_deleted += self.store.delete_samples_before(cutoff_ts)?;
                 }
@@ -223,9 +226,12 @@ pub struct PruneResult {
 
 fn date_to_timestamp(date: &str) -> Result<i64, HistoryStoreError> {
     chrono::NaiveDate::parse_from_str(date, "%Y-%m-%d")
-        .map(|d| d.and_hms_opt(0, 0, 0).unwrap().and_utc().timestamp())
+        .map(|d| {
+            let time = chrono::NaiveTime::from_hms_opt(0, 0, 0).unwrap();
+            d.and_time(time).and_utc().timestamp()
+        })
         .map_err(|e| {
-            HistoryStoreError::Database(rusqlite::Error::InvalidParameterName(e.to_string()))
+            HistoryStoreError::Database(rusqlite::Error::ToSqlConversionFailure(Box::new(e)))
         })
 }
 
