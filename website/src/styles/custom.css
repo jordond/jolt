@@ -68,6 +68,19 @@ a:hover {
   transform: translateY(-2px);
 }
 
+/* Landing page - hide default Starlight header */
+[data-page-template="splash"] header.header {
+  display: none !important;
+}
+
+[data-page-template="splash"] .page {
+  padding-top: 0 !important;
+}
+
+[data-page-template="splash"] main {
+  padding-top: 5rem;
+}
+
 /* Circuit grid background for hero */
 .hero {
   background-image: 
