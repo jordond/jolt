@@ -63,6 +63,25 @@ enum ThemeCommands {
         /// Show only user themes
         #[arg(long)]
         user: bool,
+
+        /// List available iTerm2 color schemes (300+ themes)
+        #[arg(long)]
+        iterm2: bool,
+
+        /// Search iTerm2 schemes by name
+        #[arg(long)]
+        search: Option<String>,
+    },
+
+    /// Import a theme from iTerm2 Color Schemes (https://iterm2colorschemes.com)
+    #[command(alias = "i")]
+    Import {
+        /// iTerm2 scheme name (e.g., Dracula, Gruvbox Dark, Nord)
+        scheme: String,
+
+        /// Custom name for the imported theme
+        #[arg(short, long)]
+        name: Option<String>,
     },
 }
 
@@ -417,7 +436,7 @@ fn run_config(path: bool, reset: bool, edit: bool) -> Result<()> {
 }
 
 fn run_theme(command: Option<ThemeCommands>) -> Result<()> {
-    use theme::{contrast, get_all_themes, get_builtin_themes, load_user_themes};
+    use theme::{contrast, get_all_themes, get_builtin_themes, load_user_themes, validation};
 
     let cmd = command.unwrap_or(ThemeCommands::Check {
         all: false,
@@ -426,29 +445,58 @@ fn run_theme(command: Option<ThemeCommands>) -> Result<()> {
 
     match cmd {
         ThemeCommands::Check { all, verbose } => {
+            let mut has_validation_errors = false;
+
+            let validation_results = validation::validate_user_themes();
+            if !validation_results.is_empty() {
+                validation::print_validation_results(&validation_results, verbose);
+                has_validation_errors = validation_results.iter().any(|r| !r.is_valid());
+                println!();
+            }
+
             let themes = if all {
                 get_all_themes()
             } else {
                 load_user_themes()
             };
 
-            if themes.is_empty() {
-                if all {
-                    println!("No themes found.");
-                } else {
+            let valid_theme_ids: std::collections::HashSet<_> = validation_results
+                .iter()
+                .filter(|r| r.is_valid())
+                .map(|r| r.theme_id.clone())
+                .collect();
+
+            let themes_for_contrast: Vec<_> = if all {
+                themes
+            } else {
+                themes
+                    .into_iter()
+                    .filter(|t| valid_theme_ids.contains(&t.id))
+                    .collect()
+            };
+
+            if themes_for_contrast.is_empty() && !all {
+                if validation_results.is_empty() {
                     println!("No user themes found.");
                     println!("Use --all to check builtin themes, or create a theme with:");
                     println!("  jolt theme create <name>");
+                } else if has_validation_errors {
+                    println!("All user themes have validation errors. Fix errors above to run contrast checks.");
+                }
+                if has_validation_errors {
+                    std::process::exit(1);
                 }
                 return Ok(());
             }
 
-            let results = contrast::check_all_themes(&themes);
-            contrast::print_results(&results, verbose);
+            if !themes_for_contrast.is_empty() {
+                let results = contrast::check_all_themes(&themes_for_contrast);
+                contrast::print_results(&results, verbose);
 
-            let has_failures = results.iter().any(|r| !r.pass);
-            if has_failures {
-                std::process::exit(1);
+                let has_contrast_failures = results.iter().any(|r| !r.pass);
+                if has_contrast_failures || has_validation_errors {
+                    std::process::exit(1);
+                }
             }
         }
         ThemeCommands::Open => {
@@ -507,7 +555,68 @@ fn run_theme(command: Option<ThemeCommands>) -> Result<()> {
             println!("Created theme '{}' at: {}", name, theme_path.display());
             println!("\nEdit the file to customize colors, then reload jolt to see changes.");
         }
-        ThemeCommands::List { builtin, user } => {
+        ThemeCommands::List {
+            builtin,
+            user,
+            iterm2,
+            search,
+        } => {
+            if iterm2 || search.is_some() {
+                print!("Fetching iTerm2 schemes from GitHub...");
+                std::io::Write::flush(&mut std::io::stdout())?;
+
+                let schemes = if let Some(ref query) = search {
+                    theme::iterm2::search_schemes(query)
+                } else {
+                    theme::iterm2::list_available_schemes()
+                };
+
+                match schemes {
+                    Ok(list) => {
+                        println!("\r{}", " ".repeat(50));
+                        if list.is_empty() {
+                            if let Some(query) = search {
+                                println!("No iTerm2 schemes found matching '{}'", query);
+                            } else {
+                                println!("No iTerm2 schemes found.");
+                            }
+                        } else {
+                            let title = if let Some(ref query) = search {
+                                format!(
+                                    "iTerm2 schemes matching '{}' ({} found)",
+                                    query,
+                                    list.len()
+                                )
+                            } else {
+                                format!("Available iTerm2 schemes ({} total)", list.len())
+                            };
+                            println!("{}", title);
+                            println!("{}", "-".repeat(60));
+                            for (i, scheme) in list.iter().enumerate() {
+                                print!("{:<30}", scheme);
+                                if (i + 1) % 2 == 0 {
+                                    println!();
+                                }
+                            }
+                            if list.len() % 2 != 0 {
+                                println!();
+                            }
+                            println!();
+                            println!(
+                                "Browse themes visually: {}",
+                                theme::iterm2::ITERM2_GALLERY_URL
+                            );
+                            println!("Import with: jolt theme import <scheme-name>");
+                        }
+                    }
+                    Err(e) => {
+                        println!("\rError: {}", e);
+                        std::process::exit(1);
+                    }
+                }
+                return Ok(());
+            }
+
             let themes = if builtin {
                 get_builtin_themes()
             } else if user {
@@ -531,6 +640,51 @@ fn run_theme(command: Option<ThemeCommands>) -> Result<()> {
                     theme_type,
                     theme.variants_label()
                 );
+            }
+        }
+        ThemeCommands::Import { scheme, name } => {
+            println!("Fetching iTerm2 scheme '{}'...", scheme);
+
+            match theme::iterm2::import_scheme(&scheme, name.as_deref()) {
+                Ok(result) => {
+                    let variants: Vec<&str> = [
+                        result.dark_source.as_ref().map(|_| "dark"),
+                        result.light_source.as_ref().map(|_| "light"),
+                    ]
+                    .into_iter()
+                    .flatten()
+                    .collect();
+
+                    println!("Imported theme to: {}", result.path.display());
+
+                    if let Some(dark) = &result.dark_source {
+                        println!("  dark variant:  {}", dark);
+                    }
+                    if let Some(light) = &result.light_source {
+                        println!("  light variant: {}", light);
+                    }
+
+                    if variants.len() == 2 {
+                        println!(
+                            "\nBoth dark and light variants imported! The theme will adapt to your system appearance."
+                        );
+                    } else {
+                        println!(
+                            "\nOnly {} variant available. The theme will be used for both dark and light modes.",
+                            variants.first().unwrap_or(&"unknown")
+                        );
+                    }
+
+                    println!("\nUse the theme picker (T key) to select it.");
+                }
+                Err(e) => {
+                    eprintln!("Error: {}", e);
+                    if matches!(e, theme::iterm2::Iterm2Error::NotFound(_)) {
+                        eprintln!("\nBrowse themes: {}", theme::iterm2::ITERM2_GALLERY_URL);
+                        eprintln!("Search: jolt theme list --search <query>");
+                    }
+                    std::process::exit(1);
+                }
             }
         }
     }

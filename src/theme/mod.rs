@@ -1,6 +1,8 @@
 mod builtin;
 pub mod contrast;
+pub mod iterm2;
 mod loader;
+pub mod validation;
 
 pub use builtin::get_builtin_themes;
 pub use loader::load_user_themes;
