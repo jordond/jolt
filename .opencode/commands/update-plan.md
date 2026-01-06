@@ -26,16 +26,18 @@ Update an existing plan with progress. Always includes a continuation prompt.
 
    ---
 
-   ## Continuation Prompt
+   ## Workon Prompt
 
-   To continue this work in a new session, use:
-
-   > Continue work on #<issue-number>: <title>
+   > **Mode:** <ultrawork|analyze|omit if neither label>
    >
-   > Current state: <brief status>
-   > Next step: <specific next action>
-   > Key files: `file1.rs`, `file2.rs`
+   > **Start here:** <specific next action to take>
+   >
+   > **Key files:** `path/to/modified/file1.rs`, `path/to/modified/file2.rs`
+   >
+   > **Context:** <current state and what's been done>
    ```
+
+   **Important:** If the issue has `ultrawork` or `analyze` labels, the Mode line MUST include that keyword to preserve the behavior mode for `/workon`.
 
 4. **Update labels** - Add/remove `in-progress` as appropriate
 5. **Update checkboxes** - Edit issue body if tasks completed: `gh issue edit <number> --body-file`

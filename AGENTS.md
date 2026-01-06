@@ -229,5 +229,6 @@ Use `Fixes #N` or `Closes #N` in PR descriptions to auto-close issues.
 See `.opencode/commands/` for available commands:
 
 - `/plan <description>` - Create a new plan (drafts in scratchpad, finalizes to GitHub issue)
+- `/workon <issue-number | search-query>` - Begin working on a plan issue
 - `/update-plan <issue-number>` - Update progress with continuation prompt
 - `/close-plan <issue-number>` - Close completed plan with summary
