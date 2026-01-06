@@ -1,9 +1,12 @@
 ---
 description: Create a PR to complete a plan, auto-closing the issue when merged
-argument-hint: <issue-number>
 ---
 
 <command-instruction>
+BEFORE ANYTHING ELSE, ASK THE USER FOR AN ISSUE NUMBER. THEN USE THAT PR NUMBER FOR THE REAMINING WORK. DO NOT PROCEED WITHOUT AN ISSUE NUMBER.
+
+DO NOT LIST THE ISSUES, FETCH THE SPECIFIC ISSUE NUMBER.
+
 Create a PR to complete a plan. The PR will auto-close the issue when merged.
 
 ## Procedure

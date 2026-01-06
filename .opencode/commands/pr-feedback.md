@@ -1,9 +1,12 @@
 ---
 description: Address PR review comments one by one with user confirmation
-argument-hint: <pr-number>
 ---
 
 <command-instruction>
+BEFORE ANYTHING ELSE, ASK THE USE FOR A PR NUMBER. THEN USE THAT PR NUMBER FOR THE REAMINING WORK.
+
+DO NOT PROCEED UNLESS YOU HAVE THE PR NUMBER, DO NOT LIST ALL PR's, ASK FOR A PR NUMBER.
+
 Address PR review comments one by one with user confirmation.
 
 ## Procedure

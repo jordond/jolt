@@ -1,9 +1,10 @@
 ---
 description: Create a plan for a feature or task, producing a GitHub issue as source of truth
-argument-hint: <description>
 ---
 
 <command-instruction>
+BEFORE ANYTHING ELSE, ASK THE USER FOR A DETAILED DESCRIPTION OF WHAT THEY WANT. DO NOT PROCEED UNLESS YOU HAVE THE DESCRIPTION!
+
 Create a plan for a feature or task. Produces a GitHub issue as the source of truth.
 
 ## Procedure

@@ -1,9 +1,12 @@
 ---
 description: Begin working on a plan issue by number or search query
-argument-hint: <issue-number | search-query>
 ---
 
 <command-instruction>
+BEFORE ANYTHING ELSE, ASK THE USER FOR AN ISSUE NUMBER. THEN USE THAT PR NUMBER FOR THE REAMINING WORK. DO NOT PROCEED WITHOUT AN ISSUE NUMBER.
+
+DO NOT LIST THE ISSUES, FETCH THE SPECIFIC ISSUE NUMBER.
+
 Begin working on a plan issue. Accepts an issue number or a search query to find the issue.
 
 ## Arguments
