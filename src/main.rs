@@ -2,6 +2,7 @@ mod app;
 mod config;
 mod data;
 mod input;
+mod theme;
 mod ui;
 
 use std::io;
@@ -28,9 +29,9 @@ enum Commands {
         #[arg(short, long)]
         refresh_ms: Option<u64>,
 
-        /// Theme mode (auto, dark, light)
+        /// Appearance mode (auto, dark, light)
         #[arg(short, long)]
-        theme: Option<String>,
+        appearance: Option<String>,
 
         /// Low power mode - reduced refresh rate
         #[arg(short = 'L', long)]
@@ -84,9 +85,9 @@ struct Cli {
     #[arg(short, long, global = true)]
     refresh_ms: Option<u64>,
 
-    /// Theme mode (auto, dark, light)
+    /// Appearance mode (auto, dark, light)
     #[arg(short, long, global = true)]
-    theme: Option<String>,
+    appearance: Option<String>,
 
     /// Low power mode
     #[arg(short = 'L', long, global = true)]
@@ -109,17 +110,18 @@ fn main() -> Result<()> {
         Some(Commands::Config { path, reset, edit }) => run_config(path, reset, edit),
         Some(Commands::Ui {
             refresh_ms,
-            theme,
+            appearance,
             low_power,
         }) => {
             let mut config = UserConfig::load();
-            let refresh_from_cli = config.merge_with_args(theme.as_deref(), refresh_ms, low_power);
+            let refresh_from_cli =
+                config.merge_with_args(appearance.as_deref(), refresh_ms, low_power);
             run_tui(config, refresh_from_cli)
         }
         None => {
             let mut config = UserConfig::load();
             let refresh_from_cli =
-                config.merge_with_args(cli.theme.as_deref(), cli.refresh_ms, cli.low_power);
+                config.merge_with_args(cli.appearance.as_deref(), cli.refresh_ms, cli.low_power);
             run_tui(config, refresh_from_cli)
         }
     }

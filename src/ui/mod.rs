@@ -5,6 +5,7 @@ mod help;
 mod power;
 mod processes;
 mod status_bar;
+mod theme_picker;
 
 use ratatui::{
     layout::{Constraint, Direction, Layout},
@@ -16,7 +17,7 @@ use crate::app::{App, AppView};
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 pub fn render(frame: &mut Frame, app: &mut App) {
-    let theme = app.config.theme();
+    let theme = app.current_theme();
     let area = frame.area();
 
     let outer_chunks = Layout::default()
@@ -75,6 +76,7 @@ pub fn render(frame: &mut Frame, app: &mut App) {
         AppView::About => help::render_about(frame, app, &theme),
         AppView::KillConfirm => help::render_kill_confirm(frame, app, &theme),
         AppView::Config => config_editor::render(frame, app, &theme),
+        AppView::ThemePicker => theme_picker::render(frame, app, &theme),
         AppView::Main => {}
     }
 }

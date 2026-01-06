@@ -4,6 +4,7 @@ use crate::config::{GraphMetric, RuntimeConfig, UserConfig};
 use crate::data::{
     BatteryData, HistoryData, HistoryMetric, PowerData, ProcessData, ProcessInfo, SystemInfo,
 };
+use crate::theme::{get_all_themes, NamedTheme, ThemeColors};
 
 fn get_base_process_name(name: &str) -> String {
     let name = name
@@ -36,7 +37,10 @@ pub enum Action {
     KillProcess,
     ConfirmKill,
     CancelKill,
-    CycleTheme,
+    CycleAppearance,
+    OpenThemePicker,
+    CloseThemePicker,
+    SelectTheme,
     ToggleGraphView,
     ToggleMerge,
     PageUp,
@@ -89,6 +93,7 @@ pub enum AppView {
     About,
     KillConfirm,
     Config,
+    ThemePicker,
 }
 
 pub struct App {
@@ -112,6 +117,9 @@ pub struct App {
     process_to_kill: Option<ProcessInfo>,
     tick_count: u32,
     config_snapshot: Option<(UserConfig, u64, bool)>,
+    pub theme_picker_themes: Vec<NamedTheme>,
+    pub theme_picker_index: usize,
+    preview_theme_id: Option<String>,
 }
 
 impl App {
@@ -150,6 +158,9 @@ impl App {
             process_to_kill: None,
             tick_count: 0,
             config_snapshot: None,
+            theme_picker_themes: Vec::new(),
+            theme_picker_index: 0,
+            preview_theme_id: None,
         })
     }
 
@@ -219,6 +230,11 @@ impl App {
                     if self.config_selected_item > 0 {
                         self.config_selected_item -= 1;
                     }
+                } else if self.view == AppView::ThemePicker {
+                    if self.theme_picker_index > 0 {
+                        self.theme_picker_index -= 1;
+                        self.set_theme_preview();
+                    }
                 } else {
                     self.enter_selection_mode();
                     if self.selected_process_index > 0 {
@@ -231,6 +247,11 @@ impl App {
                 if self.view == AppView::Config {
                     if self.config_selected_item < self.config_item_count() - 1 {
                         self.config_selected_item += 1;
+                    }
+                } else if self.view == AppView::ThemePicker {
+                    if self.theme_picker_index < self.theme_picker_themes.len().saturating_sub(1) {
+                        self.theme_picker_index += 1;
+                        self.set_theme_preview();
                     }
                 } else {
                     self.enter_selection_mode();
@@ -275,8 +296,29 @@ impl App {
                 self.process_to_kill = None;
                 self.view = AppView::Main;
             }
-            Action::CycleTheme => {
-                self.config.cycle_theme();
+            Action::CycleAppearance => {
+                self.config.cycle_appearance();
+            }
+            Action::OpenThemePicker => {
+                self.theme_picker_themes = get_all_themes();
+                self.theme_picker_index = self
+                    .theme_picker_themes
+                    .iter()
+                    .position(|t| t.id == self.config.theme_id())
+                    .unwrap_or(0);
+                self.preview_theme_id = None;
+                self.view = AppView::ThemePicker;
+            }
+            Action::CloseThemePicker => {
+                self.preview_theme_id = None;
+                self.view = AppView::Main;
+            }
+            Action::SelectTheme => {
+                if let Some(theme) = self.theme_picker_themes.get(self.theme_picker_index) {
+                    self.config.set_theme(&theme.id);
+                }
+                self.preview_theme_id = None;
+                self.view = AppView::Main;
             }
             Action::ToggleGraphView => {
                 self.history.toggle_metric();
@@ -524,7 +566,7 @@ impl App {
     }
 
     pub const CONFIG_ITEMS: &'static [&'static str] = &[
-        "Theme",
+        "Appearance",
         "Refresh Rate (ms)",
         "Low Power Mode",
         "Show Graph",
@@ -539,7 +581,7 @@ impl App {
 
     pub fn config_item_value(&self, index: usize) -> String {
         match index {
-            0 => self.config.user_config.theme.label().to_string(),
+            0 => self.config.appearance_label().to_string(),
             1 => self.refresh_ms.to_string(),
             2 => if self.config.user_config.low_power_mode {
                 "On"
@@ -562,7 +604,7 @@ impl App {
 
     fn toggle_config_value(&mut self) {
         match self.config_selected_item {
-            0 => self.config.cycle_theme(),
+            0 => self.config.cycle_appearance(),
             2 => {
                 self.config.user_config.low_power_mode = !self.config.user_config.low_power_mode;
                 let _ = self.config.user_config.save();
@@ -582,7 +624,7 @@ impl App {
 
     fn increment_config_value(&mut self) {
         match self.config_selected_item {
-            0 => self.config.cycle_theme(),
+            0 => self.config.cycle_appearance(),
             1 => {
                 self.refresh_ms = (self.refresh_ms + REFRESH_STEP_MS).min(MAX_REFRESH_MS);
                 if !self.config.refresh_from_cli {
@@ -606,7 +648,7 @@ impl App {
 
     fn decrement_config_value(&mut self) {
         match self.config_selected_item {
-            0 => self.config.cycle_theme(),
+            0 => self.config.cycle_appearance(),
             1 => {
                 self.refresh_ms = self
                     .refresh_ms
@@ -633,5 +675,20 @@ impl App {
             }
             _ => {}
         }
+    }
+
+    fn set_theme_preview(&mut self) {
+        if let Some(theme) = self.theme_picker_themes.get(self.theme_picker_index) {
+            self.preview_theme_id = Some(theme.id.clone());
+        }
+    }
+
+    pub fn current_theme(&self) -> ThemeColors {
+        if let Some(ref preview_id) = self.preview_theme_id {
+            if let Some(theme) = self.theme_picker_themes.iter().find(|t| &t.id == preview_id) {
+                return theme.get_colors(self.config.is_dark_mode());
+            }
+        }
+        self.config.theme()
     }
 }

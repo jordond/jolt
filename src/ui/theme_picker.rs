@@ -7,10 +7,9 @@ use ratatui::{
 };
 
 use crate::app::App;
-use crate::config::config_path;
 use crate::theme::ThemeColors;
 
-fn centered_fixed_rect(area: Rect, width: u16, height: u16) -> Rect {
+fn centered_rect(area: Rect, width: u16, height: u16) -> Rect {
     let width = width.min(area.width.saturating_sub(4));
     let height = height.min(area.height.saturating_sub(2));
     let x = area.x + (area.width.saturating_sub(width)) / 2;
@@ -19,14 +18,17 @@ fn centered_fixed_rect(area: Rect, width: u16, height: u16) -> Rect {
 }
 
 pub fn render(frame: &mut Frame, app: &App, theme: &ThemeColors) {
-    let content_height = App::CONFIG_ITEMS.len() as u16 + 8;
-    let content_width = 50;
-    let area = centered_fixed_rect(frame.area(), content_width, content_height);
+    let themes = &app.theme_picker_themes;
+    let selected = app.theme_picker_index;
+
+    let content_height = (themes.len() as u16 + 6).min(20);
+    let content_width = 45;
+    let area = centered_rect(frame.area(), content_width, content_height);
 
     frame.render_widget(Clear, area);
 
     let block = Block::default()
-        .title(" Configuration ")
+        .title(" Select Theme ")
         .borders(Borders::ALL)
         .border_style(Style::default().fg(theme.accent))
         .style(Style::default().bg(theme.dialog_bg));
@@ -39,25 +41,37 @@ pub fn render(frame: &mut Frame, app: &App, theme: &ThemeColors) {
         .constraints([
             Constraint::Length(2),
             Constraint::Min(1),
-            Constraint::Length(3),
+            Constraint::Length(2),
         ])
         .margin(1)
         .split(inner);
 
-    let path_str = config_path().to_string_lossy().to_string();
     let header = Paragraph::new(vec![Line::from(vec![Span::styled(
-        "Use ↑↓ to select, ←→ or Enter to change",
+        "Use ↑↓ to navigate, Enter to select, Esc to cancel",
         Style::default().fg(theme.muted),
     )])])
     .centered();
     frame.render_widget(header, chunks[0]);
 
-    let items: Vec<Line> = App::CONFIG_ITEMS
+    let visible_height = chunks[1].height as usize;
+    let scroll_offset = if selected >= visible_height {
+        selected - visible_height + 1
+    } else {
+        0
+    };
+
+    let current_theme_id = app.config.theme_id();
+
+    let items: Vec<Line> = themes
         .iter()
         .enumerate()
-        .map(|(i, &name)| {
-            let value = app.config_item_value(i);
-            let is_selected = i == app.config_selected_item;
+        .skip(scroll_offset)
+        .take(visible_height)
+        .map(|(i, theme_item)| {
+            let is_selected = i == selected;
+            let is_current = theme_item.id == current_theme_id;
+
+            let prefix = if is_current { "● " } else { "  " };
 
             let style = if is_selected {
                 Style::default()
@@ -68,16 +82,17 @@ pub fn render(frame: &mut Frame, app: &App, theme: &ThemeColors) {
                 Style::default().fg(theme.fg)
             };
 
-            let value_style = if is_selected {
-                style.fg(theme.accent)
+            let name_style = if is_selected {
+                style
+            } else if !theme_item.is_builtin {
+                Style::default().fg(theme.accent_secondary)
             } else {
-                Style::default().fg(theme.accent)
+                style
             };
 
             Line::from(vec![
-                Span::styled(format!("  {:<20}", name), style),
-                Span::styled(format!("{:>12}", value), value_style),
-                Span::styled("  ", style),
+                Span::styled(prefix, if is_selected { style } else { Style::default().fg(theme.accent) }),
+                Span::styled(&theme_item.name, name_style),
             ])
         })
         .collect();
@@ -85,20 +100,15 @@ pub fn render(frame: &mut Frame, app: &App, theme: &ThemeColors) {
     let list = Paragraph::new(items);
     frame.render_widget(list, chunks[1]);
 
-    let footer = Paragraph::new(vec![
-        Line::from(vec![
-            Span::styled("[r]", Style::default().fg(theme.warning)),
-            Span::styled(" Revert  ", Style::default().fg(theme.muted)),
-            Span::styled("[D]", Style::default().fg(theme.danger)),
-            Span::styled(" Defaults  ", Style::default().fg(theme.muted)),
-            Span::styled("[Esc]", Style::default().fg(theme.accent)),
-            Span::styled(" Close", Style::default().fg(theme.muted)),
-        ]),
-        Line::from(vec![Span::styled(
-            path_str,
-            Style::default().fg(theme.muted),
-        )]),
-    ])
+    let current_theme = themes.get(selected);
+    let variants_info = current_theme
+        .map(|t| t.variants_label())
+        .unwrap_or("unknown");
+
+    let footer = Paragraph::new(vec![Line::from(vec![
+        Span::styled("Variants: ", Style::default().fg(theme.muted)),
+        Span::styled(variants_info, Style::default().fg(theme.accent)),
+    ])])
     .centered();
     frame.render_widget(footer, chunks[2]);
 }

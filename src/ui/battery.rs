@@ -8,10 +8,10 @@ use ratatui::{
 };
 
 use crate::app::App;
-use crate::config::Theme;
 use crate::data::battery::ChargeState;
+use crate::theme::ThemeColors;
 
-pub fn render(frame: &mut Frame, area: Rect, app: &App, theme: &Theme) {
+pub fn render(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) {
     let block = Block::default()
         .title(" Battery ")
         .borders(Borders::ALL)
@@ -30,7 +30,7 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App, theme: &Theme) {
     render_battery_info(frame, chunks[1], app, theme);
 }
 
-fn render_battery_gauge(frame: &mut Frame, area: Rect, app: &App, theme: &Theme) {
+fn render_battery_gauge(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) {
     let percent = app.battery.charge_percent();
     let ratio = (percent / 100.0).clamp(0.0, 1.0);
 
@@ -149,7 +149,7 @@ impl Widget for ThickGauge {
     }
 }
 
-fn render_battery_info(frame: &mut Frame, area: Rect, app: &App, theme: &Theme) {
+fn render_battery_info(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) {
     let chunks = Layout::default()
         .direction(Direction::Horizontal)
         .constraints([
