@@ -735,12 +735,15 @@ impl App {
     }
 
     fn toggle_preview_appearance(&mut self) {
-        let current = self.preview_appearance.unwrap_or_else(|| self.config.is_dark_mode());
+        let current = self
+            .preview_appearance
+            .unwrap_or_else(|| self.config.is_dark_mode());
         self.preview_appearance = Some(!current);
     }
 
     pub fn preview_is_dark(&self) -> bool {
-        self.preview_appearance.unwrap_or_else(|| self.config.is_dark_mode())
+        self.preview_appearance
+            .unwrap_or_else(|| self.config.is_dark_mode())
     }
 
     pub fn current_theme(&self) -> ThemeColors {

@@ -112,7 +112,11 @@ pub fn render(frame: &mut Frame, app: &App, theme: &ThemeColors) {
         .map(|t| t.variants_label())
         .unwrap_or("unknown");
 
-    let preview_mode = if app.preview_is_dark() { "dark" } else { "light" };
+    let preview_mode = if app.preview_is_dark() {
+        "dark"
+    } else {
+        "light"
+    };
 
     let footer = Paragraph::new(vec![Line::from(vec![
         Span::styled("Preview: ", Style::default().fg(theme.muted)),

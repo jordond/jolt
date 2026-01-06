@@ -480,7 +480,11 @@ fn run_theme(command: Option<ThemeCommands>) -> Result<()> {
             let theme_path = themes_dir.join(format!("{}.toml", file_name));
 
             if theme_path.exists() {
-                eprintln!("Theme '{}' already exists at: {}", name, theme_path.display());
+                eprintln!(
+                    "Theme '{}' already exists at: {}",
+                    name,
+                    theme_path.display()
+                );
                 std::process::exit(1);
             }
 
@@ -490,7 +494,9 @@ fn run_theme(command: Option<ThemeCommands>) -> Result<()> {
                     let base_theme = get_builtin_themes()
                         .into_iter()
                         .find(|t| t.id == base_id)
-                        .ok_or_else(|| color_eyre::eyre::eyre!("Base theme '{}' not found", base_id))?;
+                        .ok_or_else(|| {
+                            color_eyre::eyre::eyre!("Base theme '{}' not found", base_id)
+                        })?;
 
                     theme::generate_theme_toml(&name, &base_theme)
                 }
@@ -515,11 +521,16 @@ fn run_theme(command: Option<ThemeCommands>) -> Result<()> {
                 return Ok(());
             }
 
-            println!("{:<20} {:<12} {}", "ID", "Type", "Variants");
+            println!("{:<20} {:<12} Variants", "ID", "Type");
             println!("{}", "-".repeat(50));
             for theme in themes {
                 let theme_type = if theme.is_builtin { "builtin" } else { "user" };
-                println!("{:<20} {:<12} {}", theme.id, theme_type, theme.variants_label());
+                println!(
+                    "{:<20} {:<12} {}",
+                    theme.id,
+                    theme_type,
+                    theme.variants_label()
+                );
             }
         }
     }

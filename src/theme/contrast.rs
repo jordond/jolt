@@ -64,7 +64,11 @@ fn wcag_grade(ratio: f64) -> String {
     }
 }
 
-fn check_theme_colors(theme_name: &str, variant: &str, colors: &ThemeColors) -> Vec<ContrastResult> {
+fn check_theme_colors(
+    theme_name: &str,
+    variant: &str,
+    colors: &ThemeColors,
+) -> Vec<ContrastResult> {
     let checks = [
         ("bg", "fg", colors.bg, colors.fg),
         ("bg", "accent", colors.bg, colors.accent),
@@ -76,7 +80,12 @@ fn check_theme_colors(theme_name: &str, variant: &str, colors: &ThemeColors) -> 
         ("bg", "highlight", colors.bg, colors.highlight),
         ("dialog_bg", "fg", colors.dialog_bg, colors.fg),
         ("dialog_bg", "accent", colors.dialog_bg, colors.accent),
-        ("selection_bg", "selection_fg", colors.selection_bg, colors.selection_fg),
+        (
+            "selection_bg",
+            "selection_fg",
+            colors.selection_bg,
+            colors.selection_fg,
+        ),
     ];
 
     checks
@@ -125,7 +134,10 @@ pub fn print_results(results: &[ContrastResult], verbose: bool) {
     println!("{}", "=".repeat(80));
 
     if failures.is_empty() {
-        println!("\n✅ All {} color pairs pass WCAG AA requirements!", results.len());
+        println!(
+            "\n✅ All {} color pairs pass WCAG AA requirements!",
+            results.len()
+        );
     } else {
         println!("\n❌ FAILURES ({} issues)\n", failures.len());
         println!(
@@ -146,10 +158,7 @@ pub fn print_results(results: &[ContrastResult], verbose: bool) {
                 "{:<20} {:<8} {:<30} {:>7.2}:1 {:<10}",
                 theme_label, r.variant, r.pair, r.ratio, r.grade
             );
-            println!(
-                "{:20} {:8} bg: {}  fg: {}",
-                "", "", r.bg_hex, r.fg_hex
-            );
+            println!("{:20} {:8} bg: {}  fg: {}", "", "", r.bg_hex, r.fg_hex);
         }
     }
 
