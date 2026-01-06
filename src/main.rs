@@ -91,6 +91,13 @@ enum ThemeCommands {
         #[arg(short, long)]
         force: bool,
     },
+
+    /// Delete all user-installed themes
+    Clean {
+        /// Skip confirmation prompt
+        #[arg(short = 'y', long)]
+        yes: bool,
+    },
 }
 
 #[derive(Debug, Subcommand)]
@@ -741,6 +748,60 @@ fn run_theme(command: Option<ThemeCommands>) -> Result<()> {
                     std::process::exit(1);
                 }
             }
+        }
+        ThemeCommands::Clean { yes } => {
+            let themes_path = config::themes_dir();
+
+            if !themes_path.exists() {
+                println!("No user themes directory found.");
+                return Ok(());
+            }
+
+            let theme_files: Vec<_> = std::fs::read_dir(&themes_path)
+                .map(|entries| {
+                    entries
+                        .filter_map(|e| e.ok())
+                        .filter(|e| {
+                            e.path()
+                                .extension()
+                                .map(|ext| ext == "toml")
+                                .unwrap_or(false)
+                        })
+                        .collect()
+                })
+                .unwrap_or_default();
+
+            if theme_files.is_empty() {
+                println!("No user themes to delete.");
+                return Ok(());
+            }
+
+            println!("Found {} user theme(s):", theme_files.len());
+            for file in &theme_files {
+                println!("  - {}", file.file_name().to_string_lossy());
+            }
+
+            if !yes {
+                print!("\nDelete all user themes? [y/N] ");
+                std::io::Write::flush(&mut std::io::stdout())?;
+
+                let mut input = String::new();
+                std::io::stdin().read_line(&mut input)?;
+
+                if !input.trim().eq_ignore_ascii_case("y") {
+                    println!("Cancelled.");
+                    return Ok(());
+                }
+            }
+
+            let mut deleted = 0;
+            for file in theme_files {
+                if std::fs::remove_file(file.path()).is_ok() {
+                    deleted += 1;
+                }
+            }
+
+            println!("Deleted {} theme(s).", deleted);
         }
     }
 
