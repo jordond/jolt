@@ -7,6 +7,7 @@ mod theme;
 mod ui;
 
 use std::io;
+use std::os::unix::process::CommandExt;
 use std::time::Duration;
 
 use app::App;
@@ -1010,10 +1011,13 @@ fn run_daemon_command(command: DaemonCommands) -> Result<()> {
             }
 
             if follow {
-                std::process::Command::new("tail")
+                // Use exec() to replace this process with tail, so Ctrl+C works properly
+                let err = std::process::Command::new("tail")
                     .args(["-f", "-n", &lines.to_string()])
                     .arg(&path)
-                    .status()?;
+                    .exec();
+                // exec() only returns if it fails
+                return Err(err.into());
             } else {
                 std::process::Command::new("tail")
                     .args(["-n", &lines.to_string()])
