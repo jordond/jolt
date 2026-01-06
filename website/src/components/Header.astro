@@ -7,12 +7,6 @@ const isSplash = Astro.props.entry?.data?.template === 'splash';
 
 <Default {...Astro.props}><slot /></Default>
 
-{!isSplash && (
-  <nav class="header-nav">
-    <a href="/jolt/docs/getting-started/" class="nav-link">Documentation</a>
-  </nav>
-)}
-
 <style>
   .header-nav {
     display: flex;
@@ -36,9 +30,9 @@ const isSplash = Astro.props.entry?.data?.template === 'splash';
 
   .nav-link:hover {
     color: var(--sl-color-accent);
-    background: rgba(0, 212, 255, 0.1);
-    border-color: rgba(0, 212, 255, 0.3);
-    text-shadow: 0 0 10px rgba(0, 212, 255, 0.4);
+    background: rgba(229, 255, 0, 0.1);
+    border-color: rgba(229, 255, 0, 0.3);
+    text-shadow: 0 0 10px rgba(229, 255, 0, 0.4);
   }
 
   @media (max-width: 600px) {

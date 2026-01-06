@@ -42,11 +42,11 @@ const { title, description } = Astro.props;
     --color-border: #1e1e2e;
     --color-text: #e2e8f0;
     --color-text-muted: #94a3b8;
-    --color-accent: #00ffff;
-    --color-accent-glow: rgba(0, 255, 255, 0.4);
-    --color-accent-10: rgba(0, 255, 255, 0.1);
-    --color-accent-20: rgba(0, 255, 255, 0.2);
-    --color-accent-03: rgba(0, 255, 255, 0.03);
+    --color-accent: #e5ff00;
+    --color-accent-glow: rgba(229, 255, 0, 0.4);
+    --color-accent-10: rgba(229, 255, 0, 0.1);
+    --color-accent-20: rgba(229, 255, 0, 0.2);
+    --color-accent-03: rgba(229, 255, 0, 0.03);
     --color-header-bg: rgba(10, 10, 15, 0.8);
     --color-button-text: #000;
     --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -59,11 +59,11 @@ const { title, description } = Astro.props;
     --color-border: #e2e8f0;
     --color-text: #1e293b;
     --color-text-muted: #64748b;
-    --color-accent: #0891b2;
-    --color-accent-glow: rgba(8, 145, 178, 0.4);
-    --color-accent-10: rgba(8, 145, 178, 0.1);
-    --color-accent-20: rgba(8, 145, 178, 0.2);
-    --color-accent-03: rgba(8, 145, 178, 0.06);
+    --color-accent: #a3b800;
+    --color-accent-glow: rgba(163, 184, 0, 0.4);
+    --color-accent-10: rgba(163, 184, 0, 0.1);
+    --color-accent-20: rgba(163, 184, 0, 0.2);
+    --color-accent-03: rgba(163, 184, 0, 0.06);
     --color-header-bg: rgba(248, 250, 252, 0.8);
     --color-button-text: #fff;
   }
@@ -74,7 +74,12 @@ const { title, description } = Astro.props;
 
   body {
     font-family: var(--font-sans);
-    background: var(--color-bg);
+    background: 
+      linear-gradient(var(--color-accent-03) 1px, transparent 1px),
+      linear-gradient(90deg, var(--color-accent-03) 1px, transparent 1px),
+      var(--color-bg);
+    background-size: 50px 50px, 50px 50px, 100% 100%;
+    background-attachment: fixed;
     color: var(--color-text);
     line-height: 1.6;
     min-height: 100vh;
@@ -86,6 +91,6 @@ const { title, description } = Astro.props;
   }
 
   ::selection {
-    background: rgba(0, 255, 255, 0.3);
+    background: rgba(229, 255, 0, 0.3);
   }
 </style>

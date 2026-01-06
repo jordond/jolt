@@ -1,15 +1,15 @@
-/* Electric Future Theme for jolt */
+/* Electric Future Theme for jolt - Neon Yellow */
 
 :root {
-  /* Accent colors */
-  --sl-color-accent-low: #0a2540;
-  --sl-color-accent: #00d4ff;
-  --sl-color-accent-high: #7dd3fc;
+  /* Accent colors - Electric Yellow */
+  --sl-color-accent-low: #3d4000;
+  --sl-color-accent: #e5ff00;
+  --sl-color-accent-high: #f5ff80;
 
-  /* Glow effects */
-  --electric-glow: 0 0 20px rgba(0, 212, 255, 0.4), 0 0 40px rgba(0, 212, 255, 0.2);
-  --electric-glow-intense: 0 0 30px rgba(0, 212, 255, 0.6), 0 0 60px rgba(0, 212, 255, 0.3);
-  --electric-glow-subtle: 0 0 10px rgba(0, 212, 255, 0.3);
+  /* Glow effects - Yellow */
+  --electric-glow: 0 0 20px rgba(229, 255, 0, 0.4), 0 0 40px rgba(229, 255, 0, 0.2);
+  --electric-glow-intense: 0 0 30px rgba(229, 255, 0, 0.6), 0 0 60px rgba(229, 255, 0, 0.3);
+  --electric-glow-subtle: 0 0 10px rgba(229, 255, 0, 0.3);
 
   /* Typography */
   --sl-font: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -29,9 +29,9 @@
   --sl-color-bg-inline-code: #1a1a24;
   --sl-color-hairline-light: #1e1e2e;
   --sl-color-hairline: #2a2a3a;
-  --sl-color-accent: #00ffff;
-  --sl-color-accent-high: #67e8f9;
-  --sl-color-accent-low: #0a2540;
+  --sl-color-accent: #e5ff00;
+  --sl-color-accent-high: #f5ff80;
+  --sl-color-accent-low: #3d4000;
   --sl-color-white: #e2e8f0;
   --sl-color-gray-1: #cbd5e1;
   --sl-color-gray-2: #94a3b8;
@@ -44,11 +44,11 @@
 
 /* Light mode */
 :root[data-theme="light"] {
-  --sl-color-accent: #0891b2;
-  --sl-color-accent-high: #0e7490;
-  --sl-color-accent-low: #ecfeff;
-  --electric-glow: 0 0 15px rgba(8, 145, 178, 0.3), 0 0 30px rgba(8, 145, 178, 0.15);
-  --electric-glow-intense: 0 0 20px rgba(8, 145, 178, 0.4), 0 0 40px rgba(8, 145, 178, 0.2);
+  --sl-color-accent: #a3b800;
+  --sl-color-accent-high: #8fa300;
+  --sl-color-accent-low: #faffc0;
+  --electric-glow: 0 0 15px rgba(163, 184, 0, 0.3), 0 0 30px rgba(163, 184, 0, 0.15);
+  --electric-glow-intense: 0 0 20px rgba(163, 184, 0, 0.4), 0 0 40px rgba(163, 184, 0, 0.2);
 }
 
 /* Neon glow on links */
@@ -85,7 +85,7 @@ a:hover {
 }
 
 [data-has-hero] site-search,
-[data-has-hero] .sl-hidden.md\\:sl-flex:has(site-search),
+[data-has-hero] .sl-hidden.md\:sl-flex:has(site-search),
 [data-has-hero] button[data-open-modal] {
   display: none !important;
 }
@@ -116,16 +116,16 @@ a:hover {
   color: var(--sl-color-white);
   text-decoration: none;
   border-radius: 0.5rem;
-  background: rgba(0, 212, 255, 0.1);
-  border: 1px solid rgba(0, 212, 255, 0.3);
+  background: rgba(229, 255, 0, 0.1);
+  border: 1px solid rgba(229, 255, 0, 0.3);
   margin-right: 0.5rem;
   transition: all 0.2s ease;
 }
 
 [data-has-hero] .landing-docs-link:hover {
-  background: rgba(0, 212, 255, 0.2);
+  background: rgba(229, 255, 0, 0.2);
   border-color: var(--sl-color-accent);
-  box-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
+  box-shadow: 0 0 20px rgba(229, 255, 0, 0.3);
   color: var(--sl-color-white);
 }
 
@@ -140,8 +140,8 @@ a:hover {
 /* Circuit grid background for hero */
 .hero {
   background-image: 
-    linear-gradient(rgba(0, 212, 255, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0, 212, 255, 0.03) 1px, transparent 1px);
+    linear-gradient(rgba(229, 255, 0, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(229, 255, 0, 0.03) 1px, transparent 1px);
   background-size: 50px 50px;
   background-position: center center;
 }
@@ -171,7 +171,7 @@ a:hover {
 
 /* Code blocks with glow */
 .expressive-code {
-  border: 1px solid rgba(0, 212, 255, 0.2);
+  border: 1px solid rgba(229, 255, 0, 0.2);
   box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
   border-radius: 0.5rem;
 }
@@ -186,7 +186,7 @@ a:hover {
   padding: 0.2em 0.4em;
   border-radius: 0.25rem;
   font-size: 0.9em;
-  border: 1px solid rgba(0, 212, 255, 0.1);
+  border: 1px solid rgba(229, 255, 0, 0.1);
 }
 
 /* Sidebar enhancements */
@@ -196,7 +196,7 @@ a:hover {
 
 nav.sidebar a[aria-current="page"],
 starlight-menu-button + nav a[aria-current="page"] {
-  background: linear-gradient(90deg, rgba(0, 212, 255, 0.15), transparent);
+  background: linear-gradient(90deg, rgba(229, 255, 0, 0.15), transparent);
   border-left: 2px solid var(--sl-color-accent);
   color: var(--sl-color-accent) !important;
 }
@@ -236,13 +236,13 @@ td, th {
 }
 
 tr:hover {
-  background: rgba(0, 212, 255, 0.03);
+  background: rgba(229, 255, 0, 0.03);
 }
 
 /* Blockquote/admonition styling */
 .starlight-aside {
   border-left: 3px solid var(--sl-color-accent);
-  background: rgba(0, 212, 255, 0.05);
+  background: rgba(229, 255, 0, 0.05);
 }
 
 /* Feature grid on landing page */
@@ -268,11 +268,11 @@ tr:hover {
   color: var(--sl-color-accent);
 }
 
-/* Hero section title styling */
+/* Hero section title styling - Yellow to Orange gradient */
 .hero h1 {
   font-size: clamp(2.5rem, 8vw, 4rem);
   font-weight: 700;
-  background: linear-gradient(135deg, var(--sl-color-accent), #a855f7);
+  background: linear-gradient(135deg, var(--sl-color-accent), #ff6b00);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -303,7 +303,7 @@ html {
 
 /* Selection color */
 ::selection {
-  background: rgba(0, 212, 255, 0.3);
+  background: rgba(229, 255, 0, 0.3);
 }
 
 /* Focus styles for accessibility */

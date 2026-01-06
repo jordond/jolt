@@ -53,7 +53,7 @@ import InstallTabs from '../components/InstallTabs.astro';
       <InstallTabs />
     </section>
 
-    <section class="features">
+    <section id="features" class="features">
       <h2>Features</h2>
       <div class="feature-grid">
         <div class="feature-card">
@@ -88,28 +88,6 @@ import InstallTabs from '../components/InstallTabs.astro';
         </div>
       </div>
     </section>
-
-    <section class="why">
-      <h2>Why jolt?</h2>
-      <div class="why-grid">
-        <div class="why-item">
-          <h3>Terminal Native</h3>
-          <p>Works over SSH, in tmux, wherever you have a terminal</p>
-        </div>
-        <div class="why-item">
-          <h3>Apple Silicon Optimized</h3>
-          <p>Direct access to IOReport for accurate power metrics</p>
-        </div>
-        <div class="why-item">
-          <h3>Lightweight</h3>
-          <p>Written in Rust, minimal resource usage</p>
-        </div>
-        <div class="why-item">
-          <h3>Scriptable</h3>
-          <p>JSON output mode for automation and integration</p>
-        </div>
-      </div>
-    </section>
   </main>
 
   <footer class="footer">
@@ -126,6 +104,12 @@ import InstallTabs from '../components/InstallTabs.astro';
       <p class="footer-copyright">MIT License © 2024 Jordon</p>
     </div>
   </footer>
+
+  <a href="#" class="scroll-nav" id="scroll-nav" aria-label="Scroll to next section">
+    <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M7 13l5 5 5-5M7 6l5 5 5-5"/>
+    </svg>
+  </a>
 </Landing>
 
 <style>
@@ -153,7 +137,7 @@ import InstallTabs from '../components/InstallTabs.astro';
   }
 
   .logo span {
-    background: linear-gradient(135deg, var(--color-accent), #a855f7);
+    background: linear-gradient(135deg, var(--color-accent), #ff6b00);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -170,15 +154,21 @@ import InstallTabs from '../components/InstallTabs.astro';
     font-size: 0.875rem;
     font-weight: 500;
     border-radius: 0.5rem;
-    background: var(--color-accent-10);
-    border: 1px solid var(--color-accent-20);
+    background: transparent;
+    border: 1px solid var(--color-border);
+    color: var(--color-text-muted);
     transition: all 0.2s;
   }
 
   .nav-button:hover {
-    background: var(--color-accent-20);
+    background: var(--color-accent-10);
     border-color: var(--color-accent);
+    color: var(--color-accent);
     box-shadow: 0 0 20px var(--color-accent-glow);
+  }
+
+  .nav-button:active {
+    box-shadow: 0 0 30px var(--color-accent-glow), 0 0 60px var(--color-accent-20);
   }
 
   .nav-icon {
@@ -215,13 +205,7 @@ import InstallTabs from '../components/InstallTabs.astro';
   }
 
   .hero-grid {
-    position: absolute;
-    inset: 0;
-    background-image: 
-      linear-gradient(var(--color-accent-03) 1px, transparent 1px),
-      linear-gradient(90deg, var(--color-accent-03) 1px, transparent 1px);
-    background-size: 50px 50px;
-    pointer-events: none;
+    display: none;
   }
 
   .hero-content {
@@ -233,7 +217,7 @@ import InstallTabs from '../components/InstallTabs.astro';
   .hero h1 {
     font-size: clamp(3rem, 10vw, 5rem);
     font-weight: 700;
-    background: linear-gradient(135deg, var(--color-accent), #a855f7);
+    background: linear-gradient(135deg, var(--color-accent), #ff6b00);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -299,13 +283,18 @@ import InstallTabs from '../components/InstallTabs.astro';
   }
 
   section h2 {
-    font-size: 2rem;
+    font-size: clamp(2.5rem, 6vw, 3.5rem);
+    font-weight: 700;
     text-align: center;
-    margin-bottom: 2rem;
-    color: var(--color-accent);
+    margin-bottom: 2.5rem;
+    background: linear-gradient(135deg, var(--color-accent), #ff6b00);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
   }
 
   .install {
+    position: relative;
     min-height: 100vh;
     display: flex;
     flex-direction: column;
@@ -328,10 +317,86 @@ import InstallTabs from '../components/InstallTabs.astro';
     margin: 0;
   }
 
+  .features {
+    position: relative;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    max-width: 1200px;
+    padding: 4rem 2rem;
+  }
+
+  .scroll-nav {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: var(--color-accent-10);
+    border: 1px solid var(--color-accent);
+    color: var(--color-accent);
+    box-shadow: 0 0 20px var(--color-accent-glow), 0 0 40px var(--color-accent-10);
+    transition: all 0.3s ease;
+    animation: bounce 2s infinite;
+    z-index: 50;
+  }
+
+  .scroll-nav:hover {
+    background: var(--color-accent-20);
+    border-color: var(--color-accent);
+    box-shadow: 0 0 30px var(--color-accent-glow), 0 0 60px var(--color-accent-20);
+    animation: none;
+    transform: scale(1.1);
+  }
+
+  .scroll-nav.at-bottom {
+    transform: rotate(180deg);
+  }
+
+  .scroll-nav.at-bottom:hover {
+    transform: rotate(180deg) scale(1.1);
+  }
+
+  .scroll-nav.hidden {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  @keyframes bounce {
+    0%, 20%, 50%, 80%, 100% {
+      transform: translateY(0);
+    }
+    40% {
+      transform: translateY(-8px);
+    }
+    60% {
+      transform: translateY(-4px);
+    }
+  }
+
   .feature-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    grid-template-columns: repeat(3, 1fr);
     gap: 1.5rem;
+    width: 100%;
+  }
+
+  @media (max-width: 900px) {
+    .feature-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  @media (max-width: 600px) {
+    .feature-grid {
+      grid-template-columns: 1fr;
+    }
   }
 
   .feature-card {
@@ -460,4 +525,43 @@ import InstallTabs from '../components/InstallTabs.astro';
     html.setAttribute('data-theme', next);
     localStorage.setItem('theme', next);
   });
+
+  const sections = ['hero', 'install', 'features'];
+  const scrollNav = document.getElementById('scroll-nav');
+  
+  function updateScrollNav() {
+    const scrollY = window.scrollY;
+    const windowHeight = window.innerHeight;
+    const docHeight = document.documentElement.scrollHeight;
+    
+    let currentSection = 0;
+    sections.forEach((id, index) => {
+      const el = document.querySelector(id === 'hero' ? '.hero' : `#${id}`);
+      if (el && scrollY >= el.offsetTop - windowHeight / 2) {
+        currentSection = index;
+      }
+    });
+
+    const atBottom = scrollY + windowHeight >= docHeight - 100;
+    
+    if (atBottom) {
+      scrollNav?.classList.add('at-bottom');
+      scrollNav?.setAttribute('href', '#');
+    } else {
+      scrollNav?.classList.remove('at-bottom');
+      const nextSection = sections[currentSection + 1];
+      if (nextSection) {
+        scrollNav?.setAttribute('href', `#${nextSection}`);
+      } else {
+        scrollNav?.classList.add('hidden');
+      }
+    }
+
+    if (!atBottom && currentSection < sections.length - 1) {
+      scrollNav?.classList.remove('hidden');
+    }
+  }
+
+  window.addEventListener('scroll', updateScrollNav);
+  updateScrollNav();
 </script>
