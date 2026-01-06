@@ -4,6 +4,7 @@ use crate::config::{GraphMetric, RuntimeConfig, UserConfig};
 use crate::data::{
     BatteryData, HistoryData, HistoryMetric, PowerData, ProcessData, ProcessInfo, SystemInfo,
 };
+use crate::theme::cache::ThemeGroup;
 use crate::theme::{get_all_themes, NamedTheme, ThemeColors};
 
 fn get_base_process_name(name: &str) -> String {
@@ -25,7 +26,7 @@ fn get_base_process_name(name: &str) -> String {
     name.to_string()
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Action {
     Quit,
     ToggleHelp,
@@ -58,6 +59,14 @@ pub enum Action {
     ConfigDecrement,
     ConfigRevert,
     ConfigDefaults,
+    OpenThemeImporter,
+    CloseThemeImporter,
+    ImporterToggleSelect,
+    ImporterPreview,
+    ImporterImport,
+    ImporterRefresh,
+    ImporterFilterChar(char),
+    ImporterFilterBackspace,
     None,
 }
 
@@ -95,6 +104,7 @@ pub enum AppView {
     KillConfirm,
     Config,
     ThemePicker,
+    ThemeImporter,
 }
 
 pub struct App {
@@ -123,6 +133,12 @@ pub struct App {
     preview_theme_id: Option<String>,
     preview_appearance: Option<bool>,
     theme_picker_from_config: bool,
+    pub importer_groups: Vec<ThemeGroup>,
+    pub importer_index: usize,
+    pub importer_selected: std::collections::HashSet<String>,
+    pub importer_filter: String,
+    pub importer_loading: bool,
+    pub importer_cache_age: Option<String>,
 }
 
 impl App {
@@ -166,6 +182,12 @@ impl App {
             preview_theme_id: None,
             preview_appearance: None,
             theme_picker_from_config: false,
+            importer_groups: Vec::new(),
+            importer_index: 0,
+            importer_selected: std::collections::HashSet::new(),
+            importer_filter: String::new(),
+            importer_loading: false,
+            importer_cache_age: None,
         })
     }
 
@@ -240,6 +262,10 @@ impl App {
                         self.theme_picker_index -= 1;
                         self.set_theme_preview();
                     }
+                } else if self.view == AppView::ThemeImporter {
+                    if self.importer_index > 0 {
+                        self.importer_index -= 1;
+                    }
                 } else {
                     self.enter_selection_mode();
                     if self.selected_process_index > 0 {
@@ -257,6 +283,11 @@ impl App {
                     if self.theme_picker_index < self.theme_picker_themes.len().saturating_sub(1) {
                         self.theme_picker_index += 1;
                         self.set_theme_preview();
+                    }
+                } else if self.view == AppView::ThemeImporter {
+                    let filtered_count = self.get_filtered_importer_groups().len();
+                    if filtered_count > 0 && self.importer_index < filtered_count - 1 {
+                        self.importer_index += 1;
                     }
                 } else {
                     self.enter_selection_mode();
@@ -351,30 +382,52 @@ impl App {
                 self.merge_mode = !self.merge_mode;
             }
             Action::PageUp => {
-                self.enter_selection_mode();
-                self.selected_process_index = self.selected_process_index.saturating_sub(10);
-                self.adjust_scroll();
-            }
-            Action::PageDown => {
-                self.enter_selection_mode();
-                let visible_count = self.visible_process_count();
-                if visible_count > 0 {
-                    self.selected_process_index =
-                        (self.selected_process_index + 10).min(visible_count - 1);
+                if self.view == AppView::ThemeImporter {
+                    self.importer_index = self.importer_index.saturating_sub(10);
+                } else {
+                    self.enter_selection_mode();
+                    self.selected_process_index = self.selected_process_index.saturating_sub(10);
                     self.adjust_scroll();
                 }
             }
+            Action::PageDown => {
+                if self.view == AppView::ThemeImporter {
+                    let filtered_count = self.get_filtered_importer_groups().len();
+                    if filtered_count > 0 {
+                        self.importer_index = (self.importer_index + 10).min(filtered_count - 1);
+                    }
+                } else {
+                    self.enter_selection_mode();
+                    let visible_count = self.visible_process_count();
+                    if visible_count > 0 {
+                        self.selected_process_index =
+                            (self.selected_process_index + 10).min(visible_count - 1);
+                        self.adjust_scroll();
+                    }
+                }
+            }
             Action::Home => {
-                self.enter_selection_mode();
-                self.selected_process_index = 0;
-                self.process_scroll_offset = 0;
+                if self.view == AppView::ThemeImporter {
+                    self.importer_index = 0;
+                } else {
+                    self.enter_selection_mode();
+                    self.selected_process_index = 0;
+                    self.process_scroll_offset = 0;
+                }
             }
             Action::End => {
-                self.enter_selection_mode();
-                let visible_count = self.visible_process_count();
-                if visible_count > 0 {
-                    self.selected_process_index = visible_count - 1;
-                    self.adjust_scroll();
+                if self.view == AppView::ThemeImporter {
+                    let filtered_count = self.get_filtered_importer_groups().len();
+                    if filtered_count > 0 {
+                        self.importer_index = filtered_count - 1;
+                    }
+                } else {
+                    self.enter_selection_mode();
+                    let visible_count = self.visible_process_count();
+                    if visible_count > 0 {
+                        self.selected_process_index = visible_count - 1;
+                        self.adjust_scroll();
+                    }
                 }
             }
             Action::CycleSortColumn => {
@@ -429,6 +482,34 @@ impl App {
                 self.refresh_ms = self.config.user_config.refresh_ms;
                 self.merge_mode = self.config.user_config.merge_mode;
                 let _ = self.config.user_config.save();
+            }
+            Action::OpenThemeImporter => {
+                self.open_theme_importer();
+            }
+            Action::CloseThemeImporter => {
+                self.view = AppView::ThemePicker;
+                self.importer_filter.clear();
+                self.importer_selected.clear();
+            }
+            Action::ImporterToggleSelect => {
+                self.toggle_importer_selection();
+            }
+            Action::ImporterPreview => {
+                self.preview_selected_importer_theme();
+            }
+            Action::ImporterImport => {
+                self.import_selected_themes();
+            }
+            Action::ImporterRefresh => {
+                self.refresh_importer_cache();
+            }
+            Action::ImporterFilterChar(c) => {
+                self.importer_filter.push(c);
+                self.importer_index = 0;
+            }
+            Action::ImporterFilterBackspace => {
+                self.importer_filter.pop();
+                self.importer_index = 0;
             }
             Action::None => {}
         }
@@ -761,5 +842,123 @@ impl App {
             return self.config.theme_with_mode(is_dark);
         }
         self.config.theme()
+    }
+
+    fn open_theme_importer(&mut self) {
+        use crate::theme::cache::{fetch_and_cache_schemes, get_cached_or_empty};
+
+        let cached = get_cached_or_empty();
+        if cached.groups.is_empty() || cached.is_expired() {
+            self.importer_loading = true;
+            if let Ok(fresh) = fetch_and_cache_schemes(false) {
+                let age = fresh.age_description();
+                self.importer_groups = fresh.groups;
+                self.importer_cache_age = Some(age);
+            } else {
+                let age = cached.age_description();
+                self.importer_groups = cached.groups;
+                self.importer_cache_age = Some(age);
+            }
+            self.importer_loading = false;
+        } else {
+            let age = cached.age_description();
+            self.importer_groups = cached.groups;
+            self.importer_cache_age = Some(age);
+        }
+
+        self.importer_index = 0;
+        self.importer_filter.clear();
+        self.importer_selected.clear();
+        self.view = AppView::ThemeImporter;
+    }
+
+    fn refresh_importer_cache(&mut self) {
+        use crate::theme::cache::fetch_and_cache_schemes;
+
+        self.importer_loading = true;
+        if let Ok(fresh) = fetch_and_cache_schemes(true) {
+            let age = fresh.age_description();
+            self.importer_groups = fresh.groups;
+            self.importer_cache_age = Some(age);
+        }
+        self.importer_loading = false;
+        self.importer_index = 0;
+    }
+
+    pub fn get_filtered_importer_groups(&self) -> Vec<&ThemeGroup> {
+        if self.importer_filter.is_empty() {
+            self.importer_groups.iter().collect()
+        } else {
+            let filter_lower = self.importer_filter.to_lowercase();
+            self.importer_groups
+                .iter()
+                .filter(|g| g.name.to_lowercase().contains(&filter_lower))
+                .collect()
+        }
+    }
+
+    fn toggle_importer_selection(&mut self) {
+        let groups = self.get_filtered_importer_groups();
+        if let Some(group) = groups.get(self.importer_index) {
+            let name = group.name.clone();
+            if self.importer_selected.contains(&name) {
+                self.importer_selected.remove(&name);
+            } else {
+                self.importer_selected.insert(name);
+            }
+        }
+    }
+
+    fn preview_selected_importer_theme(&mut self) {
+        use crate::theme::iterm2::import_scheme;
+
+        let group_info: Option<(Option<String>, String)> = {
+            let groups = self.get_filtered_importer_groups();
+            groups
+                .get(self.importer_index)
+                .map(|g| (g.dark.clone().or_else(|| g.light.clone()), g.name.clone()))
+        };
+
+        if let Some((Some(scheme_name), group_name)) = group_info {
+            if let Ok(result) = import_scheme(&scheme_name, Some(&group_name)) {
+                self.theme_picker_themes = get_all_themes();
+                let new_id = result
+                    .path
+                    .file_stem()
+                    .and_then(|s| s.to_str())
+                    .unwrap_or(&group_name)
+                    .to_string();
+
+                self.theme_picker_index = self
+                    .theme_picker_themes
+                    .iter()
+                    .position(|t| t.id == new_id)
+                    .unwrap_or(0);
+
+                self.preview_theme_id = Some(new_id);
+            }
+        }
+    }
+
+    fn import_selected_themes(&mut self) {
+        use crate::theme::iterm2::import_scheme;
+
+        if self.importer_selected.is_empty() {
+            self.preview_selected_importer_theme();
+            return;
+        }
+
+        for group_name in self.importer_selected.clone() {
+            if let Some(group) = self.importer_groups.iter().find(|g| g.name == group_name) {
+                let scheme_name = group.dark.as_ref().or(group.light.as_ref());
+                if let Some(name) = scheme_name {
+                    let _ = import_scheme(name, Some(&group.name));
+                }
+            }
+        }
+
+        self.theme_picker_themes = get_all_themes();
+        self.importer_selected.clear();
+        self.view = AppView::ThemePicker;
     }
 }

@@ -1,4 +1,5 @@
 mod builtin;
+pub mod cache;
 pub mod contrast;
 pub mod iterm2;
 mod loader;

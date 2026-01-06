@@ -5,6 +5,7 @@ mod help;
 mod power;
 mod processes;
 mod status_bar;
+mod theme_importer;
 mod theme_picker;
 
 use ratatui::{
@@ -77,6 +78,7 @@ pub fn render(frame: &mut Frame, app: &mut App) {
         AppView::KillConfirm => help::render_kill_confirm(frame, app, &theme),
         AppView::Config => config_editor::render(frame, app, &theme),
         AppView::ThemePicker => theme_picker::render(frame, app, &theme),
+        AppView::ThemeImporter => theme_importer::render(frame, app, &theme),
         AppView::Main => {}
     }
 }

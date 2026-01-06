@@ -10,6 +10,7 @@ pub fn handle_key(app: &App, key: KeyEvent) -> Action {
         AppView::KillConfirm => handle_kill_confirm_keys(key),
         AppView::Config => handle_config_keys(key),
         AppView::ThemePicker => handle_theme_picker_keys(key),
+        AppView::ThemeImporter => handle_theme_importer_keys(key),
     }
 }
 
@@ -54,6 +55,30 @@ fn handle_theme_picker_keys(key: KeyEvent) -> Action {
         KeyCode::Down | KeyCode::Char('j') => Action::SelectNext,
         KeyCode::Enter | KeyCode::Char(' ') => Action::SelectTheme,
         KeyCode::Char('a') | KeyCode::Left | KeyCode::Right => Action::TogglePreviewAppearance,
+        KeyCode::Char('i') => Action::OpenThemeImporter,
+        _ => Action::None,
+    }
+}
+
+fn handle_theme_importer_keys(key: KeyEvent) -> Action {
+    match key.code {
+        KeyCode::Esc => Action::CloseThemeImporter,
+        KeyCode::Up | KeyCode::Char('k') if key.modifiers.is_empty() => Action::SelectPrevious,
+        KeyCode::Down | KeyCode::Char('j') if key.modifiers.is_empty() => Action::SelectNext,
+        KeyCode::Char(' ') => Action::ImporterToggleSelect,
+        KeyCode::Enter => Action::ImporterPreview,
+        KeyCode::Char('i') if key.modifiers.contains(KeyModifiers::CONTROL) => {
+            Action::ImporterImport
+        }
+        KeyCode::Char('r') if key.modifiers.is_empty() => Action::ImporterRefresh,
+        KeyCode::Backspace => Action::ImporterFilterBackspace,
+        KeyCode::Char(c) if !key.modifiers.contains(KeyModifiers::CONTROL) => {
+            Action::ImporterFilterChar(c)
+        }
+        KeyCode::PageUp => Action::PageUp,
+        KeyCode::PageDown => Action::PageDown,
+        KeyCode::Home => Action::Home,
+        KeyCode::End => Action::End,
         _ => Action::None,
     }
 }

@@ -83,6 +83,14 @@ enum ThemeCommands {
         #[arg(short, long)]
         name: Option<String>,
     },
+
+    /// Fetch and cache the list of available iTerm2 themes
+    #[command(alias = "f")]
+    Fetch {
+        /// Force refresh even if cache is valid
+        #[arg(short, long)]
+        force: bool,
+    },
 }
 
 #[derive(Debug, Subcommand)]
@@ -707,6 +715,29 @@ fn run_theme(command: Option<ThemeCommands>) -> Result<()> {
                         eprintln!("\nBrowse themes: {}", theme::iterm2::ITERM2_GALLERY_URL);
                         eprintln!("Search: jolt theme list --search <query>");
                     }
+                    std::process::exit(1);
+                }
+            }
+        }
+        ThemeCommands::Fetch { force } => {
+            println!("Fetching iTerm2 theme list...");
+
+            match theme::cache::fetch_and_cache_schemes(force) {
+                Ok(cache) => {
+                    println!(
+                        "Cached {} themes in {} groups.",
+                        cache.schemes.len(),
+                        cache.groups.len()
+                    );
+                    if !force {
+                        println!("Cache updated: {}", cache.age_description());
+                    }
+                    println!(
+                        "\nUse 'jolt theme list --iterm2' to browse, or press 'i' in the theme picker to import."
+                    );
+                }
+                Err(e) => {
+                    eprintln!("Error: {}", e);
                     std::process::exit(1);
                 }
             }

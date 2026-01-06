@@ -82,7 +82,7 @@ static VARIANT_PAIRS: &[(&str, &str)] = &[
 
 /// Look up a known variant pair by theme name.
 /// Returns (dark_name, light_name) if found.
-fn lookup_variant_pair(name: &str) -> Option<(&'static str, &'static str)> {
+pub fn lookup_variant_pair(name: &str) -> Option<(&'static str, &'static str)> {
     let lower = name.to_lowercase();
     for &(dark, light) in VARIANT_PAIRS {
         if dark.to_lowercase() == lower || light.to_lowercase() == lower {
