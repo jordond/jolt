@@ -482,17 +482,28 @@ impl HistoryStore {
         Ok(())
     }
 
-    /// Get daily stats for a date range
+    /// Get daily stats for a date range (max 365 entries for display)
     pub fn get_daily_stats(&self, from: &str, to: &str) -> Result<Vec<DailyStat>> {
+        self.get_daily_stats_limited(from, to, 365)
+    }
+
+    /// Get daily stats with custom limit
+    pub fn get_daily_stats_limited(
+        &self,
+        from: &str,
+        to: &str,
+        limit: usize,
+    ) -> Result<Vec<DailyStat>> {
         let mut stmt = self.conn.prepare(
             "SELECT id, date, avg_power, max_power, total_energy_wh, screen_on_hours, charging_hours, battery_cycles
              FROM daily_stats
              WHERE date >= ? AND date <= ?
-             ORDER BY date ASC",
+             ORDER BY date DESC
+             LIMIT ?",
         )?;
 
-        let stats = stmt
-            .query_map(params![from, to], |row| {
+        let mut stats: Vec<DailyStat> = stmt
+            .query_map(params![from, to, limit as i64], |row| {
                 Ok(DailyStat {
                     id: Some(row.get(0)?),
                     date: row.get(1)?,
@@ -506,6 +517,7 @@ impl HistoryStore {
             })?
             .collect::<std::result::Result<Vec<_>, _>>()?;
 
+        stats.reverse();
         Ok(stats)
     }
 

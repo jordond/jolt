@@ -228,9 +228,13 @@ enum HistoryCommands {
 
     /// Export history data
     Export {
-        /// Output file path
+        /// Output file path (defaults to stdout)
         #[arg(short, long)]
         output: Option<String>,
+
+        /// Output format: json, csv
+        #[arg(short, long, default_value = "json")]
+        format: String,
 
         /// Start date (YYYY-MM-DD)
         #[arg(long)]
@@ -243,6 +247,10 @@ enum HistoryCommands {
         /// Time period (alternative to from/to): today, week, month, all
         #[arg(short, long)]
         period: Option<String>,
+
+        /// Include raw samples in export (can be large)
+        #[arg(long)]
+        include_samples: bool,
     },
 
     /// Prune old data
@@ -1158,9 +1166,11 @@ fn run_history_command(command: Option<HistoryCommands>) -> Result<()> {
         }
         HistoryCommands::Export {
             output,
+            format,
             from,
             to,
             period,
+            include_samples,
         } => {
             let (from_date, to_date) = if let (Some(f), Some(t)) = (from, to) {
                 (f, t)
@@ -1170,35 +1180,40 @@ fn run_history_command(command: Option<HistoryCommands>) -> Result<()> {
                 get_date_range("week")
             };
 
-            let samples = store.get_samples(
-                chrono::NaiveDate::parse_from_str(&from_date, "%Y-%m-%d")
-                    .map(|d| d.and_hms_opt(0, 0, 0).unwrap().and_utc().timestamp())
-                    .unwrap_or(0),
-                chrono::NaiveDate::parse_from_str(&to_date, "%Y-%m-%d")
-                    .map(|d| d.and_hms_opt(23, 59, 59).unwrap().and_utc().timestamp())
-                    .unwrap_or(i64::MAX),
-            );
+            let daily_stats = store
+                .get_daily_stats(&from_date, &to_date)
+                .unwrap_or_default();
+            let top_processes = store
+                .get_top_processes_range(&from_date, &to_date, 20)
+                .unwrap_or_default();
 
-            let daily_stats = store.get_daily_stats(&from_date, &to_date);
-            let top_processes = store.get_top_processes_range(&from_date, &to_date, 20);
+            let samples = if include_samples {
+                store
+                    .get_samples(
+                        chrono::NaiveDate::parse_from_str(&from_date, "%Y-%m-%d")
+                            .map(|d| d.and_hms_opt(0, 0, 0).unwrap().and_utc().timestamp())
+                            .unwrap_or(0),
+                        chrono::NaiveDate::parse_from_str(&to_date, "%Y-%m-%d")
+                            .map(|d| d.and_hms_opt(23, 59, 59).unwrap().and_utc().timestamp())
+                            .unwrap_or(i64::MAX),
+                    )
+                    .unwrap_or_default()
+            } else {
+                Vec::new()
+            };
 
-            let export_data = serde_json::json!({
-                "period": {
-                    "from": from_date,
-                    "to": to_date,
-                },
-                "samples": samples.unwrap_or_default(),
-                "daily_stats": daily_stats.unwrap_or_default(),
-                "top_processes": top_processes.unwrap_or_default(),
-            });
-
-            let json = serde_json::to_string_pretty(&export_data)?;
+            let content = match format.to_lowercase().as_str() {
+                "csv" => {
+                    export_to_csv(&from_date, &to_date, &daily_stats, &top_processes, &samples)
+                }
+                _ => export_to_json(&from_date, &to_date, &daily_stats, &top_processes, &samples),
+            };
 
             if let Some(path) = output {
-                std::fs::write(&path, &json)?;
+                std::fs::write(&path, &content)?;
                 println!("Exported to: {}", path);
             } else {
-                println!("{}", json);
+                println!("{}", content);
             }
         }
         HistoryCommands::Prune { older_than, yes } => {
@@ -1280,5 +1295,100 @@ fn truncate_str(s: &str, max_len: usize) -> String {
         s.to_string()
     } else {
         format!("{}...", &s[..max_len - 3])
+    }
+}
+
+fn export_to_json(
+    from: &str,
+    to: &str,
+    daily_stats: &[data::DailyStat],
+    top_processes: &[data::DailyTopProcess],
+    samples: &[data::Sample],
+) -> String {
+    let export_data = serde_json::json!({
+        "period": {
+            "from": from,
+            "to": to,
+        },
+        "daily_stats": daily_stats,
+        "top_processes": top_processes,
+        "samples": samples,
+    });
+    serde_json::to_string_pretty(&export_data).unwrap_or_default()
+}
+
+fn export_to_csv(
+    from: &str,
+    to: &str,
+    daily_stats: &[data::DailyStat],
+    top_processes: &[data::DailyTopProcess],
+    samples: &[data::Sample],
+) -> String {
+    let mut output = String::new();
+
+    output.push_str(&format!("# Jolt History Export: {} to {}\n\n", from, to));
+
+    output.push_str("# Daily Statistics\n");
+    output
+        .push_str("date,avg_power_w,max_power_w,total_energy_wh,screen_on_hours,charging_hours\n");
+    for stat in daily_stats {
+        output.push_str(&format!(
+            "{},{:.2},{:.2},{:.2},{:.2},{:.2}\n",
+            stat.date,
+            stat.avg_power,
+            stat.max_power,
+            stat.total_energy_wh,
+            stat.screen_on_hours,
+            stat.charging_hours
+        ));
+    }
+
+    output.push_str("\n# Top Processes\n");
+    output.push_str(
+        "process_name,avg_power_w,total_energy_wh,avg_cpu_percent,avg_memory_mb,sample_count\n",
+    );
+    for proc in top_processes {
+        output.push_str(&format!(
+            "{},{:.2},{:.2},{:.2},{:.2},{}\n",
+            escape_csv(&proc.process_name),
+            proc.avg_power,
+            proc.total_energy_wh,
+            proc.avg_cpu,
+            proc.avg_memory_mb,
+            proc.sample_count
+        ));
+    }
+
+    if !samples.is_empty() {
+        output.push_str("\n# Raw Samples\n");
+        output
+            .push_str("timestamp,battery_percent,power_watts,cpu_power,gpu_power,charging_state\n");
+        for sample in samples {
+            let charging = match sample.charging_state {
+                data::ChargingState::Discharging => "discharging",
+                data::ChargingState::Charging => "charging",
+                data::ChargingState::Full => "full",
+                data::ChargingState::Unknown => "unknown",
+            };
+            output.push_str(&format!(
+                "{},{:.1},{:.2},{:.2},{:.2},{}\n",
+                sample.timestamp,
+                sample.battery_percent,
+                sample.power_watts,
+                sample.cpu_power,
+                sample.gpu_power,
+                charging
+            ));
+        }
+    }
+
+    output
+}
+
+fn escape_csv(s: &str) -> String {
+    if s.contains(',') || s.contains('"') || s.contains('\n') {
+        format!("\"{}\"", s.replace('"', "\"\""))
+    } else {
+        s.to_string()
     }
 }

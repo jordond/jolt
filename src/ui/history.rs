@@ -3,7 +3,9 @@ use ratatui::{
     style::{Modifier, Style},
     symbols,
     text::{Line, Span},
-    widgets::{Axis, Block, Borders, Chart, Clear, Dataset, GraphType, Paragraph, Row, Table},
+    widgets::{
+        Axis, Block, Borders, Chart, Clear, Dataset, GraphType, Paragraph, Row, Sparkline, Table,
+    },
     Frame,
 };
 
@@ -221,13 +223,86 @@ fn render_power_chart(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeCol
 }
 
 fn render_stats_and_processes(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) {
-    let chunks = Layout::default()
-        .direction(Direction::Horizontal)
-        .constraints([Constraint::Percentage(40), Constraint::Percentage(60)])
+    let vertical = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([Constraint::Length(5), Constraint::Min(5)])
         .split(area);
 
-    render_summary_stats(frame, chunks[0], app, theme);
-    render_top_processes(frame, chunks[1], app, theme);
+    render_sparklines(frame, vertical[0], app, theme);
+
+    let horizontal = Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints([Constraint::Percentage(40), Constraint::Percentage(60)])
+        .split(vertical[1]);
+
+    render_summary_stats(frame, horizontal[0], app, theme);
+    render_top_processes(frame, horizontal[1], app, theme);
+}
+
+fn render_sparklines(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) {
+    let chunks = Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints([Constraint::Percentage(50), Constraint::Percentage(50)])
+        .split(area);
+
+    let power_data: Vec<u64> = if app.history_period == HistoryPeriod::Today {
+        app.history_hourly_stats
+            .iter()
+            .map(|h| (h.avg_power * 10.0) as u64)
+            .collect()
+    } else {
+        app.history_daily_stats
+            .iter()
+            .map(|d| (d.avg_power * 10.0) as u64)
+            .collect()
+    };
+
+    let battery_data: Vec<u64> = if app.history_period == HistoryPeriod::Today {
+        app.history_hourly_stats
+            .iter()
+            .map(|h| h.avg_battery as u64)
+            .collect()
+    } else {
+        app.history_daily_stats
+            .iter()
+            .map(|d| {
+                let energy_per_day = d.total_energy_wh;
+                (energy_per_day * 10.0).min(1000.0) as u64
+            })
+            .collect()
+    };
+
+    let power_block = Block::default()
+        .title(" Avg Power (W) ")
+        .borders(Borders::ALL)
+        .border_style(Style::default().fg(theme.border));
+
+    let power_sparkline = Sparkline::default()
+        .block(power_block)
+        .data(&power_data)
+        .max(power_data.iter().copied().max().unwrap_or(100).max(100))
+        .style(Style::default().fg(theme.accent));
+
+    frame.render_widget(power_sparkline, chunks[0]);
+
+    let energy_label = if app.history_period == HistoryPeriod::Today {
+        " Battery % "
+    } else {
+        " Energy (Wh) "
+    };
+
+    let energy_block = Block::default()
+        .title(energy_label)
+        .borders(Borders::ALL)
+        .border_style(Style::default().fg(theme.border));
+
+    let energy_sparkline = Sparkline::default()
+        .block(energy_block)
+        .data(&battery_data)
+        .max(battery_data.iter().copied().max().unwrap_or(100).max(100))
+        .style(Style::default().fg(theme.success));
+
+    frame.render_widget(energy_sparkline, chunks[1]);
 }
 
 fn render_summary_stats(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) {
@@ -342,7 +417,7 @@ fn render_top_processes(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeC
         return;
     }
 
-    let header = Row::new(vec!["Process", "Avg W", "Total Wh", "Samples"])
+    let header = Row::new(vec!["Process", "Avg W", "Total Wh", "CPU%"])
         .style(
             Style::default()
                 .fg(theme.accent)
@@ -350,34 +425,56 @@ fn render_top_processes(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeC
         )
         .bottom_margin(1);
 
+    let max_power = app
+        .history_top_processes
+        .iter()
+        .map(|p| p.avg_power)
+        .fold(0.0_f32, f32::max);
+
     let rows: Vec<Row> = app
         .history_top_processes
         .iter()
         .take(8)
         .map(|p| {
+            let power_color = power_level_color(p.avg_power, max_power, theme);
+
             Row::new(vec![
-                truncate_name(&p.process_name, 20),
+                truncate_name(&p.process_name, 18),
                 format!("{:.1}", p.avg_power),
                 format!("{:.1}", p.total_energy_wh),
-                format!("{}", p.sample_count),
+                format!("{:.0}", p.avg_cpu),
             ])
-            .style(Style::default().fg(theme.fg))
+            .style(Style::default().fg(power_color))
         })
         .collect();
 
     let table = Table::new(
         rows,
         [
-            Constraint::Min(20),
-            Constraint::Length(8),
-            Constraint::Length(10),
-            Constraint::Length(8),
+            Constraint::Min(18),
+            Constraint::Length(7),
+            Constraint::Length(9),
+            Constraint::Length(5),
         ],
     )
     .header(header)
     .column_spacing(1);
 
     frame.render_widget(table, inner);
+}
+
+fn power_level_color(power: f32, max_power: f32, theme: &ThemeColors) -> ratatui::style::Color {
+    if max_power <= 0.0 {
+        return theme.fg;
+    }
+    let ratio = power / max_power;
+    if ratio >= 0.7 {
+        theme.danger
+    } else if ratio >= 0.4 {
+        theme.warning
+    } else {
+        theme.success
+    }
 }
 
 fn render_footer(frame: &mut Frame, area: Rect, theme: &ThemeColors) {
