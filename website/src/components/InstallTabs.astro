@@ -1,0 +1,194 @@
+---
+---
+
+<div class="install-tabs">
+  <div class="tab-buttons" role="tablist">
+    <button class="tab-btn active" data-tab="brew" role="tab" aria-selected="true" aria-controls="panel-brew">
+      Homebrew
+    </button>
+    <button class="tab-btn" data-tab="cargo" role="tab" aria-selected="false" aria-controls="panel-cargo">
+      Cargo
+    </button>
+    <button class="tab-btn" data-tab="source" role="tab" aria-selected="false" aria-controls="panel-source">
+      Source
+    </button>
+  </div>
+
+  <div class="tab-content active" id="panel-brew" role="tabpanel" aria-labelledby="brew">
+    <div class="code-block">
+      <pre><code>brew install jordond/tap/jolt</code></pre>
+      <button class="copy-btn" data-code="brew install jordond/tap/jolt" aria-label="Copy to clipboard">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <div class="tab-content" id="panel-cargo" role="tabpanel" aria-labelledby="cargo">
+    <div class="code-block">
+      <pre><code>cargo install jolt-tui</code></pre>
+      <button class="copy-btn" data-code="cargo install jolt-tui" aria-label="Copy to clipboard">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <div class="tab-content" id="panel-source" role="tabpanel" aria-labelledby="source">
+    <div class="code-block">
+      <pre><code>git clone https://github.com/jordond/jolt.git
+cd jolt
+cargo build --release
+./target/release/jolt</code></pre>
+      <button class="copy-btn" data-code="git clone https://github.com/jordond/jolt.git && cd jolt && cargo build --release && ./target/release/jolt" aria-label="Copy to clipboard">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+        </svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const tab = btn.dataset.tab;
+      
+      document.querySelectorAll('.tab-btn').forEach(b => {
+        b.classList.remove('active');
+        b.setAttribute('aria-selected', 'false');
+      });
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+      
+      btn.classList.add('active');
+      btn.setAttribute('aria-selected', 'true');
+      document.getElementById(`panel-${tab}`).classList.add('active');
+    });
+  });
+
+  document.querySelectorAll('.copy-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const code = btn.dataset.code;
+      await navigator.clipboard.writeText(code);
+      
+      btn.classList.add('copied');
+      setTimeout(() => btn.classList.remove('copied'), 2000);
+    });
+  });
+</script>
+
+<style>
+  .install-tabs {
+    margin: 2rem 0;
+    max-width: 100%;
+  }
+  
+  .tab-buttons {
+    display: flex;
+    gap: 0.25rem;
+    border-bottom: 1px solid var(--sl-color-gray-5);
+    margin-bottom: 0;
+  }
+  
+  .tab-btn {
+    padding: 0.75rem 1.25rem;
+    background: transparent;
+    border: none;
+    color: var(--sl-color-gray-2);
+    cursor: pointer;
+    font-size: 0.95rem;
+    font-weight: 500;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s ease;
+    font-family: var(--sl-font);
+  }
+  
+  .tab-btn:hover {
+    color: var(--sl-color-white);
+    background: rgba(0, 212, 255, 0.05);
+  }
+  
+  .tab-btn.active {
+    color: var(--sl-color-accent);
+    border-bottom-color: var(--sl-color-accent);
+    text-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
+  }
+  
+  .tab-content {
+    display: none;
+  }
+  
+  .tab-content.active {
+    display: block;
+  }
+  
+  .code-block {
+    position: relative;
+    background: var(--sl-color-bg-sidebar, #12121a);
+    border: 1px solid rgba(0, 212, 255, 0.2);
+    border-top: none;
+    border-radius: 0 0 0.5rem 0.5rem;
+    overflow: hidden;
+  }
+  
+  .code-block pre {
+    margin: 0;
+    padding: 1rem 1.25rem;
+    padding-right: 3.5rem;
+    overflow-x: auto;
+    background: transparent !important;
+  }
+  
+  .code-block code {
+    font-family: var(--sl-font-mono);
+    font-size: 0.9rem;
+    color: var(--sl-color-white);
+    background: transparent !important;
+    padding: 0;
+    border: none;
+  }
+  
+  .copy-btn {
+    position: absolute;
+    top: 0.75rem;
+    right: 0.75rem;
+    background: rgba(0, 212, 255, 0.1);
+    border: 1px solid rgba(0, 212, 255, 0.2);
+    border-radius: 0.375rem;
+    padding: 0.5rem;
+    cursor: pointer;
+    color: var(--sl-color-gray-2);
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .copy-btn:hover {
+    background: rgba(0, 212, 255, 0.2);
+    color: var(--sl-color-accent);
+    border-color: var(--sl-color-accent);
+  }
+  
+  .copy-btn.copied {
+    background: rgba(39, 202, 64, 0.2);
+    border-color: #27ca40;
+    color: #27ca40;
+  }
+  
+  @media (max-width: 480px) {
+    .tab-btn {
+      padding: 0.5rem 0.75rem;
+      font-size: 0.85rem;
+    }
+    
+    .code-block pre {
+      font-size: 0.8rem;
+    }
+  }
+</style>

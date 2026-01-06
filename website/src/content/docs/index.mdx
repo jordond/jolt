@@ -1,0 +1,72 @@
+---
+title: jolt
+description: A beautiful terminal-based battery and energy monitor for macOS
+template: splash
+hero:
+  tagline: Real-time power monitoring, process energy tracking, and battery health insights — all in a beautiful terminal UI.
+  image:
+    alt: jolt TUI screenshot
+    file: ../../assets/logo.svg
+  actions:
+    - text: Get Started
+      link: /jolt/docs/getting-started/
+      icon: right-arrow
+      variant: primary
+    - text: View on GitHub
+      link: https://github.com/jordond/jolt
+      icon: external
+      variant: minimal
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+import InstallTabs from '../../components/InstallTabs.astro';
+
+## Quick Install
+
+<InstallTabs />
+
+## Features
+
+<CardGrid stagger>
+  <Card title="Real-time Monitoring" icon="rocket">
+    Track battery percentage, charging state, time remaining, and power draw updated every second.
+  </Card>
+  <Card title="Power Breakdown" icon="star">
+    See exactly how much power your CPU, GPU, and ANE are consuming in watts.
+  </Card>
+  <Card title="Process Tracking" icon="list-format">
+    Identify energy-hungry processes with color-coded severity and collapsible groups.
+  </Card>
+  <Card title="300+ Themes" icon="seti:image">
+    Import from iTerm2 Color Schemes or create your own. Light, dark, and auto modes.
+  </Card>
+  <Card title="Historical Data" icon="bars">
+    Track battery and power trends over time with built-in graphs and data export.
+  </Card>
+  <Card title="Background Daemon" icon="setting">
+    Run a daemon to collect historical data even when the TUI isn't running.
+  </Card>
+</CardGrid>
+
+## Why jolt?
+
+Unlike Activity Monitor or other GUI tools, jolt gives you:
+
+- **Terminal Native** — Works over SSH, in tmux, wherever you have a terminal
+- **Apple Silicon Optimized** — Direct access to IOReport for accurate power metrics  
+- **Lightweight** — Written in Rust, minimal resource usage
+- **Scriptable** — JSON output mode for automation and integration
+
+<div class="electric-line"></div>
+
+## Built for Power Users
+
+jolt is designed for developers, sysadmins, and anyone who lives in the terminal. Get instant visibility into what's draining your MacBook's battery without leaving your workflow.
+
+```bash
+# Launch jolt
+jolt
+
+# Or with custom refresh rate
+jolt --refresh-ms 500
+```

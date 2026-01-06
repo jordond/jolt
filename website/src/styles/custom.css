@@ -1,0 +1,256 @@
+/* Electric Future Theme for jolt */
+
+:root {
+  /* Accent colors */
+  --sl-color-accent-low: #0a2540;
+  --sl-color-accent: #00d4ff;
+  --sl-color-accent-high: #7dd3fc;
+
+  /* Glow effects */
+  --electric-glow: 0 0 20px rgba(0, 212, 255, 0.4), 0 0 40px rgba(0, 212, 255, 0.2);
+  --electric-glow-intense: 0 0 30px rgba(0, 212, 255, 0.6), 0 0 60px rgba(0, 212, 255, 0.3);
+  --electric-glow-subtle: 0 0 10px rgba(0, 212, 255, 0.3);
+
+  /* Typography */
+  --sl-font: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --sl-font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+  /* Font sizes */
+  --sl-text-h1: 2.5rem;
+  --sl-text-h2: 1.875rem;
+  --sl-text-h3: 1.5rem;
+}
+
+/* Dark mode - primary theme */
+:root[data-theme="dark"] {
+  --sl-color-bg: #0a0a0f;
+  --sl-color-bg-nav: #0d0d14;
+  --sl-color-bg-sidebar: #0d0d14;
+  --sl-color-bg-inline-code: #1a1a24;
+  --sl-color-hairline-light: #1e1e2e;
+  --sl-color-hairline: #2a2a3a;
+  --sl-color-accent: #00ffff;
+  --sl-color-accent-high: #67e8f9;
+  --sl-color-accent-low: #0a2540;
+  --sl-color-white: #e2e8f0;
+  --sl-color-gray-1: #cbd5e1;
+  --sl-color-gray-2: #94a3b8;
+  --sl-color-gray-3: #64748b;
+  --sl-color-gray-4: #475569;
+  --sl-color-gray-5: #334155;
+  --sl-color-gray-6: #1e293b;
+  --sl-color-black: #0f172a;
+}
+
+/* Light mode */
+:root[data-theme="light"] {
+  --sl-color-accent: #0891b2;
+  --sl-color-accent-high: #0e7490;
+  --sl-color-accent-low: #ecfeff;
+  --electric-glow: 0 0 15px rgba(8, 145, 178, 0.3), 0 0 30px rgba(8, 145, 178, 0.15);
+  --electric-glow-intense: 0 0 20px rgba(8, 145, 178, 0.4), 0 0 40px rgba(8, 145, 178, 0.2);
+}
+
+/* Neon glow on links */
+a:hover {
+  text-shadow: var(--electric-glow-subtle);
+}
+
+/* Glowing primary action buttons */
+.sl-link-button.sl-variant-primary {
+  box-shadow: var(--electric-glow);
+  border: 1px solid var(--sl-color-accent);
+  transition: box-shadow 0.3s ease, transform 0.2s ease;
+}
+
+.sl-link-button.sl-variant-primary:hover {
+  box-shadow: var(--electric-glow-intense);
+  transform: translateY(-2px);
+}
+
+/* Circuit grid background for hero */
+.hero {
+  background-image: 
+    linear-gradient(rgba(0, 212, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 212, 255, 0.03) 1px, transparent 1px);
+  background-size: 50px 50px;
+  background-position: center center;
+}
+
+/* Electric pulse animation */
+@keyframes electric-pulse {
+  0%, 100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* Animated border line */
+.electric-line {
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--sl-color-accent),
+    transparent
+  );
+  animation: electric-pulse 2s ease-in-out infinite;
+  margin: 2rem 0;
+}
+
+/* Code blocks with glow */
+.expressive-code {
+  border: 1px solid rgba(0, 212, 255, 0.2);
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+  border-radius: 0.5rem;
+}
+
+.expressive-code pre {
+  background: var(--sl-color-bg-sidebar) !important;
+}
+
+/* Inline code styling */
+:not(pre) > code {
+  background: var(--sl-color-bg-inline-code);
+  padding: 0.2em 0.4em;
+  border-radius: 0.25rem;
+  font-size: 0.9em;
+  border: 1px solid rgba(0, 212, 255, 0.1);
+}
+
+/* Sidebar enhancements */
+.sidebar-content {
+  border-right: 1px solid var(--sl-color-hairline-light);
+}
+
+nav.sidebar a[aria-current="page"] {
+  background: linear-gradient(90deg, rgba(0, 212, 255, 0.1), transparent);
+  border-left: 2px solid var(--sl-color-accent);
+}
+
+/* Card styling */
+.card {
+  background: var(--sl-color-bg-sidebar);
+  border: 1px solid var(--sl-color-hairline-light);
+  border-radius: 0.75rem;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.card:hover {
+  border-color: var(--sl-color-accent);
+  box-shadow: var(--electric-glow-subtle);
+}
+
+/* Table styling */
+table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+th {
+  background: var(--sl-color-bg-sidebar);
+  border-bottom: 2px solid var(--sl-color-accent);
+}
+
+td, th {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--sl-color-hairline-light);
+}
+
+tr:hover {
+  background: rgba(0, 212, 255, 0.03);
+}
+
+/* Blockquote/admonition styling */
+.starlight-aside {
+  border-left: 3px solid var(--sl-color-accent);
+  background: rgba(0, 212, 255, 0.05);
+}
+
+/* Feature grid on landing page */
+.sl-card-grid {
+  gap: 1.5rem;
+}
+
+.sl-card {
+  background: var(--sl-color-bg-sidebar);
+  border: 1px solid var(--sl-color-hairline-light);
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  transition: all 0.3s ease;
+}
+
+.sl-card:hover {
+  border-color: var(--sl-color-accent);
+  box-shadow: var(--electric-glow-subtle);
+  transform: translateY(-4px);
+}
+
+.sl-card .card-title {
+  color: var(--sl-color-accent);
+}
+
+/* Hero section title styling */
+.hero h1 {
+  font-size: clamp(2.5rem, 8vw, 4rem);
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--sl-color-accent), #a855f7);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-shadow: none;
+}
+
+.hero .tagline {
+  font-size: clamp(1.1rem, 3vw, 1.5rem);
+  color: var(--sl-color-gray-2);
+  max-width: 600px;
+}
+
+/* Screenshot placeholder styling */
+.screenshot-placeholder {
+  background: var(--sl-color-bg-sidebar);
+  border: 2px dashed var(--sl-color-hairline);
+  border-radius: 0.75rem;
+  padding: 3rem;
+  text-align: center;
+  color: var(--sl-color-gray-3);
+  margin: 2rem 0;
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Selection color */
+::selection {
+  background: rgba(0, 212, 255, 0.3);
+}
+
+/* Focus styles for accessibility */
+:focus-visible {
+  outline: 2px solid var(--sl-color-accent);
+  outline-offset: 2px;
+}
+
+/* Mobile improvements */
+@media (max-width: 768px) {
+  .hero h1 {
+    font-size: 2rem;
+  }
+  
+  .sl-card-grid {
+    gap: 1rem;
+  }
+}
+
+/* Print styles - hide decorative elements */
+@media print {
+  .electric-line,
+  .hero::before {
+    display: none;
+  }
+}
