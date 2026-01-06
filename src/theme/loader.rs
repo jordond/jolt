@@ -6,28 +6,28 @@ use std::fs;
 use std::path::PathBuf;
 
 #[derive(Debug, Deserialize)]
-pub struct UserThemeFile {
-    pub name: String,
-    pub dark: Option<UserThemeColors>,
-    pub light: Option<UserThemeColors>,
+struct ThemeFile {
+    name: String,
+    dark: Option<ThemeColorsToml>,
+    light: Option<ThemeColorsToml>,
 }
 
 #[derive(Debug, Deserialize)]
-pub struct UserThemeColors {
-    pub bg: String,
-    pub dialog_bg: String,
-    pub fg: String,
-    pub accent: String,
-    pub accent_secondary: String,
-    pub highlight: String,
-    pub muted: String,
-    pub success: String,
-    pub warning: String,
-    pub danger: String,
-    pub border: String,
-    pub selection_bg: String,
-    pub selection_fg: String,
-    pub graph_line: String,
+struct ThemeColorsToml {
+    bg: String,
+    dialog_bg: String,
+    fg: String,
+    accent: String,
+    accent_secondary: String,
+    highlight: String,
+    muted: String,
+    success: String,
+    warning: String,
+    danger: String,
+    border: String,
+    selection_bg: String,
+    selection_fg: String,
+    graph_line: String,
 }
 
 fn themes_dir() -> PathBuf {
@@ -45,7 +45,7 @@ fn parse_hex_color(hex: &str) -> Option<Color> {
     Some(Color::Rgb(r, g, b))
 }
 
-fn convert_colors(colors: &UserThemeColors) -> Option<ThemeColors> {
+fn convert_colors(colors: &ThemeColorsToml) -> Option<ThemeColors> {
     Some(ThemeColors {
         bg: parse_hex_color(&colors.bg)?,
         dialog_bg: parse_hex_color(&colors.dialog_bg)?,
@@ -64,6 +64,25 @@ fn convert_colors(colors: &UserThemeColors) -> Option<ThemeColors> {
     })
 }
 
+/// Parse a theme from TOML content. Used by both builtin and user theme loading.
+pub fn parse_theme_toml(id: &str, content: &str, is_builtin: bool) -> Option<NamedTheme> {
+    let theme_file: ThemeFile = toml::from_str(content).ok()?;
+
+    let dark = theme_file.dark.as_ref().and_then(convert_colors);
+    let light = theme_file.light.as_ref().and_then(convert_colors);
+
+    if dark.is_none() && light.is_none() {
+        return None;
+    }
+
+    Some(NamedTheme {
+        id: id.to_string(),
+        name: theme_file.name,
+        is_builtin,
+        variants: ThemeVariants { dark, light },
+    })
+}
+
 pub fn load_user_themes() -> Vec<NamedTheme> {
     let themes_path = themes_dir();
     if !themes_path.exists() {
@@ -77,24 +96,15 @@ pub fn load_user_themes() -> Vec<NamedTheme> {
             let path = entry.path();
             if path.extension().map(|e| e == "toml").unwrap_or(false) {
                 if let Ok(content) = fs::read_to_string(&path) {
-                    if let Ok(theme_file) = toml::from_str::<UserThemeFile>(&content) {
-                        let id = path
-                            .file_stem()
-                            .and_then(|s| s.to_str())
-                            .unwrap_or("unknown")
-                            .to_string();
+                    let id = path
+                        .file_stem()
+                        .and_then(|s| s.to_str())
+                        .unwrap_or("unknown")
+                        .to_string();
 
-                        let dark = theme_file.dark.as_ref().and_then(convert_colors);
-                        let light = theme_file.light.as_ref().and_then(convert_colors);
-
-                        if dark.is_some() || light.is_some() {
-                            themes.push(NamedTheme {
-                                id,
-                                name: format!("{} (user)", theme_file.name),
-                                is_builtin: false,
-                                variants: ThemeVariants { dark, light },
-                            });
-                        }
+                    if let Some(mut theme) = parse_theme_toml(&id, &content, false) {
+                        theme.name = format!("{} (user)", theme.name);
+                        themes.push(theme);
                     }
                 }
             }

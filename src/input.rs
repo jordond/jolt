@@ -53,6 +53,7 @@ fn handle_theme_picker_keys(key: KeyEvent) -> Action {
         KeyCode::Up | KeyCode::Char('k') => Action::SelectPrevious,
         KeyCode::Down | KeyCode::Char('j') => Action::SelectNext,
         KeyCode::Enter | KeyCode::Char(' ') => Action::SelectTheme,
+        KeyCode::Char('a') | KeyCode::Left | KeyCode::Right => Action::TogglePreviewAppearance,
         _ => Action::None,
     }
 }

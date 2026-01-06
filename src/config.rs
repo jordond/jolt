@@ -101,6 +101,10 @@ pub fn config_path() -> PathBuf {
     config_dir().join("config.toml")
 }
 
+pub fn themes_dir() -> PathBuf {
+    config_dir().join("themes")
+}
+
 pub fn ensure_dirs() -> std::io::Result<()> {
     fs::create_dir_all(config_dir())?;
     fs::create_dir_all(cache_dir())?;
@@ -187,6 +191,10 @@ impl RuntimeConfig {
         self.current_theme.get_colors(self.is_dark_mode())
     }
 
+    pub fn theme_with_mode(&self, is_dark: bool) -> ThemeColors {
+        self.current_theme.get_colors(is_dark)
+    }
+
     pub fn set_theme(&mut self, theme_id: &str) {
         if let Some(theme) = get_theme_by_id(theme_id) {
             self.current_theme = theme;
@@ -211,7 +219,6 @@ impl RuntimeConfig {
     pub fn theme_id(&self) -> &str {
         &self.current_theme.id
     }
-
 }
 
 fn detect_system_dark_mode() -> bool {

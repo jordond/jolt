@@ -41,6 +41,7 @@ pub enum Action {
     OpenThemePicker,
     CloseThemePicker,
     SelectTheme,
+    TogglePreviewAppearance,
     ToggleGraphView,
     ToggleMerge,
     PageUp,
@@ -120,6 +121,8 @@ pub struct App {
     pub theme_picker_themes: Vec<NamedTheme>,
     pub theme_picker_index: usize,
     preview_theme_id: Option<String>,
+    preview_appearance: Option<bool>,
+    theme_picker_from_config: bool,
 }
 
 impl App {
@@ -161,6 +164,8 @@ impl App {
             theme_picker_themes: Vec::new(),
             theme_picker_index: 0,
             preview_theme_id: None,
+            preview_appearance: None,
+            theme_picker_from_config: false,
         })
     }
 
@@ -307,18 +312,37 @@ impl App {
                     .position(|t| t.id == self.config.theme_id())
                     .unwrap_or(0);
                 self.preview_theme_id = None;
+                self.preview_appearance = None;
+                self.theme_picker_from_config = false;
                 self.view = AppView::ThemePicker;
             }
             Action::CloseThemePicker => {
+                let return_to_config = self.theme_picker_from_config;
                 self.preview_theme_id = None;
-                self.view = AppView::Main;
+                self.preview_appearance = None;
+                self.theme_picker_from_config = false;
+                self.view = if return_to_config {
+                    AppView::Config
+                } else {
+                    AppView::Main
+                };
             }
             Action::SelectTheme => {
                 if let Some(theme) = self.theme_picker_themes.get(self.theme_picker_index) {
                     self.config.set_theme(&theme.id);
                 }
+                let return_to_config = self.theme_picker_from_config;
                 self.preview_theme_id = None;
-                self.view = AppView::Main;
+                self.preview_appearance = None;
+                self.theme_picker_from_config = false;
+                self.view = if return_to_config {
+                    AppView::Config
+                } else {
+                    AppView::Main
+                };
+            }
+            Action::TogglePreviewAppearance => {
+                self.toggle_preview_appearance();
             }
             Action::ToggleGraphView => {
                 self.history.toggle_metric();
@@ -377,13 +401,19 @@ impl App {
                 }
             }
             Action::ConfigToggleValue => {
-                self.toggle_config_value();
+                if self.toggle_config_value() {
+                    self.open_theme_picker_from_config();
+                }
             }
             Action::ConfigIncrement => {
-                self.increment_config_value();
+                if self.increment_config_value() {
+                    self.open_theme_picker_from_config();
+                }
             }
             Action::ConfigDecrement => {
-                self.decrement_config_value();
+                if self.decrement_config_value() {
+                    self.open_theme_picker_from_config();
+                }
             }
             Action::ConfigRevert => {
                 if let Some((snapshot, refresh, merge)) = self.config_snapshot.take() {
@@ -566,6 +596,7 @@ impl App {
     }
 
     pub const CONFIG_ITEMS: &'static [&'static str] = &[
+        "Theme",
         "Appearance",
         "Refresh Rate (ms)",
         "Low Power Mode",
@@ -581,75 +612,81 @@ impl App {
 
     pub fn config_item_value(&self, index: usize) -> String {
         match index {
-            0 => self.config.appearance_label().to_string(),
-            1 => self.refresh_ms.to_string(),
-            2 => if self.config.user_config.low_power_mode {
+            0 => format!("{} →", self.config.theme_name()),
+            1 => self.config.appearance_label().to_string(),
+            2 => self.refresh_ms.to_string(),
+            3 => if self.config.user_config.low_power_mode {
                 "On"
             } else {
                 "Off"
             }
             .to_string(),
-            3 => if self.config.user_config.show_graph {
+            4 => if self.config.user_config.show_graph {
                 "On"
             } else {
                 "Off"
             }
             .to_string(),
-            4 => if self.merge_mode { "On" } else { "Off" }.to_string(),
-            5 => self.config.user_config.process_count.to_string(),
-            6 => format!("{:.1}", self.config.user_config.energy_threshold),
+            5 => if self.merge_mode { "On" } else { "Off" }.to_string(),
+            6 => self.config.user_config.process_count.to_string(),
+            7 => format!("{:.1}", self.config.user_config.energy_threshold),
             _ => String::new(),
         }
     }
 
-    fn toggle_config_value(&mut self) {
+    fn toggle_config_value(&mut self) -> bool {
         match self.config_selected_item {
-            0 => self.config.cycle_appearance(),
-            2 => {
+            0 => return true,
+            1 => self.config.cycle_appearance(),
+            3 => {
                 self.config.user_config.low_power_mode = !self.config.user_config.low_power_mode;
                 let _ = self.config.user_config.save();
             }
-            3 => {
+            4 => {
                 self.config.user_config.show_graph = !self.config.user_config.show_graph;
                 let _ = self.config.user_config.save();
             }
-            4 => {
+            5 => {
                 self.merge_mode = !self.merge_mode;
                 self.config.user_config.merge_mode = self.merge_mode;
                 let _ = self.config.user_config.save();
             }
             _ => {}
         }
+        false
     }
 
-    fn increment_config_value(&mut self) {
+    fn increment_config_value(&mut self) -> bool {
         match self.config_selected_item {
-            0 => self.config.cycle_appearance(),
-            1 => {
+            0 => return true,
+            1 => self.config.cycle_appearance(),
+            2 => {
                 self.refresh_ms = (self.refresh_ms + REFRESH_STEP_MS).min(MAX_REFRESH_MS);
                 if !self.config.refresh_from_cli {
                     self.config.user_config.refresh_ms = self.refresh_ms;
                     let _ = self.config.user_config.save();
                 }
             }
-            5 => {
+            6 => {
                 self.config.user_config.process_count =
                     (self.config.user_config.process_count + 10).min(200);
                 let _ = self.config.user_config.save();
             }
-            6 => {
+            7 => {
                 self.config.user_config.energy_threshold =
                     (self.config.user_config.energy_threshold + 0.5).min(10.0);
                 let _ = self.config.user_config.save();
             }
             _ => {}
         }
+        false
     }
 
-    fn decrement_config_value(&mut self) {
+    fn decrement_config_value(&mut self) -> bool {
         match self.config_selected_item {
-            0 => self.config.cycle_appearance(),
-            1 => {
+            0 => return true,
+            1 => self.config.cycle_appearance(),
+            2 => {
                 self.refresh_ms = self
                     .refresh_ms
                     .saturating_sub(REFRESH_STEP_MS)
@@ -659,7 +696,7 @@ impl App {
                     let _ = self.config.user_config.save();
                 }
             }
-            5 => {
+            6 => {
                 self.config.user_config.process_count = self
                     .config
                     .user_config
@@ -668,13 +705,14 @@ impl App {
                     .max(10);
                 let _ = self.config.user_config.save();
             }
-            6 => {
+            7 => {
                 self.config.user_config.energy_threshold =
                     (self.config.user_config.energy_threshold - 0.5).max(0.0);
                 let _ = self.config.user_config.save();
             }
             _ => {}
         }
+        false
     }
 
     fn set_theme_preview(&mut self) {
@@ -683,11 +721,41 @@ impl App {
         }
     }
 
+    fn open_theme_picker_from_config(&mut self) {
+        self.theme_picker_themes = get_all_themes();
+        self.theme_picker_index = self
+            .theme_picker_themes
+            .iter()
+            .position(|t| t.id == self.config.theme_id())
+            .unwrap_or(0);
+        self.preview_theme_id = None;
+        self.preview_appearance = None;
+        self.theme_picker_from_config = true;
+        self.view = AppView::ThemePicker;
+    }
+
+    fn toggle_preview_appearance(&mut self) {
+        let current = self.preview_appearance.unwrap_or_else(|| self.config.is_dark_mode());
+        self.preview_appearance = Some(!current);
+    }
+
+    pub fn preview_is_dark(&self) -> bool {
+        self.preview_appearance.unwrap_or_else(|| self.config.is_dark_mode())
+    }
+
     pub fn current_theme(&self) -> ThemeColors {
+        let is_dark = self.preview_is_dark();
         if let Some(ref preview_id) = self.preview_theme_id {
-            if let Some(theme) = self.theme_picker_themes.iter().find(|t| &t.id == preview_id) {
-                return theme.get_colors(self.config.is_dark_mode());
+            if let Some(theme) = self
+                .theme_picker_themes
+                .iter()
+                .find(|t| &t.id == preview_id)
+            {
+                return theme.get_colors(is_dark);
             }
+        }
+        if self.preview_appearance.is_some() {
+            return self.config.theme_with_mode(is_dark);
         }
         self.config.theme()
     }

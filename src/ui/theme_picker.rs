@@ -91,7 +91,14 @@ pub fn render(frame: &mut Frame, app: &App, theme: &ThemeColors) {
             };
 
             Line::from(vec![
-                Span::styled(prefix, if is_selected { style } else { Style::default().fg(theme.accent) }),
+                Span::styled(
+                    prefix,
+                    if is_selected {
+                        style
+                    } else {
+                        Style::default().fg(theme.accent)
+                    },
+                ),
                 Span::styled(&theme_item.name, name_style),
             ])
         })
@@ -105,9 +112,17 @@ pub fn render(frame: &mut Frame, app: &App, theme: &ThemeColors) {
         .map(|t| t.variants_label())
         .unwrap_or("unknown");
 
+    let preview_mode = if app.preview_is_dark() { "dark" } else { "light" };
+
     let footer = Paragraph::new(vec![Line::from(vec![
+        Span::styled("Preview: ", Style::default().fg(theme.muted)),
+        Span::styled(preview_mode, Style::default().fg(theme.accent)),
+        Span::styled(" │ ", Style::default().fg(theme.border)),
         Span::styled("Variants: ", Style::default().fg(theme.muted)),
         Span::styled(variants_info, Style::default().fg(theme.accent)),
+        Span::styled(" │ ", Style::default().fg(theme.border)),
+        Span::styled("a/←→", Style::default().fg(theme.accent)),
+        Span::styled(" toggle", Style::default().fg(theme.muted)),
     ])])
     .centered();
     frame.render_widget(footer, chunks[2]);

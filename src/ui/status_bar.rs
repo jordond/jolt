@@ -10,7 +10,12 @@ use crate::app::App;
 use crate::data::SystemInfo;
 use crate::theme::ThemeColors;
 
-pub fn render_title_bar(frame: &mut Frame, area: Rect, system_info: &SystemInfo, theme: &ThemeColors) {
+pub fn render_title_bar(
+    frame: &mut Frame,
+    area: Rect,
+    system_info: &SystemInfo,
+    theme: &ThemeColors,
+) {
     let version = super::VERSION;
 
     let left_spans = vec![

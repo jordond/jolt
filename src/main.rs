@@ -21,6 +21,52 @@ use ratatui::prelude::*;
 use config::{config_path, ensure_dirs, UserConfig};
 
 #[derive(Debug, Subcommand)]
+enum ThemeCommands {
+    /// Check themes for WCAG contrast issues (default)
+    #[command(alias = "c")]
+    Check {
+        /// Also check builtin themes
+        #[arg(short = 'A', long)]
+        all: bool,
+
+        /// Show passing checks too
+        #[arg(short, long)]
+        verbose: bool,
+    },
+
+    /// Open user themes folder
+    #[command(alias = "o")]
+    Open,
+
+    /// Create a new theme
+    #[command(alias = "new")]
+    Create {
+        /// Theme name
+        name: String,
+
+        /// Create from template (blank, copy)
+        #[arg(short, long, default_value = "blank")]
+        template: String,
+
+        /// Base theme to copy from (when template=copy)
+        #[arg(short, long)]
+        base: Option<String>,
+    },
+
+    /// List available themes
+    #[command(alias = "ls")]
+    List {
+        /// Show only builtin themes
+        #[arg(long)]
+        builtin: bool,
+
+        /// Show only user themes
+        #[arg(long)]
+        user: bool,
+    },
+}
+
+#[derive(Debug, Subcommand)]
 enum Commands {
     /// Launch the TUI interface (default)
     #[command(alias = "tui")]
@@ -71,6 +117,13 @@ enum Commands {
         #[arg(short, long)]
         edit: bool,
     },
+
+    /// Manage themes
+    #[command(alias = "themes")]
+    Theme {
+        #[command(subcommand)]
+        command: Option<ThemeCommands>,
+    },
 }
 
 /// Beautiful battery & energy monitor for macOS
@@ -108,6 +161,7 @@ fn main() -> Result<()> {
         }) => run_pipe(samples, interval, compact),
         Some(Commands::Debug) => run_debug(),
         Some(Commands::Config { path, reset, edit }) => run_config(path, reset, edit),
+        Some(Commands::Theme { command }) => run_theme(command),
         Some(Commands::Ui {
             refresh_ms,
             appearance,
@@ -358,6 +412,117 @@ fn run_config(path: bool, reset: bool, edit: bool) -> Result<()> {
     println!("Config file: {}", config_file.display());
     println!();
     println!("{}", toml::to_string_pretty(&config)?);
+
+    Ok(())
+}
+
+fn run_theme(command: Option<ThemeCommands>) -> Result<()> {
+    use theme::{contrast, get_all_themes, get_builtin_themes, load_user_themes};
+
+    let cmd = command.unwrap_or(ThemeCommands::Check {
+        all: false,
+        verbose: false,
+    });
+
+    match cmd {
+        ThemeCommands::Check { all, verbose } => {
+            let themes = if all {
+                get_all_themes()
+            } else {
+                load_user_themes()
+            };
+
+            if themes.is_empty() {
+                if all {
+                    println!("No themes found.");
+                } else {
+                    println!("No user themes found.");
+                    println!("Use --all to check builtin themes, or create a theme with:");
+                    println!("  jolt theme create <name>");
+                }
+                return Ok(());
+            }
+
+            let results = contrast::check_all_themes(&themes);
+            contrast::print_results(&results, verbose);
+
+            let has_failures = results.iter().any(|r| !r.pass);
+            if has_failures {
+                std::process::exit(1);
+            }
+        }
+        ThemeCommands::Open => {
+            let themes_dir = config::themes_dir();
+            if !themes_dir.exists() {
+                std::fs::create_dir_all(&themes_dir)?;
+            }
+
+            #[cfg(target_os = "macos")]
+            {
+                std::process::Command::new("open")
+                    .arg(&themes_dir)
+                    .status()?;
+            }
+
+            println!("Themes directory: {}", themes_dir.display());
+        }
+        ThemeCommands::Create {
+            name,
+            template,
+            base,
+        } => {
+            let themes_dir = config::themes_dir();
+            if !themes_dir.exists() {
+                std::fs::create_dir_all(&themes_dir)?;
+            }
+
+            let file_name = name.to_lowercase().replace(' ', "-");
+            let theme_path = themes_dir.join(format!("{}.toml", file_name));
+
+            if theme_path.exists() {
+                eprintln!("Theme '{}' already exists at: {}", name, theme_path.display());
+                std::process::exit(1);
+            }
+
+            let content = match template.as_str() {
+                "copy" => {
+                    let base_id = base.as_deref().unwrap_or("default");
+                    let base_theme = get_builtin_themes()
+                        .into_iter()
+                        .find(|t| t.id == base_id)
+                        .ok_or_else(|| color_eyre::eyre::eyre!("Base theme '{}' not found", base_id))?;
+
+                    theme::generate_theme_toml(&name, &base_theme)
+                }
+                _ => theme::generate_blank_theme_toml(&name),
+            };
+
+            std::fs::write(&theme_path, content)?;
+            println!("Created theme '{}' at: {}", name, theme_path.display());
+            println!("\nEdit the file to customize colors, then reload jolt to see changes.");
+        }
+        ThemeCommands::List { builtin, user } => {
+            let themes = if builtin {
+                get_builtin_themes()
+            } else if user {
+                load_user_themes()
+            } else {
+                get_all_themes()
+            };
+
+            if themes.is_empty() {
+                println!("No themes found.");
+                return Ok(());
+            }
+
+            println!("{:<20} {:<12} {}", "ID", "Type", "Variants");
+            println!("{}", "-".repeat(50));
+            for theme in themes {
+                let theme_type = if theme.is_builtin { "builtin" } else { "user" };
+                println!("{:<20} {:<12} {}", theme.id, theme_type, theme.variants_label());
+            }
+        }
+    }
 
     Ok(())
 }
