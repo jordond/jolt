@@ -1,8 +1,16 @@
-/target
-Cargo.lock
+# Rust
+target
 **/*.rs.bk
 *.pdb
+
+# OS
 .DS_Store
+
+# IDE
 .idea/
+
+# Logs
 *.log
-scratchpad
+
+# Local scratch files
+scratchpad/
