@@ -1,0 +1,61 @@
+---
+import type { Props } from '@astrojs/starlight/props';
+import Default from '@astrojs/starlight/components/Header.astro';
+---
+
+<Default {...Astro.props}><slot /></Default>
+
+<nav class="header-nav">
+  <a href="/jolt/docs/getting-started/" class="nav-link">Documentation</a>
+</nav>
+
+<style>
+  .header-nav {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-right: 0.5rem;
+  }
+
+  .nav-link {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--sl-color-gray-2);
+    text-decoration: none;
+    border-radius: 0.375rem;
+    transition: all 0.2s ease;
+    border: 1px solid transparent;
+  }
+
+  .nav-link:hover {
+    color: var(--sl-color-accent);
+    background: rgba(0, 212, 255, 0.1);
+    border-color: rgba(0, 212, 255, 0.3);
+    text-shadow: 0 0 10px rgba(0, 212, 255, 0.4);
+  }
+
+  @media (max-width: 600px) {
+    .nav-link {
+      padding: 0.4rem 0.75rem;
+      font-size: 0.8rem;
+    }
+  }
+</style>
+
+<script>
+  function positionNavLink() {
+    const header = document.querySelector('header.header');
+    const nav = document.querySelector('.header-nav');
+    const socialIcons = header?.querySelector('.sl-flex.social-icons');
+    
+    if (nav && socialIcons) {
+      socialIcons.parentElement?.insertBefore(nav, socialIcons);
+    }
+  }
+  
+  positionNavLink();
+  document.addEventListener('astro:page-load', positionNavLink);
+</script>
