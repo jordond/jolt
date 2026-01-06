@@ -1,0 +1,446 @@
+---
+import Landing from '../layouts/Landing.astro';
+import InstallTabs from '../components/InstallTabs.astro';
+---
+
+<Landing title="jolt - Battery Monitor for macOS" description="A beautiful terminal-based battery and energy monitor for macOS">
+  <header class="header">
+    <a href="/jolt/" class="logo">
+      <img src="/jolt/favicon.svg" alt="" width="28" height="28" />
+      <span>jolt</span>
+    </a>
+    <nav class="nav">
+      <a href="/jolt/docs/getting-started/" class="nav-button">Documentation</a>
+      <a href="https://github.com/jordond/jolt" target="_blank" rel="noopener" class="nav-icon" aria-label="GitHub">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+          <path d="M12 2C6.477 2 2 6.477 2 12c0 4.42 2.865 8.17 6.839 9.49.5.092.682-.217.682-.482 0-.237-.008-.866-.013-1.7-2.782.604-3.369-1.34-3.369-1.34-.454-1.156-1.11-1.463-1.11-1.463-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.831.092-.646.35-1.086.636-1.336-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.578 9.578 0 0112 6.836c.85.004 1.705.114 2.504.336 1.909-1.294 2.747-1.025 2.747-1.025.546 1.377.203 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.578.688.48C19.138 20.167 22 16.418 22 12c0-5.523-4.477-10-10-10z"/>
+        </svg>
+      </a>
+      <button class="nav-icon theme-toggle" aria-label="Toggle theme">
+        <svg class="sun" viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+          <path d="M12 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10zm0-5a1 1 0 0 1 1 1v1a1 1 0 1 1-2 0V3a1 1 0 0 1 1-1zm0 19a1 1 0 0 1 1 1v1a1 1 0 1 1-2 0v-1a1 1 0 0 1 1-1zm9-9a1 1 0 0 1-1 1h-1a1 1 0 1 1 0-2h1a1 1 0 0 1 1 1zM5 12a1 1 0 0 1-1 1H3a1 1 0 1 1 0-2h1a1 1 0 0 1 1 1zm14.07-7.07a1 1 0 0 1 0 1.41l-.71.71a1 1 0 1 1-1.41-1.41l.71-.71a1 1 0 0 1 1.41 0zM6.05 17.66a1 1 0 0 1 0 1.41l-.71.71a1 1 0 1 1-1.41-1.41l.71-.71a1 1 0 0 1 1.41 0zm12.02 0a1 1 0 0 1 1.41 0l.71.71a1 1 0 1 1-1.41 1.41l-.71-.71a1 1 0 0 1 0-1.41zM6.05 6.34a1 1 0 0 1-1.41 0l-.71-.71a1 1 0 0 1 1.41-1.41l.71.71a1 1 0 0 1 0 1.41z"/>
+        </svg>
+        <svg class="moon" viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+          <path d="M21.64 13a1 1 0 0 0-1.05-.14 8.049 8.049 0 0 1-3.37.73 8.15 8.15 0 0 1-8.14-8.1 8.59 8.59 0 0 1 .25-2A1 1 0 0 0 8 2.36a10.14 10.14 0 1 0 14 11.69 1 1 0 0 0-.36-1.05Z"/>
+        </svg>
+      </button>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="hero-content">
+        <h1>jolt</h1>
+        <p class="tagline">Battery intelligence for your Mac</p>
+        <p class="description">
+          Real-time power monitoring, process energy tracking, and battery health insights — all in a beautiful terminal UI.
+        </p>
+        <div class="hero-buttons">
+          <a href="/jolt/docs/getting-started/" class="button primary">Get Started</a>
+          <a href="https://github.com/jordond/jolt" target="_blank" rel="noopener" class="button secondary">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+              <path d="M12 2C6.477 2 2 6.477 2 12c0 4.42 2.865 8.17 6.839 9.49.5.092.682-.217.682-.482 0-.237-.008-.866-.013-1.7-2.782.604-3.369-1.34-3.369-1.34-.454-1.156-1.11-1.463-1.11-1.463-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.831.092-.646.35-1.086.636-1.336-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.578 9.578 0 0112 6.836c.85.004 1.705.114 2.504.336 1.909-1.294 2.747-1.025 2.747-1.025.546 1.377.203 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.578.688.48C19.138 20.167 22 16.418 22 12c0-5.523-4.477-10-10-10z"/>
+            </svg>
+            View on GitHub
+          </a>
+        </div>
+      </div>
+      <div class="hero-grid"></div>
+    </section>
+
+    <section class="install">
+      <h2>Quick Install</h2>
+      <InstallTabs />
+    </section>
+
+    <section class="features">
+      <h2>Features</h2>
+      <div class="feature-grid">
+        <div class="feature-card">
+          <div class="feature-icon">⚡</div>
+          <h3>Real-time Monitoring</h3>
+          <p>Track battery percentage, charging state, time remaining, and power draw updated every second.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">📊</div>
+          <h3>Power Breakdown</h3>
+          <p>See exactly how much power your CPU, GPU, and ANE are consuming in watts.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">🔍</div>
+          <h3>Process Tracking</h3>
+          <p>Identify energy-hungry processes with color-coded severity and collapsible groups.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">🎨</div>
+          <h3>300+ Themes</h3>
+          <p>Import from iTerm2 Color Schemes or create your own. Light, dark, and auto modes.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">📈</div>
+          <h3>Historical Data</h3>
+          <p>Track battery and power trends over time with built-in graphs and data export.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">👻</div>
+          <h3>Background Daemon</h3>
+          <p>Run a daemon to collect historical data even when the TUI isn't running.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="why">
+      <h2>Why jolt?</h2>
+      <div class="why-grid">
+        <div class="why-item">
+          <h3>Terminal Native</h3>
+          <p>Works over SSH, in tmux, wherever you have a terminal</p>
+        </div>
+        <div class="why-item">
+          <h3>Apple Silicon Optimized</h3>
+          <p>Direct access to IOReport for accurate power metrics</p>
+        </div>
+        <div class="why-item">
+          <h3>Lightweight</h3>
+          <p>Written in Rust, minimal resource usage</p>
+        </div>
+        <div class="why-item">
+          <h3>Scriptable</h3>
+          <p>JSON output mode for automation and integration</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-content">
+      <div class="footer-brand">
+        <img src="/jolt/favicon.svg" alt="" width="24" height="24" />
+        <span>jolt</span>
+      </div>
+      <div class="footer-links">
+        <a href="/jolt/docs/getting-started/">Docs</a>
+        <a href="https://github.com/jordond/jolt">GitHub</a>
+        <a href="https://github.com/jordond/jolt/issues">Issues</a>
+      </div>
+      <p class="footer-copyright">MIT License © 2024 Jordon</p>
+    </div>
+  </footer>
+</Landing>
+
+<style>
+  .header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 2rem;
+    background: rgba(10, 10, 15, 0.8);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 600;
+    font-size: 1.125rem;
+  }
+
+  .logo span {
+    background: linear-gradient(135deg, var(--color-accent), #a855f7);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .nav {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .nav-button {
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    border-radius: 0.5rem;
+    background: rgba(0, 255, 255, 0.1);
+    border: 1px solid rgba(0, 255, 255, 0.2);
+    transition: all 0.2s;
+  }
+
+  .nav-button:hover {
+    background: rgba(0, 255, 255, 0.2);
+    border-color: var(--color-accent);
+    box-shadow: 0 0 20px var(--color-accent-glow);
+  }
+
+  .nav-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 0.5rem;
+    color: var(--color-text-muted);
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .nav-icon:hover {
+    color: var(--color-accent);
+    background: rgba(0, 255, 255, 0.1);
+  }
+
+  .theme-toggle .moon { display: none; }
+  :global([data-theme="light"]) .theme-toggle .sun { display: none; }
+  :global([data-theme="light"]) .theme-toggle .moon { display: block; }
+
+  .hero {
+    position: relative;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6rem 2rem 4rem;
+    overflow: hidden;
+  }
+
+  .hero-grid {
+    position: absolute;
+    inset: 0;
+    background-image: 
+      linear-gradient(rgba(0, 255, 255, 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0, 255, 255, 0.03) 1px, transparent 1px);
+    background-size: 50px 50px;
+    pointer-events: none;
+  }
+
+  .hero-content {
+    position: relative;
+    text-align: center;
+    max-width: 700px;
+  }
+
+  .hero h1 {
+    font-size: clamp(3rem, 10vw, 5rem);
+    font-weight: 700;
+    background: linear-gradient(135deg, var(--color-accent), #a855f7);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 0.5rem;
+  }
+
+  .tagline {
+    font-size: clamp(1.25rem, 3vw, 1.5rem);
+    color: var(--color-text);
+    margin-bottom: 1rem;
+  }
+
+  .description {
+    font-size: 1.125rem;
+    color: var(--color-text-muted);
+    max-width: 500px;
+    margin: 0 auto 2rem;
+  }
+
+  .hero-buttons {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    font-size: 1rem;
+    font-weight: 500;
+    border-radius: 0.5rem;
+    transition: all 0.2s;
+  }
+
+  .button.primary {
+    background: var(--color-accent);
+    color: #000;
+    box-shadow: 0 0 20px var(--color-accent-glow);
+  }
+
+  .button.primary:hover {
+    box-shadow: 0 0 30px var(--color-accent-glow), 0 0 60px var(--color-accent-glow);
+    transform: translateY(-2px);
+  }
+
+  .button.secondary {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+  }
+
+  .button.secondary:hover {
+    border-color: var(--color-accent);
+    box-shadow: 0 0 20px var(--color-accent-glow);
+  }
+
+  section {
+    padding: 4rem 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  section h2 {
+    font-size: 2rem;
+    text-align: center;
+    margin-bottom: 2rem;
+    color: var(--color-accent);
+  }
+
+  .install {
+    background: var(--color-surface);
+    border-radius: 1rem;
+    max-width: 600px;
+  }
+
+  .feature-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+  }
+
+  .feature-card {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 0.75rem;
+    padding: 1.5rem;
+    transition: all 0.3s;
+  }
+
+  .feature-card:hover {
+    border-color: var(--color-accent);
+    box-shadow: 0 0 20px rgba(0, 255, 255, 0.1);
+    transform: translateY(-4px);
+  }
+
+  .feature-icon {
+    font-size: 2rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .feature-card h3 {
+    font-size: 1.125rem;
+    margin-bottom: 0.5rem;
+    color: var(--color-text);
+  }
+
+  .feature-card p {
+    color: var(--color-text-muted);
+    font-size: 0.9375rem;
+  }
+
+  .why-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1.5rem;
+  }
+
+  .why-item {
+    text-align: center;
+    padding: 1.5rem;
+  }
+
+  .why-item h3 {
+    color: var(--color-accent);
+    margin-bottom: 0.5rem;
+  }
+
+  .why-item p {
+    color: var(--color-text-muted);
+  }
+
+  .footer {
+    border-top: 1px solid var(--color-border);
+    padding: 2rem;
+    margin-top: 4rem;
+  }
+
+  .footer-content {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  .footer-brand {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 600;
+    color: var(--color-accent);
+  }
+
+  .footer-links {
+    display: flex;
+    gap: 1.5rem;
+  }
+
+  .footer-links a {
+    color: var(--color-text-muted);
+    transition: color 0.2s;
+  }
+
+  .footer-links a:hover {
+    color: var(--color-accent);
+  }
+
+  .footer-copyright {
+    color: var(--color-text-muted);
+    font-size: 0.875rem;
+  }
+
+  @media (max-width: 768px) {
+    .header {
+      padding: 0.75rem 1rem;
+    }
+
+    .hero {
+      padding: 5rem 1rem 3rem;
+    }
+
+    .footer-content {
+      flex-direction: column;
+      text-align: center;
+    }
+  }
+</style>
+
+<script>
+  const toggle = document.querySelector('.theme-toggle');
+  const html = document.documentElement;
+  
+  const stored = localStorage.getItem('theme');
+  if (stored) {
+    html.setAttribute('data-theme', stored);
+  } else if (window.matchMedia('(prefers-color-scheme: light)').matches) {
+    html.setAttribute('data-theme', 'light');
+  }
+
+  toggle?.addEventListener('click', () => {
+    const current = html.getAttribute('data-theme');
+    const next = current === 'light' ? 'dark' : 'light';
+    html.setAttribute('data-theme', next);
+    localStorage.setItem('theme', next);
+  });
+</script>
