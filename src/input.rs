@@ -10,7 +10,13 @@ pub fn handle_key(app: &App, key: KeyEvent) -> Action {
         AppView::KillConfirm => handle_kill_confirm_keys(key),
         AppView::Config => handle_config_keys(key),
         AppView::ThemePicker => handle_theme_picker_keys(key),
-        AppView::ThemeImporter => handle_theme_importer_keys(key),
+        AppView::ThemeImporter => {
+            if app.importer_search_focused {
+                handle_theme_importer_keys_search(key)
+            } else {
+                handle_theme_importer_keys_normal(key)
+            }
+        }
     }
 }
 
@@ -60,21 +66,27 @@ fn handle_theme_picker_keys(key: KeyEvent) -> Action {
     }
 }
 
-fn handle_theme_importer_keys(key: KeyEvent) -> Action {
+fn handle_theme_importer_keys_search(key: KeyEvent) -> Action {
+    match key.code {
+        KeyCode::Esc => Action::ImporterToggleSearch,
+        KeyCode::Enter => Action::ImporterToggleSearch,
+        KeyCode::Backspace => Action::ImporterFilterBackspace,
+        KeyCode::Char(c) => Action::ImporterFilterChar(c),
+        _ => Action::None,
+    }
+}
+
+fn handle_theme_importer_keys_normal(key: KeyEvent) -> Action {
     match key.code {
         KeyCode::Esc => Action::CloseThemeImporter,
-        KeyCode::Up | KeyCode::Char('k') if key.modifiers.is_empty() => Action::SelectPrevious,
-        KeyCode::Down | KeyCode::Char('j') if key.modifiers.is_empty() => Action::SelectNext,
+        KeyCode::Up | KeyCode::Char('k') => Action::SelectPrevious,
+        KeyCode::Down | KeyCode::Char('j') => Action::SelectNext,
         KeyCode::Char(' ') => Action::ImporterToggleSelect,
-        KeyCode::Enter => Action::ImporterPreview,
-        KeyCode::Char('i') if key.modifiers.contains(KeyModifiers::CONTROL) => {
-            Action::ImporterImport
-        }
-        KeyCode::Char('r') if key.modifiers.is_empty() => Action::ImporterRefresh,
-        KeyCode::Backspace => Action::ImporterFilterBackspace,
-        KeyCode::Char(c) if !key.modifiers.contains(KeyModifiers::CONTROL) => {
-            Action::ImporterFilterChar(c)
-        }
+        KeyCode::Enter | KeyCode::Char('p') => Action::ImporterPreview,
+        KeyCode::Char('i') => Action::ImporterImport,
+        KeyCode::Char('r') => Action::ImporterRefresh,
+        KeyCode::Char('/') | KeyCode::Char('s') => Action::ImporterToggleSearch,
+        KeyCode::Backspace => Action::ImporterClearFilter,
         KeyCode::PageUp => Action::PageUp,
         KeyCode::PageDown => Action::PageDown,
         KeyCode::Home => Action::Home,

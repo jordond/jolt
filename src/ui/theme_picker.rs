@@ -21,8 +21,8 @@ pub fn render(frame: &mut Frame, app: &App, theme: &ThemeColors) {
     let themes = &app.theme_picker_themes;
     let selected = app.theme_picker_index;
 
-    let content_height = (themes.len() as u16 + 6).min(20);
-    let content_width = 45;
+    let content_height = (themes.len() as u16 + 8).min(24);
+    let content_width = 55;
     let area = centered_rect(frame.area(), content_width, content_height);
 
     frame.render_widget(Clear, area);
@@ -39,17 +39,17 @@ pub fn render(frame: &mut Frame, app: &App, theme: &ThemeColors) {
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
-            Constraint::Length(2),
+            Constraint::Length(1),
             Constraint::Min(1),
-            Constraint::Length(2),
+            Constraint::Length(4),
         ])
         .margin(1)
         .split(inner);
 
-    let header = Paragraph::new(vec![Line::from(vec![Span::styled(
-        "Use ↑↓ to navigate, Enter to select, Esc to cancel",
+    let header = Paragraph::new(Line::from(vec![Span::styled(
+        "↑↓ navigate  Enter select  Esc cancel",
         Style::default().fg(theme.muted),
-    )])])
+    )]))
     .centered();
     frame.render_widget(header, chunks[0]);
 
@@ -118,16 +118,21 @@ pub fn render(frame: &mut Frame, app: &App, theme: &ThemeColors) {
         "light"
     };
 
-    let footer = Paragraph::new(vec![Line::from(vec![
-        Span::styled("Preview: ", Style::default().fg(theme.muted)),
-        Span::styled(preview_mode, Style::default().fg(theme.accent)),
-        Span::styled(" │ ", Style::default().fg(theme.border)),
-        Span::styled("Variants: ", Style::default().fg(theme.muted)),
-        Span::styled(variants_info, Style::default().fg(theme.accent)),
-        Span::styled(" │ ", Style::default().fg(theme.border)),
-        Span::styled("a/←→", Style::default().fg(theme.accent)),
-        Span::styled(" toggle", Style::default().fg(theme.muted)),
-    ])])
+    let footer = Paragraph::new(vec![
+        Line::from(vec![
+            Span::styled("Preview: ", Style::default().fg(theme.muted)),
+            Span::styled(preview_mode, Style::default().fg(theme.accent)),
+            Span::styled("  Variants: ", Style::default().fg(theme.muted)),
+            Span::styled(variants_info, Style::default().fg(theme.accent)),
+        ]),
+        Line::default(),
+        Line::from(vec![
+            Span::styled("a/←→", Style::default().fg(theme.accent)),
+            Span::styled(" toggle preview  ", Style::default().fg(theme.muted)),
+            Span::styled("i", Style::default().fg(theme.accent)),
+            Span::styled(" import themes", Style::default().fg(theme.muted)),
+        ]),
+    ])
     .centered();
     frame.render_widget(footer, chunks[2]);
 }

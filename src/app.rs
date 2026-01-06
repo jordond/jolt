@@ -65,8 +65,10 @@ pub enum Action {
     ImporterPreview,
     ImporterImport,
     ImporterRefresh,
+    ImporterToggleSearch,
     ImporterFilterChar(char),
     ImporterFilterBackspace,
+    ImporterClearFilter,
     None,
 }
 
@@ -139,6 +141,7 @@ pub struct App {
     pub importer_filter: String,
     pub importer_loading: bool,
     pub importer_cache_age: Option<String>,
+    pub importer_search_focused: bool,
 }
 
 impl App {
@@ -188,6 +191,7 @@ impl App {
             importer_filter: String::new(),
             importer_loading: false,
             importer_cache_age: None,
+            importer_search_focused: false,
         })
     }
 
@@ -490,26 +494,43 @@ impl App {
                 self.view = AppView::ThemePicker;
                 self.importer_filter.clear();
                 self.importer_selected.clear();
+                self.importer_search_focused = false;
             }
             Action::ImporterToggleSelect => {
                 self.toggle_importer_selection();
             }
             Action::ImporterPreview => {
+                self.importer_loading = true;
                 self.preview_selected_importer_theme();
+                self.importer_loading = false;
             }
             Action::ImporterImport => {
+                self.importer_loading = true;
                 self.import_selected_themes();
+                self.importer_loading = false;
             }
             Action::ImporterRefresh => {
                 self.refresh_importer_cache();
             }
+            Action::ImporterToggleSearch => {
+                self.importer_search_focused = !self.importer_search_focused;
+            }
             Action::ImporterFilterChar(c) => {
-                self.importer_filter.push(c);
-                self.importer_index = 0;
+                if self.importer_search_focused {
+                    self.importer_filter.push(c);
+                    self.importer_index = 0;
+                }
             }
             Action::ImporterFilterBackspace => {
-                self.importer_filter.pop();
+                if self.importer_search_focused {
+                    self.importer_filter.pop();
+                    self.importer_index = 0;
+                }
+            }
+            Action::ImporterClearFilter => {
+                self.importer_filter.clear();
                 self.importer_index = 0;
+                self.importer_search_focused = false;
             }
             Action::None => {}
         }
@@ -869,6 +890,7 @@ impl App {
         self.importer_index = 0;
         self.importer_filter.clear();
         self.importer_selected.clear();
+        self.importer_search_focused = false;
         self.view = AppView::ThemeImporter;
     }
 

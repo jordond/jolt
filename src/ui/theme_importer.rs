@@ -18,11 +18,11 @@ fn centered_rect(area: Rect, percent_x: u16, percent_y: u16) -> Rect {
 }
 
 pub fn render(frame: &mut Frame, app: &App, theme: &ThemeColors) {
-    let area = centered_rect(frame.area(), 85, 85);
+    let area = centered_rect(frame.area(), 65, 80);
     frame.render_widget(Clear, area);
 
     let status = if app.importer_loading {
-        " Loading... "
+        " ⏳ Loading... "
     } else {
         " Import Themes "
     };
@@ -52,31 +52,45 @@ pub fn render(frame: &mut Frame, app: &App, theme: &ThemeColors) {
 }
 
 fn render_search_bar(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) {
+    let is_focused = app.importer_search_focused;
+
     let filter_display = if app.importer_filter.is_empty() {
-        "Type to filter...".to_string()
+        if is_focused {
+            "".to_string()
+        } else {
+            "Press / or s to search".to_string()
+        }
     } else {
         app.importer_filter.clone()
     };
 
-    let style = if app.importer_filter.is_empty() {
+    let style = if app.importer_filter.is_empty() && !is_focused {
         Style::default().fg(theme.muted)
     } else {
         Style::default().fg(theme.fg)
     };
 
+    let border_style = if is_focused {
+        Style::default().fg(theme.accent)
+    } else {
+        Style::default().fg(theme.border)
+    };
+
+    let title = if is_focused {
+        " Search (Enter/Esc to close) "
+    } else {
+        " Search "
+    };
+
     let search_block = Block::default()
-        .title(" Search ")
+        .title(title)
         .borders(Borders::ALL)
-        .border_style(Style::default().fg(theme.border));
+        .border_style(border_style);
 
     let search_inner = search_block.inner(area);
     frame.render_widget(search_block, area);
 
-    let cursor = if app.importer_filter.is_empty() {
-        ""
-    } else {
-        "█"
-    };
+    let cursor = if is_focused { "█" } else { "" };
     let search_text = Paragraph::new(format!("{}{}", filter_display, cursor)).style(style);
     frame.render_widget(search_text, search_inner);
 }
@@ -199,16 +213,16 @@ fn render_footer(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) 
             Style::default().fg(theme.muted),
         )]),
         Line::from(vec![
+            Span::styled("/", Style::default().fg(theme.accent)),
+            Span::styled(" search  ", Style::default().fg(theme.muted)),
             Span::styled("Space", Style::default().fg(theme.accent)),
             Span::styled(" select  ", Style::default().fg(theme.muted)),
-            Span::styled("Enter", Style::default().fg(theme.accent)),
+            Span::styled("p", Style::default().fg(theme.accent)),
             Span::styled(" preview  ", Style::default().fg(theme.muted)),
             Span::styled("i", Style::default().fg(theme.accent)),
             Span::styled(" import  ", Style::default().fg(theme.muted)),
             Span::styled("r", Style::default().fg(theme.accent)),
-            Span::styled(" refresh  ", Style::default().fg(theme.muted)),
-            Span::styled("Esc", Style::default().fg(theme.accent)),
-            Span::styled(" close", Style::default().fg(theme.muted)),
+            Span::styled(" refresh", Style::default().fg(theme.muted)),
         ]),
     ]);
 
