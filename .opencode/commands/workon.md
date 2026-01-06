@@ -1,5 +1,9 @@
-# /workon <issue-number | search-query>
+---
+description: Begin working on a plan issue by number or search query
+argument-hint: <issue-number | search-query>
+---
 
+<command-instruction>
 Begin working on a plan issue. Accepts an issue number or a search query to find the issue.
 
 ## Arguments
@@ -22,8 +26,7 @@ Begin working on a plan issue. Accepts an issue number or a search query to find
    - Show any existing progress update comments
 
 3. **Check for mode labels** - Inspect issue labels for special modes:
-   - If `ultrawork` label present: Include "ultrawork" keyword in prompt context
-   - If `analyze` label present: Include "analyze" keyword in prompt context
+   - Include the labels in the prompt
    - These keywords trigger specific agent behaviors (see label table below)
 
 4. **Set up working branch**
@@ -47,35 +50,26 @@ Begin working on a plan issue. Accepts an issue number or a search query to find
      - Current state (for continued work)
      - Next step to take
      - Key files to examine
-   - Apply mode based on labels:
-     - `ultrawork`: Maximum effort - spawn parallel agents, exhaustive verification
-     - `analyze`: Analysis first - gather context with explore/librarian agents before implementation
    - Start with codebase exploration based on the issue requirements
-
-## Example Usage
-
-```bash
-# By issue number
-/workon 42
-
-# By search query
-/workon battery forecast
-
-# By partial match
-/workon "graph design"
-```
-
-## Mode Labels
-
-| Label | Keyword | Behavior |
-|-------|---------|----------|
-| `ultrawork` | "ultrawork" | Maximum effort mode - parallel agents, exhaustive search, full verification |
-| `analyze` | "analyze" | Analysis mode - deep context gathering before any implementation |
-
-When an issue has these labels, the Workon Prompt MUST contain the keyword to trigger the mode.
 
 ## Notes
 
 - This command pairs with `/plan` which creates issues with workon-friendly prompts
 - Use `/update-plan` during work to track progress
 - Use `/close-plan` when complete to create a PR
+</command-instruction>
+
+<current-context>
+<open-issues>
+!`gh issue list --state open --json number,title,labels --jq '.[] | "- #\(.number) \(.title) [\(.labels | map(.name) | join(", "))]"' 2>/dev/null || echo "no issues"`
+</open-issues>
+<in-progress-issues>
+!`gh issue list --label "in-progress" --json number,title --jq '.[] | "- #\(.number) \(.title)"' 2>/dev/null || echo "none"`
+</in-progress-issues>
+<current-branch>
+!`git branch --show-current`
+</current-branch>
+<git-status>
+!`git status --porcelain`
+</git-status>
+</current-context>

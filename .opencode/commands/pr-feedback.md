@@ -1,10 +1,10 @@
-# /pr-feedback <pr-number>
+---
+description: Address PR review comments one by one with user confirmation
+argument-hint: <pr-number>
+---
 
+<command-instruction>
 Address PR review comments one by one with user confirmation.
-
-## Arguments
-
-- `<pr-number>` - The pull request number to process feedback for
 
 ## Procedure
 
@@ -129,14 +129,14 @@ Address PR review comments one by one with user confirmation.
 
      ```bash
      gh pr comment <pr-number> --body "$(cat <<'EOF'
-     ## PR Feedback Addressed ✅
+     ## PR Feedback Addressed
 
      The following review comments have been addressed in the latest push:
 
      | File | Issue | Status |
      |------|-------|--------|
-     | `<path>:<line>` | <brief description> | ✅ Fixed |
-     | `<path>:<line>` | <brief description> | ⏭️ Skipped |
+     | `<path>:<line>` | <brief description> | Fixed |
+     | `<path>:<line>` | <brief description> | Skipped |
 
      **Summary:**
      - **Fixed:** X comments
@@ -235,9 +235,9 @@ Identify and group related comments to offer batch fixes:
 
 **Resolving review comments...**
 
-- Comment #1 (src/input.rs:166) - ✅ Resolved
-- Comment #2 (src/main.rs:1197) - ✅ Resolved
-- Comment #3 (src/main.rs:1256) - ✅ Resolved
+- Comment #1 (src/input.rs:166) - Resolved
+- Comment #2 (src/main.rs:1197) - Resolved
+- Comment #3 (src/main.rs:1256) - Resolved
 
 **Posted summary comment to PR #42**
 
@@ -262,3 +262,16 @@ If a comment appears incorrect or already resolved:
 - After pushing, always resolve addressed comments and post a summary
 - If a comment cannot be resolved (not a review thread), delete it instead
 - The summary comment provides a clear audit trail of what was addressed
+</command-instruction>
+
+<current-context>
+<open-prs>
+!`gh pr list --state open --json number,title,reviewDecision --jq '.[] | "- #\(.number) \(.title) [\(.reviewDecision // "pending")]"' 2>/dev/null || echo "no open PRs"`
+</open-prs>
+<current-branch>
+!`git branch --show-current`
+</current-branch>
+<git-status>
+!`git status --porcelain`
+</git-status>
+</current-context>

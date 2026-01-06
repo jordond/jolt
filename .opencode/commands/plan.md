@@ -1,5 +1,9 @@
-# /plan <description>
+---
+description: Create a plan for a feature or task, producing a GitHub issue as source of truth
+argument-hint: <description>
+---
 
+<command-instruction>
 Create a plan for a feature or task. Produces a GitHub issue as the source of truth.
 
 ## Procedure
@@ -53,32 +57,19 @@ The scratchpad file MUST follow this format to work with `/workon`:
 > **Context:** <any important background needed to begin>
 ```
 
-## Labels & Mode Keywords
-
-When creating issues, add labels that control agent behavior. The "Workon Prompt" must include the corresponding keyword:
-
-| Label | Keyword in Prompt | Effect |
-|-------|-------------------|--------|
-| `ultrawork` | Include "ultrawork" | Maximum effort mode - parallel agents, exhaustive verification |
-| `analyze` | Include "analyze" | Analysis mode - gather context before implementation |
-
-**Example with ultrawork label:**
-```markdown
-## Workon Prompt
-
-> **Mode:** ultrawork
->
-> **Start here:** <specific first action to take>
->
-> **Key files:** `path/to/file1.rs`, `path/to/file2.rs`
->
-> **Context:** <any important background needed to begin>
-```
-
 ## Notes
 
 - The "Workon Prompt" section is essential - it tells `/workon` how to begin
-- Use `feature` label for new functionality, `enhancement` for improvements, `bug` for fixes
-- Add `ultrawork` label for complex tasks requiring maximum effort
-- Add `analyze` label for tasks requiring deep research before implementation
-- Keep implementation steps atomic and checkable
+</command-instruction>
+
+<current-context>
+<open-issues>
+!`gh issue list --state open --limit 10 --json number,title,labels --jq '.[] | "- #\(.number) \(.title) [\(.labels | map(.name) | join(", "))]"' 2>/dev/null || echo "no issues"`
+</open-issues>
+<scratchpad-plans>
+!`ls -1 ./scratchpad/plan-*.md 2>/dev/null || echo "no drafts"`
+</scratchpad-plans>
+<project-structure>
+!`ls -1 src/`
+</project-structure>
+</current-context>
