@@ -1,7 +1,10 @@
 mod battery;
 mod config_editor;
+mod daemon_info;
 mod graphs;
 mod help;
+mod history;
+mod history_config;
 mod power;
 mod processes;
 mod status_bar;
@@ -139,6 +142,9 @@ pub fn render(frame: &mut Frame, app: &mut App) {
         AppView::Config => config_editor::render(frame, app, &theme),
         AppView::ThemePicker => theme_picker::render(frame, app, &theme),
         AppView::ThemeImporter => theme_importer::render(frame, app, &theme),
+        AppView::History => history::render(frame, app, &theme),
+        AppView::DaemonInfo => daemon_info::render(frame, app, &theme),
+        AppView::HistoryConfig => history_config::render(frame, app, &theme),
         AppView::Main => {}
     }
 }

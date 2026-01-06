@@ -11,7 +11,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::config::data_dir;
 
-const CURRENT_SCHEMA_VERSION: i32 = 1;
+const CURRENT_SCHEMA_VERSION: i32 = 2;
 const DATABASE_NAME: &str = "history.db";
 
 /// Charging state for a sample
@@ -83,6 +83,8 @@ pub struct DailyTopProcess {
     pub avg_cpu: f32,
     pub avg_memory_mb: f32,
     pub sample_count: i32,
+    pub avg_power: f32,       // Average power consumption in watts
+    pub total_energy_wh: f32, // Total energy consumed in Wh
 }
 
 /// Battery health snapshot (stored daily)
@@ -260,6 +262,8 @@ impl HistoryStore {
                 avg_cpu REAL NOT NULL,
                 avg_memory_mb REAL NOT NULL,
                 sample_count INTEGER NOT NULL,
+                avg_power REAL NOT NULL DEFAULT 0.0,
+                total_energy_wh REAL NOT NULL DEFAULT 0.0,
                 UNIQUE(date, process_name)
             );
 
@@ -291,11 +295,17 @@ impl HistoryStore {
         Ok(())
     }
 
-    /// Run migrations from the given version to current
     fn run_migrations(&mut self, from_version: i32) -> Result<()> {
         let tx = self.conn.transaction()?;
 
-        let _ = from_version;
+        if from_version < 2 {
+            tx.execute_batch(
+                r#"
+                ALTER TABLE daily_top_processes ADD COLUMN avg_power REAL NOT NULL DEFAULT 0.0;
+                ALTER TABLE daily_top_processes ADD COLUMN total_energy_wh REAL NOT NULL DEFAULT 0.0;
+                "#,
+            )?;
+        }
 
         tx.execute(
             "UPDATE schema_version SET version = ?",
@@ -535,14 +545,17 @@ impl HistoryStore {
 
     pub fn upsert_daily_process(&self, process: &DailyTopProcess) -> Result<()> {
         self.conn.execute(
-            "INSERT INTO daily_top_processes (date, process_name, total_impact, avg_cpu, avg_memory_mb, sample_count)
-             VALUES (?, ?, ?, ?, ?, ?)
+            "INSERT INTO daily_top_processes (date, process_name, total_impact, avg_cpu, avg_memory_mb, sample_count, avg_power, total_energy_wh)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
              ON CONFLICT(date, process_name) DO UPDATE SET
                 total_impact = daily_top_processes.total_impact + excluded.total_impact,
                 avg_cpu = (daily_top_processes.avg_cpu * daily_top_processes.sample_count + excluded.avg_cpu * excluded.sample_count) 
                           / (daily_top_processes.sample_count + excluded.sample_count),
                 avg_memory_mb = (daily_top_processes.avg_memory_mb * daily_top_processes.sample_count + excluded.avg_memory_mb * excluded.sample_count)
                                / (daily_top_processes.sample_count + excluded.sample_count),
+                avg_power = (daily_top_processes.avg_power * daily_top_processes.sample_count + excluded.avg_power * excluded.sample_count)
+                           / (daily_top_processes.sample_count + excluded.sample_count),
+                total_energy_wh = daily_top_processes.total_energy_wh + excluded.total_energy_wh,
                 sample_count = daily_top_processes.sample_count + excluded.sample_count",
             params![
                 process.date,
@@ -551,22 +564,23 @@ impl HistoryStore {
                 process.avg_cpu,
                 process.avg_memory_mb,
                 process.sample_count,
+                process.avg_power,
+                process.total_energy_wh,
             ],
         )?;
         Ok(())
     }
 
-    /// Get top processes for a date, ordered by total impact
     pub fn get_daily_top_processes(
         &self,
         date: &str,
         limit: usize,
     ) -> Result<Vec<DailyTopProcess>> {
         let mut stmt = self.conn.prepare(
-            "SELECT id, date, process_name, total_impact, avg_cpu, avg_memory_mb, sample_count
+            "SELECT id, date, process_name, total_impact, avg_cpu, avg_memory_mb, sample_count, avg_power, total_energy_wh
              FROM daily_top_processes
              WHERE date = ?
-             ORDER BY total_impact DESC
+             ORDER BY total_energy_wh DESC
              LIMIT ?",
         )?;
 
@@ -580,6 +594,8 @@ impl HistoryStore {
                     avg_cpu: row.get(4)?,
                     avg_memory_mb: row.get(5)?,
                     sample_count: row.get(6)?,
+                    avg_power: row.get(7)?,
+                    total_energy_wh: row.get(8)?,
                 })
             })?
             .collect::<std::result::Result<Vec<_>, _>>()?;
@@ -587,7 +603,6 @@ impl HistoryStore {
         Ok(processes)
     }
 
-    /// Get top processes across a date range
     pub fn get_top_processes_range(
         &self,
         from: &str,
@@ -599,11 +614,13 @@ impl HistoryStore {
                     SUM(total_impact) as total_impact,
                     SUM(avg_cpu * sample_count) / SUM(sample_count) as avg_cpu,
                     SUM(avg_memory_mb * sample_count) / SUM(sample_count) as avg_memory_mb,
-                    SUM(sample_count) as sample_count
+                    SUM(sample_count) as sample_count,
+                    SUM(avg_power * sample_count) / SUM(sample_count) as avg_power,
+                    SUM(total_energy_wh) as total_energy_wh
              FROM daily_top_processes
              WHERE date >= ? AND date <= ?
              GROUP BY process_name
-             ORDER BY total_impact DESC
+             ORDER BY total_energy_wh DESC
              LIMIT ?",
         )?;
 
@@ -617,6 +634,8 @@ impl HistoryStore {
                     avg_cpu: row.get(4)?,
                     avg_memory_mb: row.get(5)?,
                     sample_count: row.get(6)?,
+                    avg_power: row.get(7)?,
+                    total_energy_wh: row.get(8)?,
                 })
             })?
             .collect::<std::result::Result<Vec<_>, _>>()?;

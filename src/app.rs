@@ -1,8 +1,10 @@
 use color_eyre::eyre::Result;
 
 use crate::config::{GraphMetric, RuntimeConfig, UserConfig};
+use crate::daemon::{DaemonClient, DaemonStatus};
 use crate::data::{
-    BatteryData, HistoryData, HistoryMetric, PowerData, ProcessData, ProcessInfo, SystemInfo,
+    BatteryData, DailyStat, DailyTopProcess, HistoryData, HistoryMetric, HourlyStat, PowerData,
+    ProcessData, ProcessInfo, SystemInfo,
 };
 use crate::theme::cache::ThemeGroup;
 use crate::theme::{get_all_themes, NamedTheme, ThemeColors};
@@ -69,12 +71,60 @@ pub enum Action {
     ImporterFilterChar(char),
     ImporterFilterBackspace,
     ImporterClearFilter,
+    ToggleHistory,
+    HistoryPrevPeriod,
+    HistoryNextPeriod,
+    ToggleDaemonInfo,
+    DaemonStart,
+    DaemonStop,
+    ToggleHistoryConfig,
+    HistoryConfigToggleValue,
+    HistoryConfigIncrement,
+    HistoryConfigDecrement,
     None,
 }
 
 const MIN_REFRESH_MS: u64 = 500;
 const MAX_REFRESH_MS: u64 = 10000;
 const REFRESH_STEP_MS: u64 = 500;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum HistoryPeriod {
+    #[default]
+    Today,
+    Week,
+    Month,
+    All,
+}
+
+impl HistoryPeriod {
+    pub fn next(self) -> Self {
+        match self {
+            HistoryPeriod::Today => HistoryPeriod::Week,
+            HistoryPeriod::Week => HistoryPeriod::Month,
+            HistoryPeriod::Month => HistoryPeriod::All,
+            HistoryPeriod::All => HistoryPeriod::Today,
+        }
+    }
+
+    pub fn prev(self) -> Self {
+        match self {
+            HistoryPeriod::Today => HistoryPeriod::All,
+            HistoryPeriod::Week => HistoryPeriod::Today,
+            HistoryPeriod::Month => HistoryPeriod::Week,
+            HistoryPeriod::All => HistoryPeriod::Month,
+        }
+    }
+
+    pub fn label(self) -> &'static str {
+        match self {
+            HistoryPeriod::Today => "Today",
+            HistoryPeriod::Week => "Week",
+            HistoryPeriod::Month => "Month",
+            HistoryPeriod::All => "All",
+        }
+    }
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum SortColumn {
@@ -107,6 +157,9 @@ pub enum AppView {
     Config,
     ThemePicker,
     ThemeImporter,
+    History,
+    DaemonInfo,
+    HistoryConfig,
 }
 
 pub struct App {
@@ -142,6 +195,14 @@ pub struct App {
     pub importer_loading: bool,
     pub importer_cache_age: Option<String>,
     pub importer_search_focused: bool,
+    pub history_period: HistoryPeriod,
+    pub history_daily_stats: Vec<DailyStat>,
+    pub history_hourly_stats: Vec<HourlyStat>,
+    pub history_top_processes: Vec<DailyTopProcess>,
+    pub history_loading: bool,
+    pub daemon_status: Option<DaemonStatus>,
+    pub daemon_connected: bool,
+    pub history_config_selected_item: usize,
 }
 
 impl App {
@@ -192,6 +253,14 @@ impl App {
             importer_loading: false,
             importer_cache_age: None,
             importer_search_focused: false,
+            history_period: HistoryPeriod::default(),
+            history_daily_stats: Vec::new(),
+            history_hourly_stats: Vec::new(),
+            history_top_processes: Vec::new(),
+            history_loading: false,
+            daemon_status: None,
+            daemon_connected: false,
+            history_config_selected_item: 0,
         })
     }
 
@@ -270,6 +339,10 @@ impl App {
                     if self.importer_index > 0 {
                         self.importer_index -= 1;
                     }
+                } else if self.view == AppView::HistoryConfig {
+                    if self.history_config_selected_item > 0 {
+                        self.history_config_selected_item -= 1;
+                    }
                 } else {
                     self.enter_selection_mode();
                     if self.selected_process_index > 0 {
@@ -292,6 +365,10 @@ impl App {
                     let filtered_count = self.get_filtered_importer_groups().len();
                     if filtered_count > 0 && self.importer_index < filtered_count - 1 {
                         self.importer_index += 1;
+                    }
+                } else if self.view == AppView::HistoryConfig {
+                    if self.history_config_selected_item < Self::HISTORY_CONFIG_ITEMS.len() - 1 {
+                        self.history_config_selected_item += 1;
                     }
                 } else {
                     self.enter_selection_mode();
@@ -531,6 +608,56 @@ impl App {
                 self.importer_filter.clear();
                 self.importer_index = 0;
                 self.importer_search_focused = false;
+            }
+            Action::ToggleHistory => {
+                self.view = match self.view {
+                    AppView::History => AppView::Main,
+                    _ => {
+                        self.load_history_data();
+                        AppView::History
+                    }
+                };
+            }
+            Action::HistoryNextPeriod => {
+                self.history_period = self.history_period.next();
+                self.load_history_data();
+            }
+            Action::HistoryPrevPeriod => {
+                self.history_period = self.history_period.prev();
+                self.load_history_data();
+            }
+            Action::ToggleDaemonInfo => {
+                self.view = match self.view {
+                    AppView::DaemonInfo => AppView::Main,
+                    _ => {
+                        self.refresh_daemon_status();
+                        AppView::DaemonInfo
+                    }
+                };
+            }
+            Action::DaemonStart => {
+                self.start_daemon();
+            }
+            Action::DaemonStop => {
+                self.stop_daemon();
+            }
+            Action::ToggleHistoryConfig => {
+                self.view = match self.view {
+                    AppView::HistoryConfig => AppView::Main,
+                    _ => {
+                        self.history_config_selected_item = 0;
+                        AppView::HistoryConfig
+                    }
+                };
+            }
+            Action::HistoryConfigToggleValue => {
+                self.toggle_history_config_value();
+            }
+            Action::HistoryConfigIncrement => {
+                self.increment_history_config_value();
+            }
+            Action::HistoryConfigDecrement => {
+                self.decrement_history_config_value();
             }
             Action::None => {}
         }
@@ -817,6 +944,88 @@ impl App {
         false
     }
 
+    pub const HISTORY_CONFIG_ITEMS: &'static [&'static str] = &[
+        "Recording Enabled",
+        "Sample Interval (s)",
+        "Raw Retention (days)",
+        "Hourly Retention (days)",
+        "Daily Retention (days)",
+        "Max Database (MB)",
+    ];
+
+    pub fn history_config_item_value(&self, index: usize) -> String {
+        let history = &self.config.user_config.history;
+        match index {
+            0 => if history.enabled { "On" } else { "Off" }.to_string(),
+            1 => history.sample_interval_secs.to_string(),
+            2 => history.retention_raw_days.to_string(),
+            3 => history.retention_hourly_days.to_string(),
+            4 => {
+                if history.retention_daily_days == 0 {
+                    "Forever".to_string()
+                } else {
+                    history.retention_daily_days.to_string()
+                }
+            }
+            5 => history.max_database_mb.to_string(),
+            _ => String::new(),
+        }
+    }
+
+    fn toggle_history_config_value(&mut self) {
+        if self.history_config_selected_item == 0 {
+            self.config.user_config.history.enabled = !self.config.user_config.history.enabled;
+            let _ = self.config.user_config.save();
+        }
+    }
+
+    fn increment_history_config_value(&mut self) {
+        let history = &mut self.config.user_config.history;
+        match self.history_config_selected_item {
+            1 => {
+                history.sample_interval_secs = (history.sample_interval_secs + 10).min(600);
+            }
+            2 => {
+                history.retention_raw_days = (history.retention_raw_days + 5).min(365);
+            }
+            3 => {
+                history.retention_hourly_days = (history.retention_hourly_days + 30).min(730);
+            }
+            4 => {
+                history.retention_daily_days = (history.retention_daily_days + 30).min(3650);
+            }
+            5 => {
+                history.max_database_mb = (history.max_database_mb + 100).min(10000);
+            }
+            _ => return,
+        }
+        let _ = self.config.user_config.save();
+    }
+
+    fn decrement_history_config_value(&mut self) {
+        let history = &mut self.config.user_config.history;
+        match self.history_config_selected_item {
+            1 => {
+                history.sample_interval_secs =
+                    history.sample_interval_secs.saturating_sub(10).max(10);
+            }
+            2 => {
+                history.retention_raw_days = history.retention_raw_days.saturating_sub(5).max(1);
+            }
+            3 => {
+                history.retention_hourly_days = history.retention_hourly_days.saturating_sub(30);
+            }
+            4 => {
+                history.retention_daily_days = history.retention_daily_days.saturating_sub(30);
+            }
+            5 => {
+                history.max_database_mb = history.max_database_mb.saturating_sub(100).max(50);
+            }
+            _ => return,
+        }
+        let _ = self.config.user_config.save();
+    }
+
     fn set_theme_preview(&mut self) {
         if let Some(theme) = self.theme_picker_themes.get(self.theme_picker_index) {
             self.preview_theme_id = Some(theme.id.clone());
@@ -982,5 +1191,106 @@ impl App {
         self.theme_picker_themes = get_all_themes();
         self.importer_selected.clear();
         self.view = AppView::ThemePicker;
+    }
+
+    fn load_history_data(&mut self) {
+        self.history_loading = true;
+
+        if let Ok(mut client) = DaemonClient::connect() {
+            self.daemon_connected = true;
+
+            let (from_date, to_date) = self.get_period_dates();
+
+            if let Ok(daily) = client.get_daily_stats(&from_date, &to_date) {
+                self.history_daily_stats = daily;
+            }
+
+            if let Ok(top) = client.get_top_processes_range(&from_date, &to_date, 10) {
+                self.history_top_processes = top;
+            }
+
+            if self.history_period == HistoryPeriod::Today {
+                let now = chrono::Utc::now();
+                let start_of_day = now
+                    .date_naive()
+                    .and_hms_opt(0, 0, 0)
+                    .unwrap()
+                    .and_utc()
+                    .timestamp();
+                let end_ts = now.timestamp();
+                if let Ok(hourly) = client.get_hourly_stats(start_of_day, end_ts) {
+                    self.history_hourly_stats = hourly;
+                }
+            }
+        } else {
+            self.daemon_connected = false;
+            self.history_daily_stats.clear();
+            self.history_hourly_stats.clear();
+            self.history_top_processes.clear();
+        }
+
+        self.history_loading = false;
+    }
+
+    fn get_period_dates(&self) -> (String, String) {
+        use chrono::{Duration, Utc};
+
+        let today = Utc::now().format("%Y-%m-%d").to_string();
+        let from = match self.history_period {
+            HistoryPeriod::Today => today.clone(),
+            HistoryPeriod::Week => (Utc::now() - Duration::days(7))
+                .format("%Y-%m-%d")
+                .to_string(),
+            HistoryPeriod::Month => (Utc::now() - Duration::days(30))
+                .format("%Y-%m-%d")
+                .to_string(),
+            HistoryPeriod::All => "1970-01-01".to_string(),
+        };
+        (from, today)
+    }
+
+    fn refresh_daemon_status(&mut self) {
+        if let Ok(mut client) = DaemonClient::connect() {
+            self.daemon_connected = true;
+            if let Ok(status) = client.get_status() {
+                self.daemon_status = Some(status);
+            }
+        } else {
+            self.daemon_connected = false;
+            self.daemon_status = None;
+        }
+    }
+
+    fn start_daemon(&mut self) {
+        if crate::daemon::is_daemon_running() {
+            return;
+        }
+
+        // Spawn a separate process to start the daemon
+        // We can't call run_daemon directly because daemonize causes the parent to exit
+        if let Ok(exe) = std::env::current_exe() {
+            let _ = std::process::Command::new(exe)
+                .args(["daemon", "start"])
+                .stdout(std::process::Stdio::null())
+                .stderr(std::process::Stdio::null())
+                .spawn();
+
+            std::thread::sleep(std::time::Duration::from_millis(500));
+        }
+        self.refresh_daemon_status();
+    }
+
+    fn stop_daemon(&mut self) {
+        if let Ok(mut client) = DaemonClient::connect() {
+            let _ = client.shutdown();
+            std::thread::sleep(std::time::Duration::from_millis(200));
+        }
+        self.daemon_connected = false;
+        self.daemon_status = None;
+    }
+
+    #[allow(dead_code)]
+    pub fn is_daemon_running(&self) -> bool {
+        crate::daemon::is_daemon_running()
     }
 }

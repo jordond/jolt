@@ -78,7 +78,11 @@ impl Recorder {
         Ok(())
     }
 
-    pub fn record_processes(&mut self, processes: &ProcessData) -> Result<(), HistoryStoreError> {
+    pub fn record_processes(
+        &mut self,
+        processes: &ProcessData,
+        system_cpu_power: f32,
+    ) -> Result<(), HistoryStoreError> {
         let today = Utc::now().format("%Y-%m-%d").to_string();
 
         let top_processes: Vec<_> = processes
@@ -88,7 +92,17 @@ impl Recorder {
             .take(10)
             .collect();
 
+        let total_cpu: f32 = top_processes.iter().map(|p| p.cpu_usage).sum();
+        let sample_hours = self.config.sample_interval_secs as f32 / 3600.0;
+
         for process in top_processes {
+            let process_power = if total_cpu > 0.0 {
+                (process.cpu_usage / total_cpu) * system_cpu_power
+            } else {
+                0.0
+            };
+            let sample_energy_wh = process_power * sample_hours;
+
             let entry = DailyTopProcess {
                 id: None,
                 date: today.clone(),
@@ -97,6 +111,8 @@ impl Recorder {
                 avg_cpu: process.cpu_usage,
                 avg_memory_mb: process.memory_mb as f32,
                 sample_count: 1,
+                avg_power: process_power,
+                total_energy_wh: sample_energy_wh,
             };
             self.store.upsert_daily_process(&entry)?;
         }
@@ -137,7 +153,7 @@ impl Recorder {
     ) -> Result<(), HistoryStoreError> {
         if self.should_record() {
             self.record_sample(battery, power)?;
-            self.record_processes(processes)?;
+            self.record_processes(processes, power.cpu_power_watts())?;
             self.record_battery_health(battery)?;
         }
         Ok(())

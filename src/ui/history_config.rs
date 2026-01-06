@@ -7,7 +7,7 @@ use ratatui::{
 };
 
 use crate::app::App;
-use crate::config::config_path;
+use crate::input::keys;
 use crate::theme::ThemeColors;
 
 fn centered_fixed_rect(area: Rect, width: u16, height: u16) -> Rect {
@@ -19,15 +19,14 @@ fn centered_fixed_rect(area: Rect, width: u16, height: u16) -> Rect {
 }
 
 pub fn render(frame: &mut Frame, app: &App, theme: &ThemeColors) {
-    // Height: borders(2) + margin(2) + header(2) + items + footer(3)
-    let content_height = App::CONFIG_ITEMS.len() as u16 + 9;
-    let content_width = 60;
+    let content_height = App::HISTORY_CONFIG_ITEMS.len() as u16 + 8;
+    let content_width = 50;
     let area = centered_fixed_rect(frame.area(), content_width, content_height);
 
     frame.render_widget(Clear, area);
 
     let block = Block::default()
-        .title(" Configuration ")
+        .title(" History Config ")
         .borders(Borders::ALL)
         .border_style(Style::default().fg(theme.accent))
         .style(Style::default().bg(theme.dialog_bg));
@@ -40,25 +39,24 @@ pub fn render(frame: &mut Frame, app: &App, theme: &ThemeColors) {
         .constraints([
             Constraint::Length(2),
             Constraint::Min(1),
-            Constraint::Length(3),
+            Constraint::Length(2),
         ])
         .margin(1)
         .split(inner);
 
-    let path_str = config_path().to_string_lossy().to_string();
     let header = Paragraph::new(vec![Line::from(vec![Span::styled(
-        "Use ↑↓ to select, ←→ or Enter to change",
+        "Use \u{2191}\u{2193} to select, \u{2190}\u{2192} or Enter to change",
         Style::default().fg(theme.muted),
     )])])
     .centered();
     frame.render_widget(header, chunks[0]);
 
-    let items: Vec<Line> = App::CONFIG_ITEMS
+    let items: Vec<Line> = App::HISTORY_CONFIG_ITEMS
         .iter()
         .enumerate()
         .map(|(i, &name)| {
-            let value = app.config_item_value(i);
-            let is_selected = i == app.config_selected_item;
+            let value = app.history_config_item_value(i);
+            let is_selected = i == app.history_config_selected_item;
 
             let style = if is_selected {
                 Style::default()
@@ -76,8 +74,8 @@ pub fn render(frame: &mut Frame, app: &App, theme: &ThemeColors) {
             };
 
             Line::from(vec![
-                Span::styled(format!("  {:<20}", name), style),
-                Span::styled(format!("{:>12}", value), value_style),
+                Span::styled(format!("  {:<24}", name), style),
+                Span::styled(format!("{:>10}", value), value_style),
                 Span::styled("  ", style),
             ])
         })
@@ -86,22 +84,13 @@ pub fn render(frame: &mut Frame, app: &App, theme: &ThemeColors) {
     let list = Paragraph::new(items);
     frame.render_widget(list, chunks[1]);
 
-    let footer = Paragraph::new(vec![
-        Line::from(vec![
-            Span::styled("[r]", Style::default().fg(theme.warning)),
-            Span::styled(" Revert  ", Style::default().fg(theme.muted)),
-            Span::styled("[D]", Style::default().fg(theme.danger)),
-            Span::styled(" Defaults  ", Style::default().fg(theme.muted)),
-            Span::styled("[H]", Style::default().fg(theme.accent)),
-            Span::styled(" History  ", Style::default().fg(theme.muted)),
-            Span::styled("[Esc]", Style::default().fg(theme.accent)),
-            Span::styled(" Close", Style::default().fg(theme.muted)),
-        ]),
-        Line::from(vec![Span::styled(
-            path_str,
-            Style::default().fg(theme.muted),
-        )]),
-    ])
+    let footer = Paragraph::new(vec![Line::from(vec![
+        Span::styled(
+            format!("[{}]", keys::ESC),
+            Style::default().fg(theme.accent),
+        ),
+        Span::styled(" Close", Style::default().fg(theme.muted)),
+    ])])
     .centered();
     frame.render_widget(footer, chunks[2]);
 }
