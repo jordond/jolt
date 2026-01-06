@@ -11,6 +11,7 @@ use chrono::Utc;
 use crate::config::{runtime_dir, HistoryConfig, UserConfig};
 use crate::daemon::protocol::{CurrentData, DaemonRequest, DaemonResponse, DaemonStatus};
 use crate::daemon::{log_path, socket_path};
+use crate::data::aggregator::Aggregator;
 use crate::data::{BatteryData, PowerData, ProcessData, Recorder};
 
 #[derive(Debug, thiserror::Error)]
@@ -37,6 +38,8 @@ struct DaemonState {
     recorder: Recorder,
     start_time: Instant,
     config: HistoryConfig,
+    last_aggregation: Instant,
+    last_prune: Instant,
 }
 
 impl DaemonState {
@@ -47,6 +50,7 @@ impl DaemonState {
             .map(|s| s.to_string())
             .collect();
 
+        let now = Instant::now();
         Ok(Self {
             battery: BatteryData::new()
                 .map_err(|e| DaemonError::Io(std::io::Error::other(e.to_string())))?,
@@ -55,8 +59,10 @@ impl DaemonState {
             processes: ProcessData::with_exclusions(excluded.clone())
                 .map_err(|e| DaemonError::Io(std::io::Error::other(e.to_string())))?,
             recorder: Recorder::new(user_config.history.clone(), excluded)?,
-            start_time: Instant::now(),
+            start_time: now,
             config: user_config.history.clone(),
+            last_aggregation: now,
+            last_prune: now,
         })
     }
 
@@ -69,6 +75,60 @@ impl DaemonState {
             .record_all(&self.battery, &self.power, &self.processes)?;
 
         Ok(())
+    }
+
+    fn run_aggregation(&mut self) {
+        let aggregator = Aggregator::new(self.recorder.store(), &self.config);
+
+        match aggregator.aggregate_completed_hours() {
+            Ok(count) if count > 0 => {
+                log_message(&format!("Aggregated {} hourly stats", count));
+            }
+            Err(e) => {
+                log_message(&format!("Error aggregating hourly stats: {}", e));
+            }
+            _ => {}
+        }
+
+        match aggregator.aggregate_completed_days() {
+            Ok(count) if count > 0 => {
+                log_message(&format!("Aggregated {} daily stats", count));
+            }
+            Err(e) => {
+                log_message(&format!("Error aggregating daily stats: {}", e));
+            }
+            _ => {}
+        }
+
+        self.last_aggregation = Instant::now();
+    }
+
+    fn run_prune(&mut self) {
+        let aggregator = Aggregator::new(self.recorder.store(), &self.config);
+
+        match aggregator.prune_old_data() {
+            Ok(result) => {
+                let total = result.samples_deleted
+                    + result.hourly_deleted
+                    + result.daily_deleted
+                    + result.processes_deleted;
+                if total > 0 {
+                    log_message(&format!(
+                        "Pruned {} records ({} samples, {} hourly, {} daily, {} processes)",
+                        total,
+                        result.samples_deleted,
+                        result.hourly_deleted,
+                        result.daily_deleted,
+                        result.processes_deleted
+                    ));
+                }
+            }
+            Err(e) => {
+                log_message(&format!("Error pruning data: {}", e));
+            }
+        }
+
+        self.last_prune = Instant::now();
     }
 
     fn get_status(&self) -> DaemonStatus {
@@ -221,7 +281,11 @@ pub fn run_daemon(foreground: bool) -> Result<()> {
     log_message(&format!("Listening on {:?}", socket));
 
     let sample_interval = Duration::from_secs(state.config.sample_interval_secs);
+    let aggregation_interval = Duration::from_secs(3600);
+    let prune_interval = Duration::from_secs(86400);
     let mut last_sample = Instant::now();
+
+    state.run_aggregation();
 
     while !shutdown.load(Ordering::SeqCst) {
         if last_sample.elapsed() >= sample_interval {
@@ -229,6 +293,14 @@ pub fn run_daemon(foreground: bool) -> Result<()> {
                 log_message(&format!("Error refreshing data: {}", e));
             }
             last_sample = Instant::now();
+        }
+
+        if state.last_aggregation.elapsed() >= aggregation_interval {
+            state.run_aggregation();
+        }
+
+        if state.last_prune.elapsed() >= prune_interval {
+            state.run_prune();
         }
 
         match listener.accept() {

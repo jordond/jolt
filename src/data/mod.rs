@@ -1,3 +1,4 @@
+pub mod aggregator;
 pub mod battery;
 pub mod history;
 pub mod history_store;
