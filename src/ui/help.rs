@@ -7,8 +7,8 @@ use ratatui::{
 };
 
 use crate::app::App;
-use crate::config::Theme;
 use crate::input::KEY_BINDINGS;
+use crate::theme::ThemeColors;
 use crate::ui::VERSION;
 
 fn centered_fixed_rect(area: Rect, width: u16, height: u16) -> Rect {
@@ -19,7 +19,7 @@ fn centered_fixed_rect(area: Rect, width: u16, height: u16) -> Rect {
     Rect::new(x, y, width, height)
 }
 
-pub fn render_help(frame: &mut Frame, app: &App, theme: &Theme) {
+pub fn render_help(frame: &mut Frame, app: &App, theme: &ThemeColors) {
     let content_height = KEY_BINDINGS.len() as u16 + 8;
     let content_width = 55;
     let area = centered_fixed_rect(frame.area(), content_width, content_height);
@@ -49,7 +49,11 @@ pub fn render_help(frame: &mut Frame, app: &App, theme: &Theme) {
                 .add_modifier(Modifier::BOLD),
         )]),
         Line::from(vec![Span::styled(
-            format!("Theme: {}", app.config.theme_mode_label()),
+            format!(
+                "Theme: {} ({})",
+                app.config.theme_name(),
+                app.config.appearance_label()
+            ),
             Style::default().fg(theme.muted),
         )]),
     ])
@@ -77,7 +81,7 @@ pub fn render_help(frame: &mut Frame, app: &App, theme: &Theme) {
     frame.render_widget(help_text, chunks[1]);
 }
 
-pub fn render_kill_confirm(frame: &mut Frame, app: &App, theme: &Theme) {
+pub fn render_kill_confirm(frame: &mut Frame, app: &App, theme: &ThemeColors) {
     let area = centered_fixed_rect(frame.area(), 50, 14);
 
     frame.render_widget(Clear, area);
@@ -157,7 +161,7 @@ pub fn render_kill_confirm(frame: &mut Frame, app: &App, theme: &Theme) {
     frame.render_widget(paragraph, padded);
 }
 
-pub fn render_about(frame: &mut Frame, _app: &App, theme: &Theme) {
+pub fn render_about(frame: &mut Frame, _app: &App, theme: &ThemeColors) {
     let area = centered_fixed_rect(frame.area(), 60, 16);
 
     frame.render_widget(Clear, area);
@@ -215,7 +219,7 @@ pub fn render_about(frame: &mut Frame, _app: &App, theme: &Theme) {
         ]),
         Line::from(""),
         Line::from(vec![Span::styled(
-            "Press 'a' or Esc to close",
+            "Press 'A' or Esc to close",
             Style::default().fg(theme.muted),
         )]),
     ];

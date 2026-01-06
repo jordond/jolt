@@ -8,10 +8,10 @@ use ratatui::{
 };
 
 use crate::app::App;
-use crate::config::Theme;
 use crate::data::battery::ChargeState;
+use crate::theme::ThemeColors;
 
-pub fn render(frame: &mut Frame, area: Rect, app: &App, theme: &Theme) {
+pub fn render(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) {
     let block = Block::default()
         .title(" Battery ")
         .borders(Borders::ALL)
@@ -30,7 +30,7 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App, theme: &Theme) {
     render_battery_info(frame, chunks[1], app, theme);
 }
 
-fn render_battery_gauge(frame: &mut Frame, area: Rect, app: &App, theme: &Theme) {
+fn render_battery_gauge(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) {
     let percent = app.battery.charge_percent();
     let ratio = (percent / 100.0).clamp(0.0, 1.0);
 
@@ -149,19 +149,19 @@ impl Widget for ThickGauge {
     }
 }
 
-fn render_battery_info(frame: &mut Frame, area: Rect, app: &App, theme: &Theme) {
+fn render_battery_info(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) {
     let chunks = Layout::default()
         .direction(Direction::Horizontal)
         .constraints([
-            Constraint::Percentage(33),
-            Constraint::Percentage(34),
-            Constraint::Percentage(33),
+            Constraint::Percentage(35),
+            Constraint::Percentage(30),
+            Constraint::Percentage(35),
         ])
         .split(area);
 
     let state_icon = match app.battery.state() {
         ChargeState::Charging => "⚡",
-        ChargeState::Discharging => "🔋",
+        ChargeState::Discharging => "↓",
         ChargeState::Full => "✓",
         ChargeState::NotCharging => "⏸",
         ChargeState::Unknown => "?",
@@ -173,48 +173,51 @@ fn render_battery_info(frame: &mut Frame, area: Rect, app: &App, theme: &Theme) 
                 .battery
                 .charger_watts()
                 .map_or(String::new(), |w| format!("/{}W", w));
-            format!(" ({:.1}W{})", watts, charger)
+            format!(" +{:.1}W{}", watts, charger)
         } else {
             String::new()
         }
     } else if let Some(watts) = app.battery.discharge_watts() {
-        format!(" ({:.1}W)", watts)
+        format!(" -{:.1}W", watts)
     } else {
         String::new()
     };
 
     let state_text = format!("{} {}{}", state_icon, app.battery.state_label(), power_info);
-    let time_text = app
-        .battery
-        .time_remaining_formatted()
-        .map(|t| {
-            if app.battery.is_charging() {
-                format!("Full in {}", t)
-            } else {
-                format!("{} remaining", t)
-            }
-        })
-        .unwrap_or_else(|| {
-            if app.battery.is_charging() {
-                "Calculating...".to_string()
-            } else {
-                "".to_string()
-            }
-        });
+
+    let time_text = match app.battery.state() {
+        ChargeState::Charging => app
+            .battery
+            .time_remaining_formatted()
+            .map(|t| format!("Full in {}", t))
+            .unwrap_or_else(|| "Calculating...".to_string()),
+        ChargeState::Discharging => app
+            .battery
+            .time_remaining_formatted()
+            .map(|t| format!("{} remaining", t))
+            .unwrap_or_else(|| "Calculating...".to_string()),
+        ChargeState::Full => "Fully charged".to_string(),
+        ChargeState::NotCharging => "Plugged in".to_string(),
+        ChargeState::Unknown => String::new(),
+    };
 
     let health_text = format!(
-        "{:.1}Wh  Health: {:.0}%  Cycles: {}",
+        "{:.1}Wh │ {:.0}% health │ {} cycles",
         app.battery.max_capacity_wh(),
         app.battery.health_percent(),
         app.battery
             .cycle_count()
-            .map_or("N/A".to_string(), |c| c.to_string())
+            .map_or("?".to_string(), |c| c.to_string())
     );
 
-    let left = Paragraph::new(Line::from(vec![Span::styled(
-        state_text,
-        Style::default().fg(theme.accent),
-    )]));
+    let state_style = match app.battery.state() {
+        ChargeState::Charging => Style::default().fg(theme.success),
+        ChargeState::Discharging => Style::default().fg(theme.warning),
+        ChargeState::Full => Style::default().fg(theme.success),
+        _ => Style::default().fg(theme.accent),
+    };
+
+    let left = Paragraph::new(Line::from(vec![Span::styled(state_text, state_style)]));
 
     let center = Paragraph::new(Line::from(vec![Span::styled(
         time_text,

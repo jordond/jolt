@@ -1,4 +1,4 @@
-use ratatui::style::Color;
+use crate::theme::{get_theme_by_id, NamedTheme, ThemeColors};
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::PathBuf;
@@ -6,101 +6,49 @@ use std::process::Command;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "lowercase")]
-pub enum ThemeMode {
+pub enum AppearanceMode {
     #[default]
     Auto,
     Dark,
     Light,
 }
 
-impl ThemeMode {
+impl AppearanceMode {
     pub fn from_str(s: &str) -> Self {
         match s.to_lowercase().as_str() {
-            "dark" => ThemeMode::Dark,
-            "light" => ThemeMode::Light,
-            _ => ThemeMode::Auto,
+            "dark" => AppearanceMode::Dark,
+            "light" => AppearanceMode::Light,
+            _ => AppearanceMode::Auto,
         }
     }
 
     pub fn label(&self) -> &'static str {
         match self {
-            ThemeMode::Auto => "Auto",
-            ThemeMode::Dark => "Dark",
-            ThemeMode::Light => "Light",
+            AppearanceMode::Auto => "Auto",
+            AppearanceMode::Dark => "Dark",
+            AppearanceMode::Light => "Light",
         }
     }
 
     pub fn next(&self) -> Self {
         match self {
-            ThemeMode::Auto => ThemeMode::Dark,
-            ThemeMode::Dark => ThemeMode::Light,
-            ThemeMode::Light => ThemeMode::Auto,
+            AppearanceMode::Auto => AppearanceMode::Dark,
+            AppearanceMode::Dark => AppearanceMode::Light,
+            AppearanceMode::Light => AppearanceMode::Auto,
         }
     }
 }
 
-#[derive(Debug, Clone, Copy)]
-pub struct Theme {
-    pub bg: Color,
-    pub dialog_bg: Color,
-    pub fg: Color,
-    pub accent: Color,
-    pub accent_secondary: Color,
-    pub highlight: Color,
-    pub muted: Color,
-    pub success: Color,
-    pub warning: Color,
-    pub danger: Color,
-    pub border: Color,
-    pub selection_bg: Color,
-    pub selection_fg: Color,
-    pub graph_line: Color,
-}
-
-impl Theme {
-    pub fn dark() -> Self {
-        Self {
-            bg: Color::Rgb(22, 22, 30),
-            dialog_bg: Color::Rgb(35, 35, 45),
-            fg: Color::Rgb(230, 230, 240),
-            accent: Color::Rgb(138, 180, 248),
-            accent_secondary: Color::Rgb(187, 134, 252),
-            highlight: Color::Rgb(255, 203, 107),
-            muted: Color::Rgb(128, 128, 140),
-            success: Color::Rgb(129, 199, 132),
-            warning: Color::Rgb(255, 183, 77),
-            danger: Color::Rgb(239, 83, 80),
-            border: Color::Rgb(60, 60, 80),
-            selection_bg: Color::Rgb(50, 50, 70),
-            selection_fg: Color::Rgb(255, 255, 255),
-            graph_line: Color::Rgb(138, 180, 248),
-        }
-    }
-
-    pub fn light() -> Self {
-        Self {
-            bg: Color::Rgb(250, 250, 252),
-            dialog_bg: Color::Rgb(255, 255, 255),
-            fg: Color::Rgb(30, 30, 40),
-            accent: Color::Rgb(25, 118, 210),
-            accent_secondary: Color::Rgb(123, 31, 162),
-            highlight: Color::Rgb(255, 160, 0),
-            muted: Color::Rgb(140, 140, 150),
-            success: Color::Rgb(46, 125, 50),
-            warning: Color::Rgb(239, 108, 0),
-            danger: Color::Rgb(211, 47, 47),
-            border: Color::Rgb(200, 200, 210),
-            selection_bg: Color::Rgb(220, 230, 245),
-            selection_fg: Color::Rgb(0, 0, 0),
-            graph_line: Color::Rgb(25, 118, 210),
-        }
-    }
+fn default_theme_name() -> String {
+    "default".to_string()
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]
 pub struct UserConfig {
-    pub theme: ThemeMode,
+    pub appearance: AppearanceMode,
+    #[serde(default = "default_theme_name")]
+    pub theme: String,
     pub refresh_ms: u64,
     pub low_power_mode: bool,
     pub show_graph: bool,
@@ -115,7 +63,8 @@ pub struct UserConfig {
 impl Default for UserConfig {
     fn default() -> Self {
         Self {
-            theme: ThemeMode::Auto,
+            appearance: AppearanceMode::Auto,
+            theme: "default".to_string(),
             refresh_ms: 2000,
             low_power_mode: false,
             show_graph: true,
@@ -152,6 +101,10 @@ pub fn config_path() -> PathBuf {
     config_dir().join("config.toml")
 }
 
+pub fn themes_dir() -> PathBuf {
+    config_dir().join("themes")
+}
+
 pub fn ensure_dirs() -> std::io::Result<()> {
     fs::create_dir_all(config_dir())?;
     fs::create_dir_all(cache_dir())?;
@@ -181,12 +134,12 @@ impl UserConfig {
 
     pub fn merge_with_args(
         &mut self,
-        theme: Option<&str>,
+        appearance: Option<&str>,
         refresh_ms: Option<u64>,
         low_power: bool,
     ) -> bool {
-        if let Some(t) = theme {
-            self.theme = ThemeMode::from_str(t);
+        if let Some(a) = appearance {
+            self.appearance = AppearanceMode::from_str(a);
         }
         let refresh_from_cli = refresh_ms.is_some();
         if let Some(ms) = refresh_ms {
@@ -207,41 +160,64 @@ impl UserConfig {
 
 pub struct RuntimeConfig {
     pub user_config: UserConfig,
-    system_is_dark: bool,
+    pub system_is_dark: bool,
     pub refresh_from_cli: bool,
+    current_theme: NamedTheme,
 }
 
 impl RuntimeConfig {
     pub fn new(user_config: UserConfig, refresh_from_cli: bool) -> Self {
         let system_is_dark = detect_system_dark_mode();
+        let current_theme = get_theme_by_id(&user_config.theme)
+            .unwrap_or_else(|| get_theme_by_id("default").expect("Default theme must exist"));
+
         Self {
             user_config,
             system_is_dark,
             refresh_from_cli,
+            current_theme,
         }
     }
 
-    pub fn theme(&self) -> Theme {
-        let is_dark = match self.user_config.theme {
-            ThemeMode::Auto => self.system_is_dark,
-            ThemeMode::Dark => true,
-            ThemeMode::Light => false,
-        };
-
-        if is_dark {
-            Theme::dark()
-        } else {
-            Theme::light()
+    pub fn is_dark_mode(&self) -> bool {
+        match self.user_config.appearance {
+            AppearanceMode::Auto => self.system_is_dark,
+            AppearanceMode::Dark => true,
+            AppearanceMode::Light => false,
         }
     }
 
-    pub fn cycle_theme(&mut self) {
-        self.user_config.theme = self.user_config.theme.next();
+    pub fn theme(&self) -> ThemeColors {
+        self.current_theme.get_colors(self.is_dark_mode())
+    }
+
+    pub fn theme_with_mode(&self, is_dark: bool) -> ThemeColors {
+        self.current_theme.get_colors(is_dark)
+    }
+
+    pub fn set_theme(&mut self, theme_id: &str) {
+        if let Some(theme) = get_theme_by_id(theme_id) {
+            self.current_theme = theme;
+            self.user_config.theme = theme_id.to_string();
+            let _ = self.user_config.save();
+        }
+    }
+
+    pub fn cycle_appearance(&mut self) {
+        self.user_config.appearance = self.user_config.appearance.next();
         let _ = self.user_config.save();
     }
 
-    pub fn theme_mode_label(&self) -> &'static str {
-        self.user_config.theme.label()
+    pub fn appearance_label(&self) -> &'static str {
+        self.user_config.appearance.label()
+    }
+
+    pub fn theme_name(&self) -> &str {
+        &self.current_theme.name
+    }
+
+    pub fn theme_id(&self) -> &str {
+        &self.current_theme.id
     }
 }
 

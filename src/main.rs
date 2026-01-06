@@ -2,6 +2,7 @@ mod app;
 mod config;
 mod data;
 mod input;
+mod theme;
 mod ui;
 
 use std::io;
@@ -20,6 +21,86 @@ use ratatui::prelude::*;
 use config::{config_path, ensure_dirs, UserConfig};
 
 #[derive(Debug, Subcommand)]
+enum ThemeCommands {
+    /// Check themes for WCAG contrast issues (default)
+    #[command(alias = "c")]
+    Check {
+        /// Also check builtin themes
+        #[arg(short = 'A', long)]
+        all: bool,
+
+        /// Show passing checks too
+        #[arg(short, long)]
+        verbose: bool,
+    },
+
+    /// Open user themes folder
+    #[command(alias = "o")]
+    Open,
+
+    /// Create a new theme
+    #[command(alias = "new")]
+    Create {
+        /// Theme name
+        name: String,
+
+        /// Create from template (blank, copy)
+        #[arg(short, long, default_value = "blank")]
+        template: String,
+
+        /// Base theme to copy from (when template=copy)
+        #[arg(short, long)]
+        base: Option<String>,
+    },
+
+    /// List available themes
+    #[command(alias = "ls")]
+    List {
+        /// Show only builtin themes
+        #[arg(long)]
+        builtin: bool,
+
+        /// Show only user themes
+        #[arg(long)]
+        user: bool,
+
+        /// List available iTerm2 color schemes (300+ themes)
+        #[arg(long)]
+        iterm2: bool,
+
+        /// Search iTerm2 schemes by name
+        #[arg(long)]
+        search: Option<String>,
+    },
+
+    /// Import a theme from iTerm2 Color Schemes (https://iterm2colorschemes.com)
+    #[command(alias = "i")]
+    Import {
+        /// iTerm2 scheme name (e.g., Dracula, Gruvbox Dark, Nord)
+        scheme: String,
+
+        /// Custom name for the imported theme
+        #[arg(short, long)]
+        name: Option<String>,
+    },
+
+    /// Fetch and cache the list of available iTerm2 themes
+    #[command(alias = "f")]
+    Fetch {
+        /// Force refresh even if cache is valid
+        #[arg(short, long)]
+        force: bool,
+    },
+
+    /// Delete all user-installed themes
+    Clean {
+        /// Skip confirmation prompt
+        #[arg(short = 'y', long)]
+        yes: bool,
+    },
+}
+
+#[derive(Debug, Subcommand)]
 enum Commands {
     /// Launch the TUI interface (default)
     #[command(alias = "tui")]
@@ -28,9 +109,9 @@ enum Commands {
         #[arg(short, long)]
         refresh_ms: Option<u64>,
 
-        /// Theme mode (auto, dark, light)
+        /// Appearance mode (auto, dark, light)
         #[arg(short, long)]
-        theme: Option<String>,
+        appearance: Option<String>,
 
         /// Low power mode - reduced refresh rate
         #[arg(short = 'L', long)]
@@ -70,6 +151,13 @@ enum Commands {
         #[arg(short, long)]
         edit: bool,
     },
+
+    /// Manage themes
+    #[command(alias = "themes")]
+    Theme {
+        #[command(subcommand)]
+        command: Option<ThemeCommands>,
+    },
 }
 
 /// Beautiful battery & energy monitor for macOS
@@ -84,9 +172,9 @@ struct Cli {
     #[arg(short, long, global = true)]
     refresh_ms: Option<u64>,
 
-    /// Theme mode (auto, dark, light)
+    /// Appearance mode (auto, dark, light)
     #[arg(short, long, global = true)]
-    theme: Option<String>,
+    appearance: Option<String>,
 
     /// Low power mode
     #[arg(short = 'L', long, global = true)]
@@ -107,19 +195,21 @@ fn main() -> Result<()> {
         }) => run_pipe(samples, interval, compact),
         Some(Commands::Debug) => run_debug(),
         Some(Commands::Config { path, reset, edit }) => run_config(path, reset, edit),
+        Some(Commands::Theme { command }) => run_theme(command),
         Some(Commands::Ui {
             refresh_ms,
-            theme,
+            appearance,
             low_power,
         }) => {
             let mut config = UserConfig::load();
-            let refresh_from_cli = config.merge_with_args(theme.as_deref(), refresh_ms, low_power);
+            let refresh_from_cli =
+                config.merge_with_args(appearance.as_deref(), refresh_ms, low_power);
             run_tui(config, refresh_from_cli)
         }
         None => {
             let mut config = UserConfig::load();
             let refresh_from_cli =
-                config.merge_with_args(cli.theme.as_deref(), cli.refresh_ms, cli.low_power);
+                config.merge_with_args(cli.appearance.as_deref(), cli.refresh_ms, cli.low_power);
             run_tui(config, refresh_from_cli)
         }
     }
@@ -356,6 +446,364 @@ fn run_config(path: bool, reset: bool, edit: bool) -> Result<()> {
     println!("Config file: {}", config_file.display());
     println!();
     println!("{}", toml::to_string_pretty(&config)?);
+
+    Ok(())
+}
+
+fn run_theme(command: Option<ThemeCommands>) -> Result<()> {
+    use theme::{contrast, get_all_themes, get_builtin_themes, load_user_themes, validation};
+
+    let cmd = command.unwrap_or(ThemeCommands::Check {
+        all: false,
+        verbose: false,
+    });
+
+    match cmd {
+        ThemeCommands::Check { all, verbose } => {
+            let mut has_validation_errors = false;
+
+            let validation_results = validation::validate_user_themes();
+            if !validation_results.is_empty() {
+                validation::print_validation_results(&validation_results, verbose);
+                has_validation_errors = validation_results.iter().any(|r| !r.is_valid());
+                println!();
+            }
+
+            let themes = if all {
+                get_all_themes()
+            } else {
+                load_user_themes()
+            };
+
+            let valid_theme_ids: std::collections::HashSet<_> = validation_results
+                .iter()
+                .filter(|r| r.is_valid())
+                .map(|r| r.theme_id.clone())
+                .collect();
+
+            let themes_for_contrast: Vec<_> = if all {
+                themes
+            } else {
+                themes
+                    .into_iter()
+                    .filter(|t| valid_theme_ids.contains(&t.id))
+                    .collect()
+            };
+
+            if themes_for_contrast.is_empty() && !all {
+                if validation_results.is_empty() {
+                    println!("No user themes found.");
+                    println!("Use --all to check builtin themes, or create a theme with:");
+                    println!("  jolt theme create <name>");
+                } else if has_validation_errors {
+                    println!("All user themes have validation errors. Fix errors above to run contrast checks.");
+                }
+                if has_validation_errors {
+                    std::process::exit(1);
+                }
+                return Ok(());
+            }
+
+            if !themes_for_contrast.is_empty() {
+                let results = contrast::check_all_themes(&themes_for_contrast);
+                contrast::print_results(&results, verbose);
+
+                let has_contrast_failures = results.iter().any(|r| !r.pass);
+                if has_contrast_failures || has_validation_errors {
+                    std::process::exit(1);
+                }
+            }
+        }
+        ThemeCommands::Open => {
+            let themes_dir = config::themes_dir();
+            if !themes_dir.exists() {
+                std::fs::create_dir_all(&themes_dir)?;
+            }
+
+            #[cfg(target_os = "macos")]
+            {
+                std::process::Command::new("open")
+                    .arg(&themes_dir)
+                    .status()?;
+            }
+
+            println!("Themes directory: {}", themes_dir.display());
+        }
+        ThemeCommands::Create {
+            name,
+            template,
+            base,
+        } => {
+            let themes_dir = config::themes_dir();
+            if !themes_dir.exists() {
+                std::fs::create_dir_all(&themes_dir)?;
+            }
+
+            let file_name = name.to_lowercase().replace(' ', "-");
+            let theme_path = themes_dir.join(format!("{}.toml", file_name));
+
+            if theme_path.exists() {
+                eprintln!(
+                    "Theme '{}' already exists at: {}",
+                    name,
+                    theme_path.display()
+                );
+                std::process::exit(1);
+            }
+
+            let content = match template.as_str() {
+                "copy" => {
+                    let base_id = base.as_deref().unwrap_or("default");
+                    let base_theme = get_builtin_themes()
+                        .into_iter()
+                        .find(|t| t.id == base_id)
+                        .ok_or_else(|| {
+                            color_eyre::eyre::eyre!("Base theme '{}' not found", base_id)
+                        })?;
+
+                    theme::generate_theme_toml(&name, &base_theme)
+                }
+                _ => theme::generate_blank_theme_toml(&name),
+            };
+
+            std::fs::write(&theme_path, content)?;
+            println!("Created theme '{}' at: {}", name, theme_path.display());
+            println!("\nEdit the file to customize colors, then reload jolt to see changes.");
+        }
+        ThemeCommands::List {
+            builtin,
+            user,
+            iterm2,
+            search,
+        } => {
+            if iterm2 || search.is_some() {
+                print!("Fetching iTerm2 schemes from GitHub...");
+                std::io::Write::flush(&mut std::io::stdout())?;
+
+                let schemes = if let Some(ref query) = search {
+                    theme::iterm2::search_schemes(query)
+                } else {
+                    theme::iterm2::list_available_schemes()
+                };
+
+                match schemes {
+                    Ok(list) => {
+                        println!("\r{}", " ".repeat(50));
+                        if list.is_empty() {
+                            if let Some(query) = search {
+                                println!("No iTerm2 schemes found matching '{}'", query);
+                            } else {
+                                println!("No iTerm2 schemes found.");
+                            }
+                        } else {
+                            let title = if let Some(ref query) = search {
+                                format!(
+                                    "iTerm2 schemes matching '{}' ({} found)",
+                                    query,
+                                    list.len()
+                                )
+                            } else {
+                                format!("Available iTerm2 schemes ({} total)", list.len())
+                            };
+                            println!("{}", title);
+                            println!("{}", "-".repeat(60));
+                            for (i, scheme) in list.iter().enumerate() {
+                                print!("{:<30}", scheme);
+                                if (i + 1) % 2 == 0 {
+                                    println!();
+                                }
+                            }
+                            if list.len() % 2 != 0 {
+                                println!();
+                            }
+                            println!();
+                            println!(
+                                "Browse themes visually: {}",
+                                theme::iterm2::ITERM2_GALLERY_URL
+                            );
+                            println!("Import with: jolt theme import <scheme-name>");
+                        }
+                    }
+                    Err(e) => {
+                        println!("\rError: {}", e);
+                        std::process::exit(1);
+                    }
+                }
+                return Ok(());
+            }
+
+            let themes = if builtin {
+                get_builtin_themes()
+            } else if user {
+                load_user_themes()
+            } else {
+                get_all_themes()
+            };
+
+            if themes.is_empty() {
+                println!("No themes found.");
+                return Ok(());
+            }
+
+            println!("{:<20} {:<12} Variants", "ID", "Type");
+            println!("{}", "-".repeat(50));
+            for theme in themes {
+                let theme_type = if theme.is_builtin { "builtin" } else { "user" };
+                println!(
+                    "{:<20} {:<12} {}",
+                    theme.id,
+                    theme_type,
+                    theme.variants_label()
+                );
+            }
+        }
+        ThemeCommands::Import { scheme, name } => {
+            println!("Fetching iTerm2 scheme '{}'...", scheme);
+
+            match theme::iterm2::import_scheme(&scheme, name.as_deref()) {
+                Ok(result) => {
+                    let has_dark = result.dark_source.is_some();
+                    let has_light = result.light_source.is_some();
+
+                    println!("Imported theme to: {}", result.path.display());
+
+                    if let Some(dark) = &result.dark_source {
+                        println!("  dark variant:  {}", dark);
+                    }
+                    if let Some(light) = &result.light_source {
+                        println!("  light variant: {}", light);
+                    }
+
+                    if has_dark && has_light {
+                        println!(
+                            "\nBoth dark and light variants imported! The theme will adapt to your system appearance."
+                        );
+                    } else {
+                        let missing = if has_dark {
+                            theme::iterm2::SchemeVariant::Light
+                        } else {
+                            theme::iterm2::SchemeVariant::Dark
+                        };
+                        let missing_name = if has_dark { "light" } else { "dark" };
+
+                        println!(
+                            "\nOnly {} variant found. Looking for {} variant suggestions...",
+                            if has_dark { "dark" } else { "light" },
+                            missing_name
+                        );
+
+                        match theme::iterm2::find_variant_suggestions(&scheme, missing) {
+                            Ok(suggestions) if !suggestions.is_empty() => {
+                                println!("\nPossible {} variants:", missing_name);
+                                for (i, suggestion) in suggestions.iter().take(10).enumerate() {
+                                    println!("  {}. {}", i + 1, suggestion);
+                                }
+                                if suggestions.len() > 10 {
+                                    println!("  ... and {} more", suggestions.len() - 10);
+                                }
+                                println!(
+                                    "\nTo add a variant, edit the theme file or import separately."
+                                );
+                            }
+                            Ok(_) => {
+                                println!("No {} variant suggestions found.", missing_name);
+                            }
+                            Err(_) => {
+                                println!("Could not fetch variant suggestions.");
+                            }
+                        }
+                    }
+
+                    println!("\nUse the theme picker (T key) to select it.");
+                }
+                Err(e) => {
+                    eprintln!("Error: {}", e);
+                    if matches!(e, theme::iterm2::Iterm2Error::NotFound(_)) {
+                        eprintln!("\nBrowse themes: {}", theme::iterm2::ITERM2_GALLERY_URL);
+                        eprintln!("Search: jolt theme list --search <query>");
+                    }
+                    std::process::exit(1);
+                }
+            }
+        }
+        ThemeCommands::Fetch { force } => {
+            println!("Fetching iTerm2 theme list...");
+
+            match theme::cache::fetch_and_cache_schemes(force) {
+                Ok(cache) => {
+                    println!(
+                        "Cached {} themes in {} groups.",
+                        cache.schemes.len(),
+                        cache.groups.len()
+                    );
+                    if !force {
+                        println!("Cache updated: {}", cache.age_description());
+                    }
+                    println!(
+                        "\nUse 'jolt theme list --iterm2' to browse, or press 'i' in the theme picker to import."
+                    );
+                }
+                Err(e) => {
+                    eprintln!("Error: {}", e);
+                    std::process::exit(1);
+                }
+            }
+        }
+        ThemeCommands::Clean { yes } => {
+            let themes_path = config::themes_dir();
+
+            if !themes_path.exists() {
+                println!("No user themes directory found.");
+                return Ok(());
+            }
+
+            let theme_files: Vec<_> = std::fs::read_dir(&themes_path)
+                .map(|entries| {
+                    entries
+                        .filter_map(|e| e.ok())
+                        .filter(|e| {
+                            e.path()
+                                .extension()
+                                .map(|ext| ext == "toml")
+                                .unwrap_or(false)
+                        })
+                        .collect()
+                })
+                .unwrap_or_default();
+
+            if theme_files.is_empty() {
+                println!("No user themes to delete.");
+                return Ok(());
+            }
+
+            println!("Found {} user theme(s):", theme_files.len());
+            for file in &theme_files {
+                println!("  - {}", file.file_name().to_string_lossy());
+            }
+
+            if !yes {
+                print!("\nDelete all user themes? [y/N] ");
+                std::io::Write::flush(&mut std::io::stdout())?;
+
+                let mut input = String::new();
+                std::io::stdin().read_line(&mut input)?;
+
+                if !input.trim().eq_ignore_ascii_case("y") {
+                    println!("Cancelled.");
+                    return Ok(());
+                }
+            }
+
+            let mut deleted = 0;
+            for file in theme_files {
+                if std::fs::remove_file(file.path()).is_ok() {
+                    deleted += 1;
+                }
+            }
+
+            println!("Deleted {} theme(s).", deleted);
+        }
+    }
 
     Ok(())
 }

@@ -7,9 +7,9 @@ use ratatui::{
 };
 
 use crate::app::{App, SortColumn};
-use crate::config::Theme;
+use crate::theme::ThemeColors;
 
-fn energy_gradient_color(energy: f32, theme: &Theme) -> Color {
+fn energy_gradient_color(energy: f32, theme: &ThemeColors) -> Color {
     let (low_r, low_g, low_b) = extract_rgb(theme.success);
     let (mid_r, mid_g, mid_b) = extract_rgb(theme.warning);
     let (high_r, high_g, high_b) = extract_rgb(theme.danger);
@@ -46,7 +46,7 @@ fn lerp(a: u8, b: u8, t: f32) -> u8 {
     (a as f32 + (b as f32 - a as f32) * t) as u8
 }
 
-pub fn render(frame: &mut Frame, area: Rect, app: &mut App, theme: &Theme) {
+pub fn render(frame: &mut Frame, area: Rect, app: &mut App, theme: &ThemeColors) {
     let title = if app.selection_mode {
         " Processes [SELECTION MODE - Esc to exit] "
     } else if app.merge_mode {

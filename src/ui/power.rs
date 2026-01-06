@@ -7,10 +7,10 @@ use ratatui::{
 };
 
 use crate::app::App;
-use crate::config::Theme;
 use crate::data::power::PowerMode;
+use crate::theme::ThemeColors;
 
-pub fn render(frame: &mut Frame, area: Rect, app: &App, theme: &Theme) {
+pub fn render(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) {
     let block = Block::default()
         .title(" Power ")
         .borders(Borders::ALL)

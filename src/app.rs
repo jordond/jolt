@@ -4,6 +4,8 @@ use crate::config::{GraphMetric, RuntimeConfig, UserConfig};
 use crate::data::{
     BatteryData, HistoryData, HistoryMetric, PowerData, ProcessData, ProcessInfo, SystemInfo,
 };
+use crate::theme::cache::ThemeGroup;
+use crate::theme::{get_all_themes, NamedTheme, ThemeColors};
 
 fn get_base_process_name(name: &str) -> String {
     let name = name
@@ -24,7 +26,7 @@ fn get_base_process_name(name: &str) -> String {
     name.to_string()
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Action {
     Quit,
     ToggleHelp,
@@ -36,7 +38,11 @@ pub enum Action {
     KillProcess,
     ConfirmKill,
     CancelKill,
-    CycleTheme,
+    CycleAppearance,
+    OpenThemePicker,
+    CloseThemePicker,
+    SelectTheme,
+    TogglePreviewAppearance,
     ToggleGraphView,
     ToggleMerge,
     PageUp,
@@ -53,6 +59,16 @@ pub enum Action {
     ConfigDecrement,
     ConfigRevert,
     ConfigDefaults,
+    OpenThemeImporter,
+    CloseThemeImporter,
+    ImporterToggleSelect,
+    ImporterPreview,
+    ImporterImport,
+    ImporterRefresh,
+    ImporterToggleSearch,
+    ImporterFilterChar(char),
+    ImporterFilterBackspace,
+    ImporterClearFilter,
     None,
 }
 
@@ -89,6 +105,8 @@ pub enum AppView {
     About,
     KillConfirm,
     Config,
+    ThemePicker,
+    ThemeImporter,
 }
 
 pub struct App {
@@ -112,6 +130,18 @@ pub struct App {
     process_to_kill: Option<ProcessInfo>,
     tick_count: u32,
     config_snapshot: Option<(UserConfig, u64, bool)>,
+    pub theme_picker_themes: Vec<NamedTheme>,
+    pub theme_picker_index: usize,
+    preview_theme_id: Option<String>,
+    preview_appearance: Option<bool>,
+    theme_picker_from_config: bool,
+    pub importer_groups: Vec<ThemeGroup>,
+    pub importer_index: usize,
+    pub importer_selected: std::collections::HashSet<String>,
+    pub importer_filter: String,
+    pub importer_loading: bool,
+    pub importer_cache_age: Option<String>,
+    pub importer_search_focused: bool,
 }
 
 impl App {
@@ -150,6 +180,18 @@ impl App {
             process_to_kill: None,
             tick_count: 0,
             config_snapshot: None,
+            theme_picker_themes: Vec::new(),
+            theme_picker_index: 0,
+            preview_theme_id: None,
+            preview_appearance: None,
+            theme_picker_from_config: false,
+            importer_groups: Vec::new(),
+            importer_index: 0,
+            importer_selected: std::collections::HashSet::new(),
+            importer_filter: String::new(),
+            importer_loading: false,
+            importer_cache_age: None,
+            importer_search_focused: false,
         })
     }
 
@@ -219,6 +261,15 @@ impl App {
                     if self.config_selected_item > 0 {
                         self.config_selected_item -= 1;
                     }
+                } else if self.view == AppView::ThemePicker {
+                    if self.theme_picker_index > 0 {
+                        self.theme_picker_index -= 1;
+                        self.set_theme_preview();
+                    }
+                } else if self.view == AppView::ThemeImporter {
+                    if self.importer_index > 0 {
+                        self.importer_index -= 1;
+                    }
                 } else {
                     self.enter_selection_mode();
                     if self.selected_process_index > 0 {
@@ -231,6 +282,16 @@ impl App {
                 if self.view == AppView::Config {
                     if self.config_selected_item < self.config_item_count() - 1 {
                         self.config_selected_item += 1;
+                    }
+                } else if self.view == AppView::ThemePicker {
+                    if self.theme_picker_index < self.theme_picker_themes.len().saturating_sub(1) {
+                        self.theme_picker_index += 1;
+                        self.set_theme_preview();
+                    }
+                } else if self.view == AppView::ThemeImporter {
+                    let filtered_count = self.get_filtered_importer_groups().len();
+                    if filtered_count > 0 && self.importer_index < filtered_count - 1 {
+                        self.importer_index += 1;
                     }
                 } else {
                     self.enter_selection_mode();
@@ -275,8 +336,48 @@ impl App {
                 self.process_to_kill = None;
                 self.view = AppView::Main;
             }
-            Action::CycleTheme => {
-                self.config.cycle_theme();
+            Action::CycleAppearance => {
+                self.config.cycle_appearance();
+            }
+            Action::OpenThemePicker => {
+                self.theme_picker_themes = get_all_themes();
+                self.theme_picker_index = self
+                    .theme_picker_themes
+                    .iter()
+                    .position(|t| t.id == self.config.theme_id())
+                    .unwrap_or(0);
+                self.preview_theme_id = None;
+                self.preview_appearance = None;
+                self.theme_picker_from_config = false;
+                self.view = AppView::ThemePicker;
+            }
+            Action::CloseThemePicker => {
+                let return_to_config = self.theme_picker_from_config;
+                self.preview_theme_id = None;
+                self.preview_appearance = None;
+                self.theme_picker_from_config = false;
+                self.view = if return_to_config {
+                    AppView::Config
+                } else {
+                    AppView::Main
+                };
+            }
+            Action::SelectTheme => {
+                if let Some(theme) = self.theme_picker_themes.get(self.theme_picker_index) {
+                    self.config.set_theme(&theme.id);
+                }
+                let return_to_config = self.theme_picker_from_config;
+                self.preview_theme_id = None;
+                self.preview_appearance = None;
+                self.theme_picker_from_config = false;
+                self.view = if return_to_config {
+                    AppView::Config
+                } else {
+                    AppView::Main
+                };
+            }
+            Action::TogglePreviewAppearance => {
+                self.toggle_preview_appearance();
             }
             Action::ToggleGraphView => {
                 self.history.toggle_metric();
@@ -285,30 +386,52 @@ impl App {
                 self.merge_mode = !self.merge_mode;
             }
             Action::PageUp => {
-                self.enter_selection_mode();
-                self.selected_process_index = self.selected_process_index.saturating_sub(10);
-                self.adjust_scroll();
-            }
-            Action::PageDown => {
-                self.enter_selection_mode();
-                let visible_count = self.visible_process_count();
-                if visible_count > 0 {
-                    self.selected_process_index =
-                        (self.selected_process_index + 10).min(visible_count - 1);
+                if self.view == AppView::ThemeImporter {
+                    self.importer_index = self.importer_index.saturating_sub(10);
+                } else {
+                    self.enter_selection_mode();
+                    self.selected_process_index = self.selected_process_index.saturating_sub(10);
                     self.adjust_scroll();
                 }
             }
+            Action::PageDown => {
+                if self.view == AppView::ThemeImporter {
+                    let filtered_count = self.get_filtered_importer_groups().len();
+                    if filtered_count > 0 {
+                        self.importer_index = (self.importer_index + 10).min(filtered_count - 1);
+                    }
+                } else {
+                    self.enter_selection_mode();
+                    let visible_count = self.visible_process_count();
+                    if visible_count > 0 {
+                        self.selected_process_index =
+                            (self.selected_process_index + 10).min(visible_count - 1);
+                        self.adjust_scroll();
+                    }
+                }
+            }
             Action::Home => {
-                self.enter_selection_mode();
-                self.selected_process_index = 0;
-                self.process_scroll_offset = 0;
+                if self.view == AppView::ThemeImporter {
+                    self.importer_index = 0;
+                } else {
+                    self.enter_selection_mode();
+                    self.selected_process_index = 0;
+                    self.process_scroll_offset = 0;
+                }
             }
             Action::End => {
-                self.enter_selection_mode();
-                let visible_count = self.visible_process_count();
-                if visible_count > 0 {
-                    self.selected_process_index = visible_count - 1;
-                    self.adjust_scroll();
+                if self.view == AppView::ThemeImporter {
+                    let filtered_count = self.get_filtered_importer_groups().len();
+                    if filtered_count > 0 {
+                        self.importer_index = filtered_count - 1;
+                    }
+                } else {
+                    self.enter_selection_mode();
+                    let visible_count = self.visible_process_count();
+                    if visible_count > 0 {
+                        self.selected_process_index = visible_count - 1;
+                        self.adjust_scroll();
+                    }
                 }
             }
             Action::CycleSortColumn => {
@@ -335,13 +458,19 @@ impl App {
                 }
             }
             Action::ConfigToggleValue => {
-                self.toggle_config_value();
+                if self.toggle_config_value() {
+                    self.open_theme_picker_from_config();
+                }
             }
             Action::ConfigIncrement => {
-                self.increment_config_value();
+                if self.increment_config_value() {
+                    self.open_theme_picker_from_config();
+                }
             }
             Action::ConfigDecrement => {
-                self.decrement_config_value();
+                if self.decrement_config_value() {
+                    self.open_theme_picker_from_config();
+                }
             }
             Action::ConfigRevert => {
                 if let Some((snapshot, refresh, merge)) = self.config_snapshot.take() {
@@ -357,6 +486,51 @@ impl App {
                 self.refresh_ms = self.config.user_config.refresh_ms;
                 self.merge_mode = self.config.user_config.merge_mode;
                 let _ = self.config.user_config.save();
+            }
+            Action::OpenThemeImporter => {
+                self.open_theme_importer();
+            }
+            Action::CloseThemeImporter => {
+                self.view = AppView::ThemePicker;
+                self.importer_filter.clear();
+                self.importer_selected.clear();
+                self.importer_search_focused = false;
+            }
+            Action::ImporterToggleSelect => {
+                self.toggle_importer_selection();
+            }
+            Action::ImporterPreview => {
+                self.importer_loading = true;
+                self.preview_selected_importer_theme();
+                self.importer_loading = false;
+            }
+            Action::ImporterImport => {
+                self.importer_loading = true;
+                self.import_selected_themes();
+                self.importer_loading = false;
+            }
+            Action::ImporterRefresh => {
+                self.refresh_importer_cache();
+            }
+            Action::ImporterToggleSearch => {
+                self.importer_search_focused = !self.importer_search_focused;
+            }
+            Action::ImporterFilterChar(c) => {
+                if self.importer_search_focused {
+                    self.importer_filter.push(c);
+                    self.importer_index = 0;
+                }
+            }
+            Action::ImporterFilterBackspace => {
+                if self.importer_search_focused {
+                    self.importer_filter.pop();
+                    self.importer_index = 0;
+                }
+            }
+            Action::ImporterClearFilter => {
+                self.importer_filter.clear();
+                self.importer_index = 0;
+                self.importer_search_focused = false;
             }
             Action::None => {}
         }
@@ -525,6 +699,7 @@ impl App {
 
     pub const CONFIG_ITEMS: &'static [&'static str] = &[
         "Theme",
+        "Appearance",
         "Refresh Rate (ms)",
         "Low Power Mode",
         "Show Graph",
@@ -539,75 +714,81 @@ impl App {
 
     pub fn config_item_value(&self, index: usize) -> String {
         match index {
-            0 => self.config.user_config.theme.label().to_string(),
-            1 => self.refresh_ms.to_string(),
-            2 => if self.config.user_config.low_power_mode {
+            0 => format!("{} →", self.config.theme_name()),
+            1 => self.config.appearance_label().to_string(),
+            2 => self.refresh_ms.to_string(),
+            3 => if self.config.user_config.low_power_mode {
                 "On"
             } else {
                 "Off"
             }
             .to_string(),
-            3 => if self.config.user_config.show_graph {
+            4 => if self.config.user_config.show_graph {
                 "On"
             } else {
                 "Off"
             }
             .to_string(),
-            4 => if self.merge_mode { "On" } else { "Off" }.to_string(),
-            5 => self.config.user_config.process_count.to_string(),
-            6 => format!("{:.1}", self.config.user_config.energy_threshold),
+            5 => if self.merge_mode { "On" } else { "Off" }.to_string(),
+            6 => self.config.user_config.process_count.to_string(),
+            7 => format!("{:.1}", self.config.user_config.energy_threshold),
             _ => String::new(),
         }
     }
 
-    fn toggle_config_value(&mut self) {
+    fn toggle_config_value(&mut self) -> bool {
         match self.config_selected_item {
-            0 => self.config.cycle_theme(),
-            2 => {
+            0 => return true,
+            1 => self.config.cycle_appearance(),
+            3 => {
                 self.config.user_config.low_power_mode = !self.config.user_config.low_power_mode;
                 let _ = self.config.user_config.save();
             }
-            3 => {
+            4 => {
                 self.config.user_config.show_graph = !self.config.user_config.show_graph;
                 let _ = self.config.user_config.save();
             }
-            4 => {
+            5 => {
                 self.merge_mode = !self.merge_mode;
                 self.config.user_config.merge_mode = self.merge_mode;
                 let _ = self.config.user_config.save();
             }
             _ => {}
         }
+        false
     }
 
-    fn increment_config_value(&mut self) {
+    fn increment_config_value(&mut self) -> bool {
         match self.config_selected_item {
-            0 => self.config.cycle_theme(),
-            1 => {
+            0 => return true,
+            1 => self.config.cycle_appearance(),
+            2 => {
                 self.refresh_ms = (self.refresh_ms + REFRESH_STEP_MS).min(MAX_REFRESH_MS);
                 if !self.config.refresh_from_cli {
                     self.config.user_config.refresh_ms = self.refresh_ms;
                     let _ = self.config.user_config.save();
                 }
             }
-            5 => {
+            6 => {
                 self.config.user_config.process_count =
                     (self.config.user_config.process_count + 10).min(200);
                 let _ = self.config.user_config.save();
             }
-            6 => {
+            7 => {
                 self.config.user_config.energy_threshold =
                     (self.config.user_config.energy_threshold + 0.5).min(10.0);
                 let _ = self.config.user_config.save();
             }
             _ => {}
         }
+        false
     }
 
-    fn decrement_config_value(&mut self) {
+    fn decrement_config_value(&mut self) -> bool {
         match self.config_selected_item {
-            0 => self.config.cycle_theme(),
-            1 => {
+            0 => return true,
+            1 => self.config.cycle_appearance(),
+            2 => {
                 self.refresh_ms = self
                     .refresh_ms
                     .saturating_sub(REFRESH_STEP_MS)
@@ -617,7 +798,7 @@ impl App {
                     let _ = self.config.user_config.save();
                 }
             }
-            5 => {
+            6 => {
                 self.config.user_config.process_count = self
                     .config
                     .user_config
@@ -626,12 +807,180 @@ impl App {
                     .max(10);
                 let _ = self.config.user_config.save();
             }
-            6 => {
+            7 => {
                 self.config.user_config.energy_threshold =
                     (self.config.user_config.energy_threshold - 0.5).max(0.0);
                 let _ = self.config.user_config.save();
             }
             _ => {}
         }
+        false
+    }
+
+    fn set_theme_preview(&mut self) {
+        if let Some(theme) = self.theme_picker_themes.get(self.theme_picker_index) {
+            self.preview_theme_id = Some(theme.id.clone());
+        }
+    }
+
+    fn open_theme_picker_from_config(&mut self) {
+        self.theme_picker_themes = get_all_themes();
+        self.theme_picker_index = self
+            .theme_picker_themes
+            .iter()
+            .position(|t| t.id == self.config.theme_id())
+            .unwrap_or(0);
+        self.preview_theme_id = None;
+        self.preview_appearance = None;
+        self.theme_picker_from_config = true;
+        self.view = AppView::ThemePicker;
+    }
+
+    fn toggle_preview_appearance(&mut self) {
+        let current = self
+            .preview_appearance
+            .unwrap_or_else(|| self.config.is_dark_mode());
+        self.preview_appearance = Some(!current);
+    }
+
+    pub fn preview_is_dark(&self) -> bool {
+        self.preview_appearance
+            .unwrap_or_else(|| self.config.is_dark_mode())
+    }
+
+    pub fn current_theme(&self) -> ThemeColors {
+        let is_dark = self.preview_is_dark();
+        if let Some(ref preview_id) = self.preview_theme_id {
+            if let Some(theme) = self
+                .theme_picker_themes
+                .iter()
+                .find(|t| &t.id == preview_id)
+            {
+                return theme.get_colors(is_dark);
+            }
+        }
+        if self.preview_appearance.is_some() {
+            return self.config.theme_with_mode(is_dark);
+        }
+        self.config.theme()
+    }
+
+    fn open_theme_importer(&mut self) {
+        use crate::theme::cache::{fetch_and_cache_schemes, get_cached_or_empty};
+
+        let cached = get_cached_or_empty();
+        if cached.groups.is_empty() || cached.is_expired() {
+            self.importer_loading = true;
+            if let Ok(fresh) = fetch_and_cache_schemes(false) {
+                let age = fresh.age_description();
+                self.importer_groups = fresh.groups;
+                self.importer_cache_age = Some(age);
+            } else {
+                let age = cached.age_description();
+                self.importer_groups = cached.groups;
+                self.importer_cache_age = Some(age);
+            }
+            self.importer_loading = false;
+        } else {
+            let age = cached.age_description();
+            self.importer_groups = cached.groups;
+            self.importer_cache_age = Some(age);
+        }
+
+        self.importer_index = 0;
+        self.importer_filter.clear();
+        self.importer_selected.clear();
+        self.importer_search_focused = false;
+        self.view = AppView::ThemeImporter;
+    }
+
+    fn refresh_importer_cache(&mut self) {
+        use crate::theme::cache::fetch_and_cache_schemes;
+
+        self.importer_loading = true;
+        if let Ok(fresh) = fetch_and_cache_schemes(true) {
+            let age = fresh.age_description();
+            self.importer_groups = fresh.groups;
+            self.importer_cache_age = Some(age);
+        }
+        self.importer_loading = false;
+        self.importer_index = 0;
+    }
+
+    pub fn get_filtered_importer_groups(&self) -> Vec<&ThemeGroup> {
+        if self.importer_filter.is_empty() {
+            self.importer_groups.iter().collect()
+        } else {
+            let filter_lower = self.importer_filter.to_lowercase();
+            self.importer_groups
+                .iter()
+                .filter(|g| g.name.to_lowercase().contains(&filter_lower))
+                .collect()
+        }
+    }
+
+    fn toggle_importer_selection(&mut self) {
+        let groups = self.get_filtered_importer_groups();
+        if let Some(group) = groups.get(self.importer_index) {
+            let name = group.name.clone();
+            if self.importer_selected.contains(&name) {
+                self.importer_selected.remove(&name);
+            } else {
+                self.importer_selected.insert(name);
+            }
+        }
+    }
+
+    fn preview_selected_importer_theme(&mut self) {
+        use crate::theme::iterm2::import_scheme;
+
+        let group_info: Option<(Option<String>, String)> = {
+            let groups = self.get_filtered_importer_groups();
+            groups
+                .get(self.importer_index)
+                .map(|g| (g.dark.clone().or_else(|| g.light.clone()), g.name.clone()))
+        };
+
+        if let Some((Some(scheme_name), group_name)) = group_info {
+            if let Ok(result) = import_scheme(&scheme_name, Some(&group_name)) {
+                self.theme_picker_themes = get_all_themes();
+                let new_id = result
+                    .path
+                    .file_stem()
+                    .and_then(|s| s.to_str())
+                    .unwrap_or(&group_name)
+                    .to_string();
+
+                self.theme_picker_index = self
+                    .theme_picker_themes
+                    .iter()
+                    .position(|t| t.id == new_id)
+                    .unwrap_or(0);
+
+                self.preview_theme_id = Some(new_id);
+            }
+        }
+    }
+
+    fn import_selected_themes(&mut self) {
+        use crate::theme::iterm2::import_scheme;
+
+        if self.importer_selected.is_empty() {
+            self.preview_selected_importer_theme();
+            return;
+        }
+
+        for group_name in self.importer_selected.clone() {
+            if let Some(group) = self.importer_groups.iter().find(|g| g.name == group_name) {
+                let scheme_name = group.dark.as_ref().or(group.light.as_ref());
+                if let Some(name) = scheme_name {
+                    let _ = import_scheme(name, Some(&group.name));
+                }
+            }
+        }
+
+        self.theme_picker_themes = get_all_themes();
+        self.importer_selected.clear();
+        self.view = AppView::ThemePicker;
     }
 }

@@ -8,10 +8,10 @@ use ratatui::{
 };
 
 use crate::app::App;
-use crate::config::Theme;
 use crate::data::history::HistoryMetric;
+use crate::theme::ThemeColors;
 
-pub fn render(frame: &mut Frame, area: Rect, app: &App, theme: &Theme) {
+pub fn render(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) {
     match app.history.current_metric {
         HistoryMetric::Split => render_split(frame, area, app, theme),
         HistoryMetric::Merged => render_merged(frame, area, app, theme),
@@ -19,7 +19,7 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App, theme: &Theme) {
     }
 }
 
-fn render_single(frame: &mut Frame, area: Rect, app: &App, theme: &Theme) {
+fn render_single(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) {
     let is_battery = app.history.current_metric == HistoryMetric::Battery;
 
     let current_value = if is_battery {
@@ -150,7 +150,7 @@ fn render_battery_markers(
     frame: &mut Frame,
     area: Rect,
     app: &App,
-    theme: &Theme,
+    theme: &ThemeColors,
     max_x: f64,
     min_y: f64,
     max_y: f64,
@@ -178,7 +178,7 @@ fn render_battery_markers(
     }
 }
 
-fn render_merged(frame: &mut Frame, area: Rect, app: &App, theme: &Theme) {
+fn render_merged(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) {
     let power_val = app
         .history
         .points
@@ -284,7 +284,7 @@ fn render_merged(frame: &mut Frame, area: Rect, app: &App, theme: &Theme) {
     frame.render_widget(chart, area);
 }
 
-fn render_split(frame: &mut Frame, area: Rect, app: &App, theme: &Theme) {
+fn render_split(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) {
     let chunks = Layout::default()
         .direction(Direction::Horizontal)
         .constraints([Constraint::Percentage(50), Constraint::Percentage(50)])
@@ -317,7 +317,7 @@ fn render_mini_chart(
     title: &str,
     data: &[(f64, f64)],
     (min_y, max_y): (f64, f64),
-    theme: &Theme,
+    theme: &ThemeColors,
     line_color: ratatui::style::Color,
 ) {
     let block = Block::default()

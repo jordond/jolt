@@ -9,6 +9,14 @@ pub fn handle_key(app: &App, key: KeyEvent) -> Action {
         AppView::About => handle_about_keys(key),
         AppView::KillConfirm => handle_kill_confirm_keys(key),
         AppView::Config => handle_config_keys(key),
+        AppView::ThemePicker => handle_theme_picker_keys(key),
+        AppView::ThemeImporter => {
+            if app.importer_search_focused {
+                handle_theme_importer_keys_search(key)
+            } else {
+                handle_theme_importer_keys_normal(key)
+            }
+        }
     }
 }
 
@@ -23,12 +31,13 @@ fn handle_main_keys(key: KeyEvent, selection_mode: bool) -> Action {
             }
         }
         KeyCode::Char('h') | KeyCode::Char('?') => Action::ToggleHelp,
-        KeyCode::Char('a') => Action::ToggleAbout,
+        KeyCode::Char('A') => Action::ToggleAbout,
+        KeyCode::Char('a') => Action::CycleAppearance,
         KeyCode::Up | KeyCode::Char('k') => Action::SelectPrevious,
         KeyCode::Down | KeyCode::Char('j') => Action::SelectNext,
         KeyCode::Enter | KeyCode::Char(' ') => Action::ToggleExpand,
         KeyCode::Char('K') => Action::KillProcess,
-        KeyCode::Char('t') => Action::CycleTheme,
+        KeyCode::Char('t') => Action::OpenThemePicker,
         KeyCode::Char('g') => Action::ToggleGraphView,
         KeyCode::Char('m') => Action::ToggleMerge,
         KeyCode::PageUp => Action::PageUp,
@@ -41,6 +50,47 @@ fn handle_main_keys(key: KeyEvent, selection_mode: bool) -> Action {
         KeyCode::Char('-') => Action::DecreaseRefreshRate,
         KeyCode::Char('c') if key.modifiers.contains(KeyModifiers::CONTROL) => Action::Quit,
         KeyCode::Char('C') => Action::ToggleConfig,
+        _ => Action::None,
+    }
+}
+
+fn handle_theme_picker_keys(key: KeyEvent) -> Action {
+    match key.code {
+        KeyCode::Esc | KeyCode::Char('t') | KeyCode::Char('q') => Action::CloseThemePicker,
+        KeyCode::Up | KeyCode::Char('k') => Action::SelectPrevious,
+        KeyCode::Down | KeyCode::Char('j') => Action::SelectNext,
+        KeyCode::Enter | KeyCode::Char(' ') => Action::SelectTheme,
+        KeyCode::Char('a') | KeyCode::Left | KeyCode::Right => Action::TogglePreviewAppearance,
+        KeyCode::Char('i') => Action::OpenThemeImporter,
+        _ => Action::None,
+    }
+}
+
+fn handle_theme_importer_keys_search(key: KeyEvent) -> Action {
+    match key.code {
+        KeyCode::Esc => Action::ImporterToggleSearch,
+        KeyCode::Enter => Action::ImporterToggleSearch,
+        KeyCode::Backspace => Action::ImporterFilterBackspace,
+        KeyCode::Char(c) => Action::ImporterFilterChar(c),
+        _ => Action::None,
+    }
+}
+
+fn handle_theme_importer_keys_normal(key: KeyEvent) -> Action {
+    match key.code {
+        KeyCode::Esc => Action::CloseThemeImporter,
+        KeyCode::Up | KeyCode::Char('k') => Action::SelectPrevious,
+        KeyCode::Down | KeyCode::Char('j') => Action::SelectNext,
+        KeyCode::Char(' ') => Action::ImporterToggleSelect,
+        KeyCode::Enter | KeyCode::Char('p') => Action::ImporterPreview,
+        KeyCode::Char('i') => Action::ImporterImport,
+        KeyCode::Char('r') => Action::ImporterRefresh,
+        KeyCode::Char('/') | KeyCode::Char('s') => Action::ImporterToggleSearch,
+        KeyCode::Backspace => Action::ImporterClearFilter,
+        KeyCode::PageUp => Action::PageUp,
+        KeyCode::PageDown => Action::PageDown,
+        KeyCode::Home => Action::Home,
+        KeyCode::End => Action::End,
         _ => Action::None,
     }
 }
@@ -70,7 +120,7 @@ fn handle_help_keys(key: KeyEvent) -> Action {
 
 fn handle_about_keys(key: KeyEvent) -> Action {
     match key.code {
-        KeyCode::Esc | KeyCode::Char('a') | KeyCode::Char('q') => Action::ToggleAbout,
+        KeyCode::Esc | KeyCode::Char('A') | KeyCode::Char('q') => Action::ToggleAbout,
         _ => Action::None,
     }
 }
@@ -119,7 +169,11 @@ pub const KEY_BINDINGS: &[KeyBinding] = &[
     },
     KeyBinding {
         key: "t",
-        description: "Cycle theme (Auto/Dark/Light)",
+        description: "Open theme picker",
+    },
+    KeyBinding {
+        key: "a",
+        description: "Cycle appearance (Auto/Dark/Light)",
     },
     KeyBinding {
         key: "PgUp/PgDn",
@@ -150,7 +204,7 @@ pub const KEY_BINDINGS: &[KeyBinding] = &[
         description: "Toggle help",
     },
     KeyBinding {
-        key: "a",
+        key: "A",
         description: "About jolt",
     },
     KeyBinding {

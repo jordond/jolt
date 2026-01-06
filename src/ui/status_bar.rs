@@ -7,10 +7,15 @@ use ratatui::{
 };
 
 use crate::app::App;
-use crate::config::Theme;
 use crate::data::SystemInfo;
+use crate::theme::ThemeColors;
 
-pub fn render_title_bar(frame: &mut Frame, area: Rect, system_info: &SystemInfo, theme: &Theme) {
+pub fn render_title_bar(
+    frame: &mut Frame,
+    area: Rect,
+    system_info: &SystemInfo,
+    theme: &ThemeColors,
+) {
     let version = super::VERSION;
 
     let left_spans = vec![
@@ -37,14 +42,27 @@ pub fn render_title_bar(frame: &mut Frame, area: Rect, system_info: &SystemInfo,
     frame.render_widget(bar, area);
 }
 
-pub fn render_status_bar(frame: &mut Frame, area: Rect, app: &App, theme: &Theme) {
-    let hints = [
-        ("?", "help"),
-        ("C", "config"),
-        ("t", "theme"),
-        ("g", "graph"),
-        ("m", "merge"),
-        ("q", "quit"),
+pub fn render_status_bar(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) {
+    let theme_name = app.config.theme_name();
+    let theme_display = if theme_name.len() > 12 {
+        format!("{}...", &theme_name[..9])
+    } else {
+        theme_name.to_string()
+    };
+
+    let appearance = app.config.appearance_label().to_lowercase();
+
+    let theme_hint = format!("theme ({})", theme_display);
+    let appearance_hint = format!("appearance ({})", appearance);
+
+    let hints: Vec<(&str, String)> = vec![
+        ("?", "help".to_string()),
+        ("C", "config".to_string()),
+        ("t", theme_hint),
+        ("a", appearance_hint),
+        ("g", "graph".to_string()),
+        ("m", "merge".to_string()),
+        ("q", "quit".to_string()),
     ];
 
     let mut left_spans: Vec<Span> = vec![Span::raw(" ")];
@@ -64,7 +82,7 @@ pub fn render_status_bar(frame: &mut Frame, area: Rect, app: &App, theme: &Theme
 
     let left_width: usize = left_spans.iter().map(|s| s.width()).sum();
     let right_width = right_text.len();
-    let padding = area.width as usize - left_width - right_width;
+    let padding = (area.width as usize).saturating_sub(left_width + right_width);
 
     left_spans.push(Span::raw(" ".repeat(padding.saturating_sub(1))));
     left_spans.push(Span::styled("-/+", Style::default().fg(theme.muted)));

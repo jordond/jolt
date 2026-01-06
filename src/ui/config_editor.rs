@@ -7,7 +7,8 @@ use ratatui::{
 };
 
 use crate::app::App;
-use crate::config::{config_path, Theme};
+use crate::config::config_path;
+use crate::theme::ThemeColors;
 
 fn centered_fixed_rect(area: Rect, width: u16, height: u16) -> Rect {
     let width = width.min(area.width.saturating_sub(4));
@@ -17,7 +18,7 @@ fn centered_fixed_rect(area: Rect, width: u16, height: u16) -> Rect {
     Rect::new(x, y, width, height)
 }
 
-pub fn render(frame: &mut Frame, app: &App, theme: &Theme) {
+pub fn render(frame: &mut Frame, app: &App, theme: &ThemeColors) {
     let content_height = App::CONFIG_ITEMS.len() as u16 + 8;
     let content_width = 50;
     let area = centered_fixed_rect(frame.area(), content_width, content_height);
