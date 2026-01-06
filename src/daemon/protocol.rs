@@ -1,16 +1,10 @@
 use serde::{Deserialize, Serialize};
 
-use crate::data::{DailyStat, DailyTopProcess, DatabaseStats, HourlyStat, Sample};
+use crate::data::{DailyStat, DailyTopProcess, HourlyStat};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum DaemonRequest {
-    Ping,
     GetStatus,
-    GetCurrentData,
-    GetSamples {
-        from: i64,
-        to: i64,
-    },
     GetHourlyStats {
         from: i64,
         to: i64,
@@ -19,28 +13,12 @@ pub enum DaemonRequest {
         from: String,
         to: String,
     },
-    GetTopProcesses {
-        date: String,
-        limit: usize,
-    },
     GetTopProcessesRange {
         from: String,
         to: String,
         limit: usize,
     },
-    GetDatabaseStats,
     Shutdown,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct CurrentData {
-    pub battery_percent: f32,
-    pub power_watts: f32,
-    pub cpu_power: f32,
-    pub gpu_power: f32,
-    pub charging: bool,
-    pub health_percent: f32,
-    pub time_remaining_mins: Option<u64>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -55,14 +33,10 @@ pub struct DaemonStatus {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum DaemonResponse {
-    Pong,
     Status(DaemonStatus),
-    CurrentData(CurrentData),
-    Samples(Vec<Sample>),
     HourlyStats(Vec<HourlyStat>),
     DailyStats(Vec<DailyStat>),
     TopProcesses(Vec<DailyTopProcess>),
-    DatabaseStats(DatabaseStats),
     Ok,
     Error(String),
 }

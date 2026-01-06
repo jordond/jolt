@@ -9,7 +9,7 @@ use std::time::{Duration, Instant};
 use chrono::Utc;
 
 use crate::config::{runtime_dir, HistoryConfig, UserConfig};
-use crate::daemon::protocol::{CurrentData, DaemonRequest, DaemonResponse, DaemonStatus};
+use crate::daemon::protocol::{DaemonRequest, DaemonResponse, DaemonStatus};
 use crate::daemon::{log_path, socket_path};
 use crate::data::aggregator::Aggregator;
 use crate::data::{BatteryData, PowerData, ProcessData, Recorder};
@@ -144,29 +144,9 @@ impl DaemonState {
         }
     }
 
-    fn get_current_data(&self) -> CurrentData {
-        CurrentData {
-            battery_percent: self.battery.charge_percent(),
-            power_watts: self.power.total_power_watts(),
-            cpu_power: self.power.cpu_power_watts(),
-            gpu_power: self.power.gpu_power_watts(),
-            charging: self.battery.is_charging(),
-            health_percent: self.battery.health_percent(),
-            time_remaining_mins: self.battery.time_remaining_minutes(),
-        }
-    }
-
     fn handle_request(&self, request: DaemonRequest) -> DaemonResponse {
         match request {
-            DaemonRequest::Ping => DaemonResponse::Pong,
             DaemonRequest::GetStatus => DaemonResponse::Status(self.get_status()),
-            DaemonRequest::GetCurrentData => DaemonResponse::CurrentData(self.get_current_data()),
-            DaemonRequest::GetSamples { from, to } => {
-                match self.recorder.store().get_samples(from, to) {
-                    Ok(samples) => DaemonResponse::Samples(samples),
-                    Err(e) => DaemonResponse::Error(e.to_string()),
-                }
-            }
             DaemonRequest::GetHourlyStats { from, to } => {
                 match self.recorder.store().get_hourly_stats(from, to) {
                     Ok(stats) => DaemonResponse::HourlyStats(stats),
@@ -176,12 +156,6 @@ impl DaemonState {
             DaemonRequest::GetDailyStats { from, to } => {
                 match self.recorder.store().get_daily_stats(&from, &to) {
                     Ok(stats) => DaemonResponse::DailyStats(stats),
-                    Err(e) => DaemonResponse::Error(e.to_string()),
-                }
-            }
-            DaemonRequest::GetTopProcesses { date, limit } => {
-                match self.recorder.store().get_daily_top_processes(&date, limit) {
-                    Ok(processes) => DaemonResponse::TopProcesses(processes),
                     Err(e) => DaemonResponse::Error(e.to_string()),
                 }
             }
@@ -195,10 +169,6 @@ impl DaemonState {
                     Err(e) => DaemonResponse::Error(e.to_string()),
                 }
             }
-            DaemonRequest::GetDatabaseStats => match self.recorder.store().get_stats() {
-                Ok(stats) => DaemonResponse::DatabaseStats(stats),
-                Err(e) => DaemonResponse::Error(e.to_string()),
-            },
             DaemonRequest::Shutdown => DaemonResponse::Ok,
         }
     }

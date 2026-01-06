@@ -525,38 +525,6 @@ impl HistoryStore {
         Ok(())
     }
 
-    pub fn get_daily_top_processes(
-        &self,
-        date: &str,
-        limit: usize,
-    ) -> Result<Vec<DailyTopProcess>> {
-        let mut stmt = self.conn.prepare(
-            "SELECT id, date, process_name, total_impact, avg_cpu, avg_memory_mb, sample_count, avg_power, total_energy_wh
-             FROM daily_top_processes
-             WHERE date = ?
-             ORDER BY total_energy_wh DESC
-             LIMIT ?",
-        )?;
-
-        let processes = stmt
-            .query_map(params![date, limit as i64], |row| {
-                Ok(DailyTopProcess {
-                    id: Some(row.get(0)?),
-                    date: row.get(1)?,
-                    process_name: row.get(2)?,
-                    total_impact: row.get(3)?,
-                    avg_cpu: row.get(4)?,
-                    avg_memory_mb: row.get(5)?,
-                    sample_count: row.get(6)?,
-                    avg_power: row.get(7)?,
-                    total_energy_wh: row.get(8)?,
-                })
-            })?
-            .collect::<std::result::Result<Vec<_>, _>>()?;
-
-        Ok(processes)
-    }
-
     pub fn get_top_processes_range(
         &self,
         from: &str,
