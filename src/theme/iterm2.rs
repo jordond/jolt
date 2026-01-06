@@ -10,6 +10,88 @@ const ITERM2_API_URL: &str =
 
 pub const ITERM2_GALLERY_URL: &str = "https://iterm2colorschemes.com/";
 
+/// Known dark/light variant pairs from the iTerm2-Color-Schemes repository.
+/// Format: (dark_variant, light_variant)
+/// This table enables instant lookup without network requests.
+static VARIANT_PAIRS: &[(&str, &str)] = &[
+    // Standard Dark/Light suffix pairs
+    ("3024 Night", "3024 Day"),
+    ("Aizen Dark", "Aizen Light"),
+    ("Atom One Dark", "Atom One Light"),
+    ("Belafonte Night", "Belafonte Day"),
+    ("Bluloco Dark", "Bluloco Light"),
+    ("Builtin Dark", "Builtin Light"),
+    ("Builtin Tango Dark", "Builtin Tango Light"),
+    ("Farmhouse Dark", "Farmhouse Light"),
+    ("Flexoki Dark", "Flexoki Light"),
+    ("GitHub Dark", "GitHub"),
+    ("GitHub Dark Colorblind", "GitHub Light Colorblind"),
+    ("GitHub Dark Default", "GitHub Light Default"),
+    ("GitHub Dark High Contrast", "GitHub Light High Contrast"),
+    ("GitLab Dark", "GitLab Light"),
+    ("Gruvbox Dark", "Gruvbox Light"),
+    ("Gruvbox Dark Hard", "Gruvbox Light Hard"),
+    ("Gruvbox Material Dark", "Gruvbox Material Light"),
+    ("Iceberg Dark", "Iceberg Light"),
+    ("Melange Dark", "Melange Light"),
+    ("Neobones Dark", "Neobones Light"),
+    ("Nvim Dark", "Nvim Light"),
+    ("One Double Dark", "One Double Light"),
+    ("One Half Dark", "One Half Light"),
+    ("Pencil Dark", "Pencil Light"),
+    ("Raycast Dark", "Raycast Light"),
+    ("Selenized Dark", "Selenized Light"),
+    ("Seoulbones Dark", "Seoulbones Light"),
+    ("Tinacious Design Dark", "Tinacious Design Light"),
+    ("Violet Dark", "Violet Light"),
+    ("Xcode Dark", "Xcode Light"),
+    ("Xcode Dark hc", "Xcode Light hc"),
+    ("Zenbones Dark", "Zenbones Light"),
+    ("Zenwritten Dark", "Zenwritten Light"),
+    ("iTerm2 Dark Background", "iTerm2 Light Background"),
+    ("iTerm2 Solarized Dark", "iTerm2 Solarized Light"),
+    ("iTerm2 Tango Dark", "iTerm2 Tango Light"),
+    // Base name = dark variant
+    ("Adwaita Dark", "Adwaita"),
+    ("Night Owl", "Light Owl"),
+    ("Nord", "Nord Light"),
+    ("Onenord", "Onenord Light"),
+    ("Pro", "Pro Light"),
+    ("Terminal Basic Dark", "Terminal Basic"),
+    ("No Clown Fiesta", "No Clown Fiesta Light"),
+    // Special naming patterns
+    ("Rose Pine Moon", "Rose Pine Dawn"),
+    ("Rose Pine", "Rose Pine Dawn"),
+    ("TokyoNight Night", "TokyoNight Day"),
+    ("TokyoNight Moon", "TokyoNight Day"),
+    ("TokyoNight Storm", "TokyoNight Day"),
+    ("TokyoNight", "TokyoNight Day"),
+    ("Ayu", "Ayu Light"),
+    ("Ayu Mirage", "Ayu Light"),
+    ("Everforest Dark Hard", "Everforest Light Med"),
+    ("Tomorrow Night", "Tomorrow"),
+    ("Tomorrow Night Blue", "Tomorrow"),
+    ("Tomorrow Night Bright", "Tomorrow"),
+    ("Tomorrow Night Burns", "Tomorrow"),
+    ("Tomorrow Night Eighties", "Tomorrow"),
+    // Catppuccin family (Latte = light, others = dark)
+    ("Catppuccin Frappe", "Catppuccin Latte"),
+    ("Catppuccin Macchiato", "Catppuccin Latte"),
+    ("Catppuccin Mocha", "Catppuccin Latte"),
+];
+
+/// Look up a known variant pair by theme name.
+/// Returns (dark_name, light_name) if found.
+fn lookup_variant_pair(name: &str) -> Option<(&'static str, &'static str)> {
+    let lower = name.to_lowercase();
+    for &(dark, light) in VARIANT_PAIRS {
+        if dark.to_lowercase() == lower || light.to_lowercase() == lower {
+            return Some((dark, light));
+        }
+    }
+    None
+}
+
 #[derive(Debug)]
 pub enum Iterm2Error {
     NetworkError(String),
@@ -72,10 +154,19 @@ pub struct Iterm2Scheme {
 }
 
 fn detect_variant(name: &str) -> SchemeVariant {
+    if let Some((dark, light)) = lookup_variant_pair(name) {
+        let lower = name.to_lowercase();
+        if dark.to_lowercase() == lower {
+            return SchemeVariant::Dark;
+        } else if light.to_lowercase() == lower {
+            return SchemeVariant::Light;
+        }
+    }
+
     let lower = name.to_lowercase();
-    if lower.contains("light") {
+    if lower.contains("light") || lower.contains("day") || lower.contains("dawn") {
         SchemeVariant::Light
-    } else if lower.contains("dark") {
+    } else if lower.contains("dark") || lower.contains("night") || lower.contains("moon") {
         SchemeVariant::Dark
     } else {
         SchemeVariant::Unknown
@@ -83,8 +174,16 @@ fn detect_variant(name: &str) -> SchemeVariant {
 }
 
 fn find_counterpart_name(name: &str) -> Option<String> {
-    let variant = detect_variant(name);
+    if let Some((dark, light)) = lookup_variant_pair(name) {
+        let lower = name.to_lowercase();
+        if dark.to_lowercase() == lower {
+            return Some(light.to_string());
+        } else {
+            return Some(dark.to_string());
+        }
+    }
 
+    let variant = detect_variant(name);
     match variant {
         SchemeVariant::Dark => {
             let lower = name.to_lowercase();
@@ -416,6 +515,38 @@ pub fn search_schemes(query: &str) -> Result<Vec<String>, Iterm2Error> {
     Ok(matches)
 }
 
+pub fn find_variant_suggestions(
+    name: &str,
+    target_variant: SchemeVariant,
+) -> Result<Vec<String>, Iterm2Error> {
+    let base_name = derive_base_name(name);
+    let all_schemes = list_available_schemes()?;
+    let base_lower = base_name.to_lowercase();
+
+    let mut suggestions: Vec<String> = all_schemes
+        .into_iter()
+        .filter(|s| {
+            let s_lower = s.to_lowercase();
+            if s_lower == name.to_lowercase() {
+                return false;
+            }
+
+            let matches_base = s_lower.contains(&base_lower)
+                || base_lower.contains(&derive_base_name(s).to_lowercase());
+
+            if !matches_base {
+                return false;
+            }
+
+            let variant = detect_variant(s);
+            variant == target_variant || variant == SchemeVariant::Unknown
+        })
+        .collect();
+
+    suggestions.sort();
+    Ok(suggestions)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -481,5 +612,55 @@ mod tests {
         assert_eq!(derive_base_name("Gruvbox Dark Hard"), "Gruvbox Dark Hard");
         assert_eq!(derive_base_name("One Dark"), "One");
         assert_eq!(derive_base_name("Dracula"), "Dracula");
+    }
+
+    #[test]
+    fn test_lookup_variant_pair() {
+        let mocha = lookup_variant_pair("Catppuccin Mocha");
+        assert!(mocha.is_some());
+        assert_eq!(mocha.unwrap().1, "Catppuccin Latte");
+
+        let latte = lookup_variant_pair("Catppuccin Latte");
+        assert!(latte.is_some());
+        assert_eq!(latte.unwrap().1, "Catppuccin Latte");
+
+        assert_eq!(
+            lookup_variant_pair("Tomorrow Night"),
+            Some(("Tomorrow Night", "Tomorrow"))
+        );
+        assert_eq!(lookup_variant_pair("Nord"), Some(("Nord", "Nord Light")));
+        assert_eq!(lookup_variant_pair("Dracula"), None);
+    }
+
+    #[test]
+    fn test_find_counterpart_via_lookup() {
+        assert_eq!(
+            find_counterpart_name("Catppuccin Mocha"),
+            Some("Catppuccin Latte".to_string())
+        );
+        let latte_counterpart = find_counterpart_name("Catppuccin Latte");
+        assert!(latte_counterpart.is_some());
+        assert!(latte_counterpart.unwrap().starts_with("Catppuccin"));
+
+        assert_eq!(
+            find_counterpart_name("Tomorrow Night"),
+            Some("Tomorrow".to_string())
+        );
+        assert_eq!(
+            find_counterpart_name("Nord"),
+            Some("Nord Light".to_string())
+        );
+        assert_eq!(
+            find_counterpart_name("Nord Light"),
+            Some("Nord".to_string())
+        );
+    }
+
+    #[test]
+    fn test_detect_variant_via_lookup() {
+        assert_eq!(detect_variant("Catppuccin Mocha"), SchemeVariant::Dark);
+        assert_eq!(detect_variant("Catppuccin Latte"), SchemeVariant::Light);
+        assert_eq!(detect_variant("Nord"), SchemeVariant::Dark);
+        assert_eq!(detect_variant("Tomorrow"), SchemeVariant::Light);
     }
 }

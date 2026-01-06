@@ -647,13 +647,8 @@ fn run_theme(command: Option<ThemeCommands>) -> Result<()> {
 
             match theme::iterm2::import_scheme(&scheme, name.as_deref()) {
                 Ok(result) => {
-                    let variants: Vec<&str> = [
-                        result.dark_source.as_ref().map(|_| "dark"),
-                        result.light_source.as_ref().map(|_| "light"),
-                    ]
-                    .into_iter()
-                    .flatten()
-                    .collect();
+                    let has_dark = result.dark_source.is_some();
+                    let has_light = result.light_source.is_some();
 
                     println!("Imported theme to: {}", result.path.display());
 
@@ -664,15 +659,44 @@ fn run_theme(command: Option<ThemeCommands>) -> Result<()> {
                         println!("  light variant: {}", light);
                     }
 
-                    if variants.len() == 2 {
+                    if has_dark && has_light {
                         println!(
                             "\nBoth dark and light variants imported! The theme will adapt to your system appearance."
                         );
                     } else {
+                        let missing = if has_dark {
+                            theme::iterm2::SchemeVariant::Light
+                        } else {
+                            theme::iterm2::SchemeVariant::Dark
+                        };
+                        let missing_name = if has_dark { "light" } else { "dark" };
+
                         println!(
-                            "\nOnly {} variant available. The theme will be used for both dark and light modes.",
-                            variants.first().unwrap_or(&"unknown")
+                            "\nOnly {} variant found. Looking for {} variant suggestions...",
+                            if has_dark { "dark" } else { "light" },
+                            missing_name
                         );
+
+                        match theme::iterm2::find_variant_suggestions(&scheme, missing) {
+                            Ok(suggestions) if !suggestions.is_empty() => {
+                                println!("\nPossible {} variants:", missing_name);
+                                for (i, suggestion) in suggestions.iter().take(10).enumerate() {
+                                    println!("  {}. {}", i + 1, suggestion);
+                                }
+                                if suggestions.len() > 10 {
+                                    println!("  ... and {} more", suggestions.len() - 10);
+                                }
+                                println!(
+                                    "\nTo add a variant, edit the theme file or import separately."
+                                );
+                            }
+                            Ok(_) => {
+                                println!("No {} variant suggestions found.", missing_name);
+                            }
+                            Err(_) => {
+                                println!("Could not fetch variant suggestions.");
+                            }
+                        }
                     }
 
                     println!("\nUse the theme picker (T key) to select it.");
