@@ -266,6 +266,9 @@ If a comment appears incorrect or already resolved:
 </command-instruction>
 
 <current-context>
+<repo>
+!`gh repo view --json owner,name --jq '"\(.owner.login)/\(.name)"'`
+</repo>
 <open-prs>
 !`gh pr list --state open --json number,title,reviewDecision --jq '.[] | "- #\(.number) \(.title) [\(.reviewDecision // "pending")]"' 2>/dev/null || echo "no open PRs"`
 </open-prs>
