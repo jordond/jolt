@@ -1,7 +1,7 @@
 use ratatui::{
     buffer::Buffer,
     layout::{Constraint, Direction, Layout, Rect},
-    style::{Modifier, Style},
+    style::{Color, Modifier, Style},
     text::{Line, Span},
     widgets::{Block, Borders, Paragraph, Widget},
     Frame,
@@ -10,6 +10,21 @@ use ratatui::{
 use crate::app::App;
 use crate::data::battery::ChargeState;
 use crate::theme::ThemeColors;
+
+fn percent_to_color(
+    percent: f32,
+    high_threshold: f32,
+    low_threshold: f32,
+    theme: &ThemeColors,
+) -> Color {
+    if percent > high_threshold {
+        theme.success
+    } else if percent > low_threshold {
+        theme.warning
+    } else {
+        theme.danger
+    }
+}
 
 pub fn render(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) {
     let block = Block::default()
@@ -48,14 +63,7 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) {
 fn render_battery_gauge(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) {
     let percent = app.battery.charge_percent();
     let ratio = (percent / 100.0).clamp(0.0, 1.0);
-
-    let gauge_color = if percent > 50.0 {
-        theme.success
-    } else if percent > 20.0 {
-        theme.warning
-    } else {
-        theme.danger
-    };
+    let gauge_color = percent_to_color(percent, 50.0, 20.0, theme);
 
     let gauge = ThickGauge {
         ratio,
@@ -201,13 +209,7 @@ fn render_battery_info_card(frame: &mut Frame, area: Rect, app: &App, theme: &Th
         app.battery.discharge_watts().map(|w| format!("{:.1}W", w))
     };
 
-    let health_color = if app.battery.health_percent() >= 80.0 {
-        theme.success
-    } else if app.battery.health_percent() >= 50.0 {
-        theme.warning
-    } else {
-        theme.danger
-    };
+    let health_color = percent_to_color(app.battery.health_percent(), 79.0, 49.0, theme);
 
     let cycles_text = app
         .battery
@@ -215,13 +217,7 @@ fn render_battery_info_card(frame: &mut Frame, area: Rect, app: &App, theme: &Th
         .map_or("—".to_string(), |c| c.to_string());
 
     let percent = app.battery.charge_percent();
-    let percent_color = if percent > 50.0 {
-        theme.success
-    } else if percent > 20.0 {
-        theme.warning
-    } else {
-        theme.danger
-    };
+    let percent_color = percent_to_color(percent, 50.0, 20.0, theme);
 
     let single_line = build_single_line(
         percent,
