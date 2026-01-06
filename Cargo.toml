@@ -32,6 +32,8 @@ toml = "0.9.8"
 dirs = "6"
 ureq = "2"
 plist = "1"
+rusqlite = { version = "0.32", features = ["bundled"] }
+daemonize = "0.5"
 
 [profile.release]
 lto = true

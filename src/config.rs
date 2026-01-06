@@ -45,6 +45,30 @@ fn default_theme_name() -> String {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]
+pub struct HistoryConfig {
+    pub enabled: bool,
+    pub sample_interval_secs: u64,
+    pub retention_raw_days: u32,
+    pub retention_hourly_days: u32,
+    pub retention_daily_days: u32,
+    pub max_database_mb: u32,
+}
+
+impl Default for HistoryConfig {
+    fn default() -> Self {
+        Self {
+            enabled: true,
+            sample_interval_secs: 60,
+            retention_raw_days: 30,
+            retention_hourly_days: 180,
+            retention_daily_days: 0,
+            max_database_mb: 500,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default)]
 pub struct UserConfig {
     pub appearance: AppearanceMode,
     #[serde(default = "default_theme_name")]
@@ -58,6 +82,8 @@ pub struct UserConfig {
     pub merge_mode: bool,
     #[serde(default)]
     pub excluded_processes: Vec<String>,
+    #[serde(default)]
+    pub history: HistoryConfig,
 }
 
 impl Default for UserConfig {
@@ -73,6 +99,7 @@ impl Default for UserConfig {
             energy_threshold: 0.5,
             merge_mode: true,
             excluded_processes: Vec::new(),
+            history: HistoryConfig::default(),
         }
     }
 }
@@ -94,6 +121,19 @@ pub fn config_dir() -> PathBuf {
 pub fn cache_dir() -> PathBuf {
     dirs::cache_dir()
         .unwrap_or_else(|| PathBuf::from("~/.cache"))
+        .join("jolt")
+}
+
+pub fn data_dir() -> PathBuf {
+    dirs::data_dir()
+        .unwrap_or_else(|| PathBuf::from("~/.local/share"))
+        .join("jolt")
+}
+
+pub fn runtime_dir() -> PathBuf {
+    dirs::runtime_dir()
+        .or_else(dirs::cache_dir)
+        .unwrap_or_else(|| PathBuf::from("/tmp"))
         .join("jolt")
 }
 
