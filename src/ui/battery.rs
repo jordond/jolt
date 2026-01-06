@@ -347,7 +347,10 @@ fn build_single_line<'a>(
 
     spans.extend([
         Span::styled("  │  ", Style::default().fg(theme.border)),
-        Span::styled(format!("{:.0}%", health), Style::default().fg(health_color)),
+        Span::styled(
+            format!("capacity {:.0}%", health),
+            Style::default().fg(health_color),
+        ),
         Span::styled(
             format!(" ({:.0}/{:.0}Wh)", capacity, design_capacity),
             Style::default().fg(theme.muted),
