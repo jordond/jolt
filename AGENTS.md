@@ -1,10 +1,27 @@
 # AGENTS.md - Coding Agent Guidelines for jolt
 
-A terminal-based battery and energy monitor TUI for macOS Apple Silicon.
+A monorepo containing a terminal-based battery and energy monitor TUI for macOS Apple Silicon, plus its documentation website.
 
-## Build Commands
+## Repository Structure
+
+```
+jolt/
+├── cli/                   # Rust CLI application
+│   ├── src/               # Rust source code
+│   ├── Cargo.toml         # Rust dependencies
+│   └── build.rs           # Build script
+├── website/               # Astro documentation site
+├── scripts/               # Repository-level scripts
+├── .github/workflows/     # CI/CD configuration
+└── AGENTS.md              # This file
+```
+
+## CLI Build Commands
+
+All cargo commands must be run from the `cli/` directory:
 
 ```bash
+cd cli
 cargo build                    # Development build
 cargo build --release          # Release build (optimized, stripped)
 cargo run                      # Run TUI
@@ -13,28 +30,30 @@ cargo run -- pipe --samples 2  # JSON output
 cargo run -- daemon start      # Start background recorder
 ```
 
-## Lint & Check Commands
+## CLI Lint & Check Commands
 
 ```bash
+cd cli
 cargo fmt --all --check                                      # Format check (CI enforces)
 cargo fmt --all                                              # Format code
 cargo clippy --all-targets --all-features -- -D warnings     # Clippy (CI enforces)
 cargo check --all-targets --all-features                     # Type check
 ```
 
-## Test Commands
+## CLI Test Commands
 
 ```bash
+cd cli
 cargo test                     # Run all tests
 cargo test test_name           # Run single test by name
 cargo test module_name::       # Run tests in module
 cargo test -- --nocapture      # Run with output
 ```
 
-## Project Structure
+## CLI Project Structure
 
 ```
-src/
+cli/src/
 ├── main.rs              # CLI entry (clap), subcommands
 ├── app.rs               # App state, Action enum, event handling
 ├── config.rs            # UserConfig, HistoryConfig, persistence
@@ -162,32 +181,32 @@ pub enum Action {
 
 ### Adding a Config Option
 
-1. Add field to `UserConfig` in `config.rs` with serde default
-2. Add to config editor in `ui/config_editor.rs`
+1. Add field to `UserConfig` in `cli/src/config.rs` with serde default
+2. Add to config editor in `cli/src/ui/config_editor.rs`
 3. Add handler in `App::toggle_config_value` or similar
 
 ### Adding a View/Modal
 
-1. Add variant to `AppView` enum in `app.rs`
+1. Add variant to `AppView` enum in `cli/src/app.rs`
 2. Add `Action::Toggle*` variant
-3. Add key handler in `input.rs`
-4. Add render function in `ui/`, match arm in `ui/mod.rs`
+3. Add key handler in `cli/src/input.rs`
+4. Add render function in `cli/src/ui/`, match arm in `cli/src/ui/mod.rs`
 
 ### Adding a Theme
 
-1. Create `.toml` in `src/theme/themes/` with `[dark]` and/or `[light]` sections
+1. Create `.toml` in `cli/src/theme/themes/` with `[dark]` and/or `[light]` sections
 2. Theme is auto-loaded by `builtin.rs`
 
 ### Adding a Data Source
 
-1. Create struct in `data/` with `new()` and `refresh()` methods
-2. Re-export in `data/mod.rs`
+1. Create struct in `cli/src/data/` with `new()` and `refresh()` methods
+2. Re-export in `cli/src/data/mod.rs`
 3. Add to `App` struct, init in `App::new()`, refresh in `App::tick()`
 
 ## File Organization
 
 - **Scratch files**: Store plans and temp files in `./scratchpad/` (gitignored)
-- **Themes**: Builtin themes in `src/theme/themes/*.toml`
+- **CLI Themes**: Builtin themes in `cli/src/theme/themes/*.toml`
 - **User data**: `~/.config/jolt/` for config, `~/.local/share/jolt/` for data
 
 ## Task & Issue Workflow

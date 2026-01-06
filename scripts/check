@@ -18,7 +18,7 @@ print_error() {
 	echo -e "${RED}✗${NC} $1"
 }
 
-cd "$(dirname "$0")/.."
+cd "$(dirname "$0")/../cli"
 
 print_step "Checking format..."
 if cargo fmt --all --check; then
