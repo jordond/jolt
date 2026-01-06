@@ -1,5 +1,5 @@
 # Rust
-cli/target/
+target
 **/*.rs.bk
 *.pdb
 
