@@ -3,13 +3,32 @@ description: Address PR review comments one by one with user confirmation
 ---
 
 <command-instruction>
-BEFORE ANYTHING ELSE, ASK THE USE FOR A PR NUMBER. THEN USE THAT PR NUMBER FOR THE REAMINING WORK.
+BEFORE ANYTHING ELSE, ASK THE USER FOR A PR NUMBER. THEN USE THAT PR NUMBER FOR THE REMAINING WORK.
 
 Address PR review comments one by one with user confirmation.
 
 ## Procedure
 
-1. **Fetch PR review comments**
+1. **Verify correct branch**
+
+   After getting the PR number, verify the current branch matches the PR's head branch:
+
+   ```bash
+   # Get PR's head branch
+   PR_BRANCH=$(gh pr view <pr-number> --json headRefName --jq '.headRefName')
+   CURRENT_BRANCH=$(git branch --show-current)
+
+   if [ "$CURRENT_BRANCH" != "$PR_BRANCH" ]; then
+     echo "WARNING: Current branch ($CURRENT_BRANCH) does not match PR branch ($PR_BRANCH)"
+   fi
+   ```
+
+   - If branches don't match, **STOP** and ask user:
+     - "You're on `<current-branch>` but PR #X is on `<pr-branch>`. Switch to correct branch? (YES / NO)"
+     - If YES: `git checkout <pr-branch>`
+     - If NO: Abort and explain they need to be on the correct branch
+
+2. **Fetch PR review comments**
 
    ```bash
    gh api repos/:owner/:repo/pulls/<pr-number>/comments --paginate | jq -r '.[] | "---\n## Comment \(.id)\n**File:** \(.path):\(.line)\n**Suggestion:**\n\(.body)\n"'

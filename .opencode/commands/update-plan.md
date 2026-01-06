@@ -3,13 +3,32 @@ description: Update an existing plan with progress, always including a continuat
 ---
 
 <command-instruction>
-BEFORE ANYTHING ELSE, ASK THE USER FOR AN ISSUE NUMBER. THEN USE THAT PR NUMBER FOR THE REAMINING WORK. DO NOT PROCEED WITHOUT AN ISSUE NUMBER.
+BEFORE ANYTHING ELSE, ASK THE USER FOR AN ISSUE NUMBER. THEN USE THAT ISSUE NUMBER FOR THE REMAINING WORK. DO NOT PROCEED WITHOUT AN ISSUE NUMBER.
 
 Update an existing plan with progress. Always includes a continuation prompt.
 
 ## Procedure
 
-1. **Fetch current state** - `gh issue view <issue-number>`
+1. **Verify correct branch**
+
+   After getting the issue number, verify the current branch is associated with that issue:
+
+   ```bash
+   CURRENT_BRANCH=$(git branch --show-current)
+   ISSUE_NUM=<issue-number>
+
+   # Check if branch name contains issue number (e.g., feat/issue-42-description or fix/issue-42-description)
+   if [[ ! "$CURRENT_BRANCH" =~ issue-${ISSUE_NUM} ]]; then
+     echo "WARNING: Current branch ($CURRENT_BRANCH) does not appear to be for issue #$ISSUE_NUM"
+   fi
+   ```
+
+   - If branch doesn't match the issue, **STOP** and ask user:
+     - "You're on `<current-branch>` but updating issue #X. Expected a branch like `feat/issue-X-*` or `fix/issue-X-*`. Continue anyway? (YES / NO)"
+     - If NO: List branches that might match the issue and offer to switch
+     - If YES: Proceed with caution
+
+2. **Fetch current state** - `gh issue view <issue-number>`
 2. **Summarize progress** - What was completed, what changed, any blockers
 3. **Post update comment** with this format:
 

@@ -3,9 +3,36 @@ description: Create a PR to complete a plan, auto-closing the issue when merged
 ---
 
 <command-instruction>
-BEFORE ANYTHING ELSE, ASK THE USER FOR AN ISSUE NUMBER. THEN USE THAT PR NUMBER FOR THE REAMINING WORK. DO NOT PROCEED WITHOUT AN ISSUE NUMBER.
+BEFORE ANYTHING ELSE, ASK THE USER FOR AN ISSUE NUMBER. THEN USE THAT ISSUE NUMBER FOR THE REMAINING WORK. DO NOT PROCEED WITHOUT AN ISSUE NUMBER.
 
 Create a PR to complete a plan. The PR will auto-close the issue when merged.
+
+## Procedure (Step 0 - REQUIRED)
+
+**Verify correct branch**
+
+After getting the issue number, verify the current branch is associated with that issue:
+
+```bash
+CURRENT_BRANCH=$(git branch --show-current)
+ISSUE_NUM=<issue-number>
+
+# Check if branch name contains issue number (e.g., feat/issue-42-description or fix/issue-42-description)
+if [[ ! "$CURRENT_BRANCH" =~ issue-${ISSUE_NUM} ]]; then
+  echo "WARNING: Current branch ($CURRENT_BRANCH) does not appear to be for issue #$ISSUE_NUM"
+fi
+
+# Also verify we're not on main/master
+if [[ "$CURRENT_BRANCH" == "main" || "$CURRENT_BRANCH" == "master" ]]; then
+  echo "ERROR: Cannot create PR from main/master branch"
+fi
+```
+
+- If on `main`/`master`: **STOP** - Cannot create PR from main branch
+- If branch doesn't match the issue, **STOP** and ask user:
+  - "You're on `<current-branch>` but completing issue #X. Expected a branch like `feat/issue-X-*` or `fix/issue-X-*`. Continue anyway? (YES / NO)"
+  - If NO: List branches that might match the issue and offer to switch
+  - If YES: Proceed with caution
 
 ## Prerequisites
 
