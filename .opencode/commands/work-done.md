@@ -7,14 +7,21 @@ BEFORE ANYTHING ELSE, ASK THE USER FOR AN ISSUE NUMBER. THEN USE THAT PR NUMBER 
 
 Create a PR to complete a plan. The PR will auto-close the issue when merged.
 
+## Prerequisites
+
+- **Copilot Review Extension** (optional but recommended):
+  ```bash
+  gh extension install ChrisCarini/gh-copilot-review
+  ```
+
 ## Procedure
 
 1. **Verify completion** - Ensure all tasks in the issue are done
 2. **Commit changes** - If uncommitted work exists, create a commit
 3. **Push branch** - `git push -u origin <branch-name>`
-4. **Create PR** with this format:
+4. **Create PR** and capture the URL:
    ```bash
-   gh pr create --title "<descriptive title>" --body "$(cat <<'EOF'
+   PR_URL=$(gh pr create --title "<descriptive title>" --body "$(cat <<'EOF'
    ## Summary
 
    <1-3 bullet points describing what was done>
@@ -25,9 +32,14 @@ Create a PR to complete a plan. The PR will auto-close the issue when merged.
 
    Fixes #<issue-number>
    EOF
-   )"
+   )")
+   echo "Created PR: $PR_URL"
    ```
-5. **Post final update** - Comment on the issue with PR link and summary
+5. **Request Copilot review** (if extension installed):
+   ```bash
+   gh copilot-review "$PR_URL"
+   ```
+6. **Post final update** - Comment on the issue with PR link and summary
 </command-instruction>
 
 <current-context>
