@@ -348,7 +348,7 @@ fn build_single_line<'a>(
     spans.extend([
         Span::styled("  │  ", Style::default().fg(theme.border)),
         Span::styled(
-            format!("capacity {:.0}%", health),
+            format!("health {:.0}%", health),
             Style::default().fg(health_color),
         ),
         Span::styled(
