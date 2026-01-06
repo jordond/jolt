@@ -2,9 +2,9 @@ use std::io::{BufRead, BufReader, Write};
 use std::os::unix::net::UnixStream;
 use std::time::Duration;
 
-use crate::daemon::protocol::{CurrentData, DaemonRequest, DaemonResponse, DaemonStatus};
+use crate::daemon::protocol::{DaemonRequest, DaemonResponse, DaemonStatus};
 use crate::daemon::socket_path;
-use crate::data::{DailyStat, DailyTopProcess, DatabaseStats, HourlyStat, Sample};
+use crate::data::{DailyStat, DailyTopProcess, HourlyStat};
 
 #[derive(Debug, thiserror::Error)]
 pub enum ClientError {
@@ -24,7 +24,6 @@ pub struct DaemonClient {
     stream: UnixStream,
 }
 
-#[allow(dead_code)]
 impl DaemonClient {
     pub fn connect() -> Result<Self> {
         let path = socket_path();
@@ -49,33 +48,9 @@ impl DaemonClient {
         DaemonResponse::from_json(&line).map_err(|e| ClientError::Protocol(e.to_string()))
     }
 
-    pub fn ping(&mut self) -> Result<bool> {
-        match self.send_request(DaemonRequest::Ping)? {
-            DaemonResponse::Pong => Ok(true),
-            DaemonResponse::Error(e) => Err(ClientError::Daemon(e)),
-            _ => Err(ClientError::Protocol("Unexpected response".into())),
-        }
-    }
-
     pub fn get_status(&mut self) -> Result<DaemonStatus> {
         match self.send_request(DaemonRequest::GetStatus)? {
             DaemonResponse::Status(status) => Ok(status),
-            DaemonResponse::Error(e) => Err(ClientError::Daemon(e)),
-            _ => Err(ClientError::Protocol("Unexpected response".into())),
-        }
-    }
-
-    pub fn get_current_data(&mut self) -> Result<CurrentData> {
-        match self.send_request(DaemonRequest::GetCurrentData)? {
-            DaemonResponse::CurrentData(data) => Ok(data),
-            DaemonResponse::Error(e) => Err(ClientError::Daemon(e)),
-            _ => Err(ClientError::Protocol("Unexpected response".into())),
-        }
-    }
-
-    pub fn get_samples(&mut self, from: i64, to: i64) -> Result<Vec<Sample>> {
-        match self.send_request(DaemonRequest::GetSamples { from, to })? {
-            DaemonResponse::Samples(samples) => Ok(samples),
             DaemonResponse::Error(e) => Err(ClientError::Daemon(e)),
             _ => Err(ClientError::Protocol("Unexpected response".into())),
         }
@@ -100,17 +75,6 @@ impl DaemonClient {
         }
     }
 
-    pub fn get_top_processes(&mut self, date: &str, limit: usize) -> Result<Vec<DailyTopProcess>> {
-        match self.send_request(DaemonRequest::GetTopProcesses {
-            date: date.to_string(),
-            limit,
-        })? {
-            DaemonResponse::TopProcesses(processes) => Ok(processes),
-            DaemonResponse::Error(e) => Err(ClientError::Daemon(e)),
-            _ => Err(ClientError::Protocol("Unexpected response".into())),
-        }
-    }
-
     pub fn get_top_processes_range(
         &mut self,
         from: &str,
@@ -123,14 +87,6 @@ impl DaemonClient {
             limit,
         })? {
             DaemonResponse::TopProcesses(processes) => Ok(processes),
-            DaemonResponse::Error(e) => Err(ClientError::Daemon(e)),
-            _ => Err(ClientError::Protocol("Unexpected response".into())),
-        }
-    }
-
-    pub fn get_database_stats(&mut self) -> Result<DatabaseStats> {
-        match self.send_request(DaemonRequest::GetDatabaseStats)? {
-            DaemonResponse::DatabaseStats(stats) => Ok(stats),
             DaemonResponse::Error(e) => Err(ClientError::Daemon(e)),
             _ => Err(ClientError::Protocol("Unexpected response".into())),
         }

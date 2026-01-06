@@ -1302,9 +1302,4 @@ impl App {
         self.daemon_connected = false;
         self.daemon_status = None;
     }
-
-    #[allow(dead_code)]
-    pub fn is_daemon_running(&self) -> bool {
-        crate::daemon::is_daemon_running()
-    }
 }

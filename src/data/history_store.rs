@@ -5,7 +5,7 @@
 
 use std::path::PathBuf;
 
-use chrono::{DateTime, Timelike, Utc};
+use chrono::Utc;
 use rusqlite::{params, Connection, OptionalExtension};
 use serde::{Deserialize, Serialize};
 
@@ -100,19 +100,12 @@ pub struct BatteryHealthSnapshot {
 
 /// Errors that can occur during history storage operations
 #[derive(Debug, thiserror::Error)]
-#[allow(dead_code)]
 pub enum HistoryStoreError {
     #[error("Database error: {0}")]
     Database(#[from] rusqlite::Error),
 
     #[error("IO error: {0}")]
     Io(#[from] std::io::Error),
-
-    #[error("Migration failed: {0}")]
-    Migration(String),
-
-    #[error("Database corrupted or inaccessible")]
-    Corrupted,
 }
 
 pub type Result<T> = std::result::Result<T, HistoryStoreError>;
@@ -123,7 +116,6 @@ pub struct HistoryStore {
     path: PathBuf,
 }
 
-#[allow(dead_code)]
 impl HistoryStore {
     /// Open or create the history database
     pub fn open() -> Result<Self> {
@@ -144,23 +136,6 @@ impl HistoryStore {
         store.initialize_schema()?;
 
         Ok(store)
-    }
-
-    /// Open an in-memory database (for testing)
-    #[allow(dead_code)]
-    pub fn open_in_memory() -> Result<Self> {
-        let conn = Connection::open_in_memory()?;
-        let mut store = Self {
-            conn,
-            path: PathBuf::from(":memory:"),
-        };
-        store.initialize_schema()?;
-        Ok(store)
-    }
-
-    /// Get the database file path
-    pub fn path(&self) -> &PathBuf {
-        &self.path
     }
 
     /// Get the database file size in bytes
@@ -356,39 +331,6 @@ impl HistoryStore {
             .collect::<std::result::Result<Vec<_>, _>>()?;
 
         Ok(samples)
-    }
-
-    /// Get the most recent sample
-    pub fn get_latest_sample(&self) -> Result<Option<Sample>> {
-        let sample = self
-            .conn
-            .query_row(
-                "SELECT id, timestamp, battery_percent, power_watts, cpu_power, gpu_power, charging_state
-                 FROM samples ORDER BY timestamp DESC LIMIT 1",
-                [],
-                |row| {
-                    Ok(Sample {
-                        id: Some(row.get(0)?),
-                        timestamp: row.get(1)?,
-                        battery_percent: row.get(2)?,
-                        power_watts: row.get(3)?,
-                        cpu_power: row.get(4)?,
-                        gpu_power: row.get(5)?,
-                        charging_state: ChargingState::from(row.get::<_, i32>(6)?),
-                    })
-                },
-            )
-            .optional()?;
-
-        Ok(sample)
-    }
-
-    /// Get total sample count
-    pub fn sample_count(&self) -> Result<i64> {
-        let count: i64 = self
-            .conn
-            .query_row("SELECT COUNT(*) FROM samples", [], |row| row.get(0))?;
-        Ok(count)
     }
 
     /// Delete samples older than the given timestamp
@@ -683,55 +625,6 @@ impl HistoryStore {
         Ok(())
     }
 
-    /// Get battery health history
-    pub fn get_battery_health_history(&self, limit: usize) -> Result<Vec<BatteryHealthSnapshot>> {
-        let mut stmt = self.conn.prepare(
-            "SELECT id, date, health_percent, cycle_count, max_capacity_wh, design_capacity_wh
-             FROM battery_health
-             ORDER BY date DESC
-             LIMIT ?",
-        )?;
-
-        let snapshots = stmt
-            .query_map([limit as i64], |row| {
-                Ok(BatteryHealthSnapshot {
-                    id: Some(row.get(0)?),
-                    date: row.get(1)?,
-                    health_percent: row.get(2)?,
-                    cycle_count: row.get(3)?,
-                    max_capacity_wh: row.get(4)?,
-                    design_capacity_wh: row.get(5)?,
-                })
-            })?
-            .collect::<std::result::Result<Vec<_>, _>>()?;
-
-        Ok(snapshots)
-    }
-
-    /// Get the latest battery health snapshot
-    pub fn get_latest_battery_health(&self) -> Result<Option<BatteryHealthSnapshot>> {
-        let snapshot = self
-            .conn
-            .query_row(
-                "SELECT id, date, health_percent, cycle_count, max_capacity_wh, design_capacity_wh
-                 FROM battery_health ORDER BY date DESC LIMIT 1",
-                [],
-                |row| {
-                    Ok(BatteryHealthSnapshot {
-                        id: Some(row.get(0)?),
-                        date: row.get(1)?,
-                        health_percent: row.get(2)?,
-                        cycle_count: row.get(3)?,
-                        max_capacity_wh: row.get(4)?,
-                        design_capacity_wh: row.get(5)?,
-                    })
-                },
-            )
-            .optional()?;
-
-        Ok(snapshot)
-    }
-
     pub fn vacuum(&self) -> Result<()> {
         self.conn.execute("VACUUM", [])?;
         Ok(())
@@ -787,7 +680,6 @@ pub struct DatabaseStats {
     pub size_bytes: u64,
 }
 
-#[allow(dead_code)]
 impl DatabaseStats {
     /// Format size as human-readable string
     pub fn size_formatted(&self) -> String {
@@ -802,50 +694,10 @@ impl DatabaseStats {
             format!("{:.2} GB", bytes / (1024.0 * 1024.0 * 1024.0))
         }
     }
-
-    /// Get the date range as formatted strings
-    pub fn date_range(&self) -> Option<(String, String)> {
-        match (self.oldest_sample, self.newest_sample) {
-            (Some(oldest), Some(newest)) => {
-                let oldest_dt = DateTime::from_timestamp(oldest, 0)?;
-                let newest_dt = DateTime::from_timestamp(newest, 0)?;
-                Some((
-                    oldest_dt.format("%Y-%m-%d").to_string(),
-                    newest_dt.format("%Y-%m-%d").to_string(),
-                ))
-            }
-            _ => None,
-        }
-    }
-}
-
-/// Helper to get today's date as YYYY-MM-DD string
-#[allow(dead_code)]
-pub fn today_date_string() -> String {
-    Utc::now().format("%Y-%m-%d").to_string()
 }
 
 /// Helper to get a date string for N days ago
 pub fn days_ago_date_string(days: u32) -> String {
     let date = Utc::now() - chrono::Duration::days(days as i64);
     date.format("%Y-%m-%d").to_string()
-}
-
-/// Helper to get the start of the current hour as Unix timestamp
-#[allow(dead_code)]
-pub fn current_hour_start() -> i64 {
-    let now = Utc::now();
-    now.date_naive()
-        .and_hms_opt(now.hour(), 0, 0)
-        .unwrap()
-        .and_utc()
-        .timestamp()
-}
-
-/// Helper to get the start of the current day as Unix timestamp
-#[allow(dead_code)]
-pub fn current_day_start() -> i64 {
-    let date = Utc::now().date_naive();
-    let time = chrono::NaiveTime::from_hms_opt(0, 0, 0).unwrap();
-    date.and_time(time).and_utc().timestamp()
 }
