@@ -57,14 +57,10 @@ fn render_battery_gauge(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeC
         theme.danger
     };
 
-    let label = format!("{:.0}%", percent);
-
     let gauge = ThickGauge {
         ratio,
-        label,
         filled_color: gauge_color,
         border_color: theme.border,
-        label_color: theme.fg,
         bg_color: theme.bg,
     };
 
@@ -73,10 +69,8 @@ fn render_battery_gauge(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeC
 
 struct ThickGauge {
     ratio: f32,
-    label: String,
     filled_color: ratatui::style::Color,
     border_color: ratatui::style::Color,
-    label_color: ratatui::style::Color,
     bg_color: ratatui::style::Color,
 }
 
@@ -161,21 +155,6 @@ impl Widget for ThickGauge {
                 }
             }
         }
-
-        let label_with_padding = format!(" {}", self.label);
-        let label_x = bar_start + filled_width;
-
-        for (i, ch) in label_with_padding.chars().enumerate() {
-            let x = label_x + i as u16;
-            if x >= bar_start && x < bar_end {
-                if let Some(cell) = buf.cell_mut((x, label_y)) {
-                    cell.set_char(ch);
-                    cell.set_fg(self.label_color);
-                    cell.set_bg(self.bg_color);
-                    cell.set_style(Style::default().add_modifier(Modifier::BOLD));
-                }
-            }
-        }
     }
 }
 
@@ -235,7 +214,18 @@ fn render_battery_info_card(frame: &mut Frame, area: Rect, app: &App, theme: &Th
         .cycle_count()
         .map_or("—".to_string(), |c| c.to_string());
 
+    let percent = app.battery.charge_percent();
+    let percent_color = if percent > 50.0 {
+        theme.success
+    } else if percent > 20.0 {
+        theme.warning
+    } else {
+        theme.danger
+    };
+
     let single_line = build_single_line(
+        percent,
+        percent_color,
         state_icon,
         app.battery.state_label(),
         time_label,
@@ -280,6 +270,13 @@ fn render_battery_info_card(frame: &mut Frame, area: Rect, app: &App, theme: &Th
                 app.battery.state_label(),
                 Style::default().fg(theme.fg).add_modifier(Modifier::BOLD),
             ),
+            Span::styled("  ", Style::default()),
+            Span::styled(
+                format!("{:.0}%", percent),
+                Style::default()
+                    .fg(percent_color)
+                    .add_modifier(Modifier::BOLD),
+            ),
             Span::styled("  │  ", Style::default().fg(theme.border)),
             Span::styled(format!("{} ", time_label), Style::default().fg(theme.muted)),
             Span::styled(&time_value, Style::default().fg(theme.fg)),
@@ -315,6 +312,8 @@ fn render_battery_info_card(frame: &mut Frame, area: Rect, app: &App, theme: &Th
 
 #[allow(clippy::too_many_arguments)]
 fn build_single_line<'a>(
+    percent: f32,
+    percent_color: ratatui::style::Color,
     icon: &'a str,
     state: &'a str,
     time_label: &'a str,
@@ -332,6 +331,13 @@ fn build_single_line<'a>(
         Span::styled(
             state,
             Style::default().fg(theme.fg).add_modifier(Modifier::BOLD),
+        ),
+        Span::styled("  ", Style::default()),
+        Span::styled(
+            format!("{:.0}%", percent),
+            Style::default()
+                .fg(percent_color)
+                .add_modifier(Modifier::BOLD),
         ),
         Span::styled("  │  ", Style::default().fg(theme.border)),
         Span::styled(format!("{} ", time_label), Style::default().fg(theme.muted)),
