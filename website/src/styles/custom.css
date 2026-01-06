@@ -194,9 +194,16 @@ a:hover {
   border-right: 1px solid var(--sl-color-hairline-light);
 }
 
-nav.sidebar a[aria-current="page"] {
-  background: linear-gradient(90deg, rgba(0, 212, 255, 0.1), transparent);
+nav.sidebar a[aria-current="page"],
+starlight-menu-button + nav a[aria-current="page"] {
+  background: linear-gradient(90deg, rgba(0, 212, 255, 0.15), transparent);
   border-left: 2px solid var(--sl-color-accent);
+  color: var(--sl-color-accent) !important;
+}
+
+nav.sidebar a:hover,
+starlight-menu-button + nav a:hover {
+  color: var(--sl-color-white);
 }
 
 /* Card styling */

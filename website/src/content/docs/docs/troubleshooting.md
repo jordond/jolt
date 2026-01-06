@@ -3,8 +3,6 @@ title: Troubleshooting
 description: Solutions to common jolt issues
 ---
 
-# Troubleshooting
-
 Solutions to common issues you might encounter with jolt.
 
 ## Installation Issues

@@ -3,8 +3,6 @@ title: Background Daemon
 description: Using jolt's background daemon for continuous data collection
 ---
 
-# Background Daemon
-
 jolt includes a background daemon that collects battery and power data even when the TUI isn't running. This enables historical tracking and analysis over time.
 
 ## Why Use the Daemon?

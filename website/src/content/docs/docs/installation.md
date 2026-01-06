@@ -3,8 +3,6 @@ title: Installation
 description: How to install jolt on macOS
 ---
 
-# Installation
-
 jolt is available through multiple installation methods.
 
 ## Requirements

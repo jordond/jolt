@@ -3,8 +3,6 @@ title: Keyboard Shortcuts
 description: Complete list of jolt keyboard shortcuts
 ---
 
-# Keyboard Shortcuts
-
 jolt is fully keyboard-driven. Here's a complete reference of all shortcuts.
 
 ## Navigation

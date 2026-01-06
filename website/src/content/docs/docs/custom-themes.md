@@ -3,8 +3,6 @@ title: Custom Themes
 description: Creating your own jolt themes
 ---
 
-# Custom Themes
-
 Create personalized themes for jolt with TOML configuration files.
 
 ## Theme Location

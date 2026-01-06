@@ -3,8 +3,6 @@ title: Config File
 description: Configure jolt with the config file
 ---
 
-# Config File
-
 jolt stores its configuration in a TOML file that persists your preferences across sessions.
 
 ## Config Location

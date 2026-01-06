@@ -3,8 +3,6 @@ title: Quick Start
 description: Get up and running with jolt in 5 minutes
 ---
 
-# Quick Start
-
 This guide will get you up and running with jolt in under 5 minutes.
 
 ## Launch jolt

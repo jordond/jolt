@@ -3,8 +3,6 @@ title: TUI Interface
 description: Overview of jolt's terminal user interface
 ---
 
-# TUI Interface
-
 jolt's terminal user interface is divided into several panels, each showing different aspects of your Mac's power state.
 
 ## Layout Overview

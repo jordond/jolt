@@ -3,8 +3,6 @@ title: FAQ
 description: Frequently asked questions about jolt
 ---
 
-# Frequently Asked Questions
-
 Common questions and answers about jolt.
 
 ## General

@@ -3,8 +3,6 @@ title: Historical Data
 description: Viewing and managing jolt's historical data
 ---
 
-# Historical Data
-
 jolt can track battery and power data over time, enabling analysis of usage patterns and trends.
 
 ## Enabling History

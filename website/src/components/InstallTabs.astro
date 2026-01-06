@@ -14,47 +14,61 @@
     </button>
   </div>
 
-  <div class="tab-content active" id="panel-brew" role="tabpanel" aria-labelledby="brew">
-    <div class="code-block">
-      <pre><code>brew install jordond/tap/jolt</code></pre>
-      <button class="copy-btn" data-code="brew install jordond/tap/jolt" aria-label="Copy to clipboard">
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-        </svg>
-      </button>
+  <div class="tab-panels">
+    <div class="tab-content active" id="panel-brew" role="tabpanel" aria-labelledby="brew">
+      <div class="code-block">
+        <pre><code>brew install jordond/tap/jolt</code></pre>
+        <button class="copy-btn" data-code="brew install jordond/tap/jolt" aria-label="Copy to clipboard">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+          </svg>
+        </button>
+      </div>
     </div>
-  </div>
 
-  <div class="tab-content" id="panel-cargo" role="tabpanel" aria-labelledby="cargo">
-    <div class="code-block">
-      <pre><code>cargo install jolt-tui</code></pre>
-      <button class="copy-btn" data-code="cargo install jolt-tui" aria-label="Copy to clipboard">
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-        </svg>
-      </button>
+    <div class="tab-content" id="panel-cargo" role="tabpanel" aria-labelledby="cargo">
+      <div class="code-block">
+        <pre><code>cargo install jolt-tui</code></pre>
+        <button class="copy-btn" data-code="cargo install jolt-tui" aria-label="Copy to clipboard">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+          </svg>
+        </button>
+      </div>
     </div>
-  </div>
 
-  <div class="tab-content" id="panel-source" role="tabpanel" aria-labelledby="source">
-    <div class="code-block">
-      <pre><code>git clone https://github.com/jordond/jolt.git
-cd jolt
-cargo build --release
+    <div class="tab-content" id="panel-source" role="tabpanel" aria-labelledby="source">
+      <div class="code-block">
+        <pre><code>git clone https://github.com/jordond/jolt.git
+cd jolt && cargo build --release
 ./target/release/jolt</code></pre>
-      <button class="copy-btn" data-code="git clone https://github.com/jordond/jolt.git && cd jolt && cargo build --release && ./target/release/jolt" aria-label="Copy to clipboard">
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-        </svg>
-      </button>
+        <button class="copy-btn" data-code="git clone https://github.com/jordond/jolt.git && cd jolt && cargo build --release && ./target/release/jolt" aria-label="Copy to clipboard">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+          </svg>
+        </button>
+      </div>
     </div>
   </div>
 </div>
 
 <script>
+  const panels = document.querySelector('.tab-panels');
+  const contents = document.querySelectorAll('.tab-content');
+  
+  function updateHeight() {
+    const active = document.querySelector('.tab-content.active .code-block');
+    if (active && panels) {
+      panels.style.height = active.offsetHeight + 'px';
+    }
+  }
+  
+  // Set initial height
+  updateHeight();
+  
   document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       const tab = btn.dataset.tab;
@@ -63,11 +77,13 @@ cargo build --release
         b.classList.remove('active');
         b.setAttribute('aria-selected', 'false');
       });
-      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+      contents.forEach(c => c.classList.remove('active'));
       
       btn.classList.add('active');
       btn.setAttribute('aria-selected', 'true');
       document.getElementById(`panel-${tab}`).classList.add('active');
+      
+      updateHeight();
     });
   });
 
@@ -119,21 +135,31 @@ cargo build --release
     text-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
   }
   
-  .tab-content {
-    display: none;
-  }
-  
-  .tab-content.active {
-    display: block;
-  }
-  
-  .code-block {
+  .tab-panels {
     position: relative;
     background: var(--sl-color-bg-sidebar, #12121a);
     border: 1px solid rgba(0, 212, 255, 0.2);
     border-top: none;
     border-radius: 0 0 0.5rem 0.5rem;
     overflow: hidden;
+    transition: height 0.25s ease-out;
+  }
+  
+  .tab-content {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    transition: opacity 0.2s ease-out;
+    pointer-events: none;
+  }
+  
+  .tab-content.active {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  
+  .code-block {
+    position: relative;
   }
   
   .code-block pre {
@@ -142,6 +168,7 @@ cargo build --release
     padding-right: 3.5rem;
     overflow-x: auto;
     background: transparent !important;
+    white-space: pre;
   }
   
   .code-block code {
@@ -151,6 +178,7 @@ cargo build --release
     background: transparent !important;
     padding: 0;
     border: none;
+    white-space: pre;
   }
   
   .copy-btn {

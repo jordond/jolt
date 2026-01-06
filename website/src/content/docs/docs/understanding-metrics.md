@@ -3,8 +3,6 @@ title: Understanding Metrics
 description: What the battery and power metrics mean
 ---
 
-# Understanding Metrics
-
 jolt displays various metrics about your Mac's battery and power consumption. Here's what they mean and how to interpret them.
 
 ## Battery Metrics

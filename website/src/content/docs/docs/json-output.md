@@ -3,8 +3,6 @@ title: JSON Output
 description: Using jolt's pipe mode for scripting and automation
 ---
 
-# JSON Output
-
 jolt's pipe mode outputs metrics as JSON, perfect for scripting, monitoring, and integration with other tools.
 
 ## Basic Usage

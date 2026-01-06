@@ -3,8 +3,6 @@ title: Themes
 description: Customizing jolt's appearance with themes
 ---
 
-# Themes
-
 jolt supports extensive theming with 300+ importable themes from iTerm2 Color Schemes, plus the ability to create your own.
 
 ## Appearance Modes

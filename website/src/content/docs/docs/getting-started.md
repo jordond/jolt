@@ -3,8 +3,6 @@ title: Introduction
 description: What is jolt and why use it?
 ---
 
-# Introduction
-
 jolt is a terminal-based battery and energy monitor designed specifically for macOS. Built in Rust for performance and reliability, it provides real-time insights into your Mac's power consumption.
 
 ## Why jolt?

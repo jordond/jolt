@@ -3,8 +3,6 @@ title: CLI Reference
 description: Complete command-line reference for jolt
 ---
 
-# CLI Reference
-
 Complete reference for all jolt commands and options.
 
 ## Global Options

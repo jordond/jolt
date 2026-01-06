@@ -35,7 +35,8 @@ const { title, description } = Astro.props;
     box-sizing: border-box;
   }
 
-  :root {
+  :root,
+  [data-theme="dark"] {
     --color-bg: #0a0a0f;
     --color-surface: #12121a;
     --color-border: #1e1e2e;
@@ -43,8 +44,28 @@ const { title, description } = Astro.props;
     --color-text-muted: #94a3b8;
     --color-accent: #00ffff;
     --color-accent-glow: rgba(0, 255, 255, 0.4);
+    --color-accent-10: rgba(0, 255, 255, 0.1);
+    --color-accent-20: rgba(0, 255, 255, 0.2);
+    --color-accent-03: rgba(0, 255, 255, 0.03);
+    --color-header-bg: rgba(10, 10, 15, 0.8);
+    --color-button-text: #000;
     --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     --font-mono: 'JetBrains Mono', monospace;
+  }
+
+  [data-theme="light"] {
+    --color-bg: #f8fafc;
+    --color-surface: #ffffff;
+    --color-border: #e2e8f0;
+    --color-text: #1e293b;
+    --color-text-muted: #64748b;
+    --color-accent: #0891b2;
+    --color-accent-glow: rgba(8, 145, 178, 0.4);
+    --color-accent-10: rgba(8, 145, 178, 0.1);
+    --color-accent-20: rgba(8, 145, 178, 0.2);
+    --color-accent-03: rgba(8, 145, 178, 0.06);
+    --color-header-bg: rgba(248, 250, 252, 0.8);
+    --color-button-text: #fff;
   }
 
   html {
