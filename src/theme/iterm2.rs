@@ -120,6 +120,9 @@ pub struct Iterm2Color {
     pub b: f64,
 }
 
+/// WCAG AA requires 4.5:1 for normal text. We target slightly higher to avoid edge cases.
+const MIN_CONTRAST_RATIO: f64 = 4.6;
+
 impl Iterm2Color {
     pub fn to_hex(&self) -> String {
         let r = (self.r * 255.0).round() as u8;
@@ -134,6 +137,112 @@ impl Iterm2Color {
             g: self.g * (1.0 - ratio) + other.g * ratio,
             b: self.b * (1.0 - ratio) + other.b * ratio,
         }
+    }
+
+    /// Convert sRGB channel to linear for luminance calculation
+    fn linearize(val: f64) -> f64 {
+        if val <= 0.03928 {
+            val / 12.92
+        } else {
+            ((val + 0.055) / 1.055).powf(2.4)
+        }
+    }
+
+    /// Calculate relative luminance (0.0 = black, 1.0 = white)
+    fn luminance(&self) -> f64 {
+        0.2126 * Self::linearize(self.r)
+            + 0.7152 * Self::linearize(self.g)
+            + 0.0722 * Self::linearize(self.b)
+    }
+
+    /// Calculate contrast ratio between two colors (1:1 to 21:1)
+    fn contrast_ratio(&self, other: &Iterm2Color) -> f64 {
+        let l1 = self.luminance();
+        let l2 = other.luminance();
+        let lighter = l1.max(l2);
+        let darker = l1.min(l2);
+        (lighter + 0.05) / (darker + 0.05)
+    }
+
+    fn lighten(&self, amount: f64) -> Iterm2Color {
+        Iterm2Color {
+            r: self.r + (1.0 - self.r) * amount,
+            g: self.g + (1.0 - self.g) * amount,
+            b: self.b + (1.0 - self.b) * amount,
+        }
+    }
+
+    fn darken(&self, amount: f64) -> Iterm2Color {
+        Iterm2Color {
+            r: self.r * (1.0 - amount),
+            g: self.g * (1.0 - amount),
+            b: self.b * (1.0 - amount),
+        }
+    }
+
+    /// Binary search to find minimal color adjustment that meets target contrast ratio.
+    fn ensure_contrast(&self, bg: &Iterm2Color, min_ratio: f64) -> Iterm2Color {
+        if self.contrast_ratio(bg) >= min_ratio {
+            return self.clone();
+        }
+
+        let lighten_result = self.adjust_for_contrast(bg, min_ratio, true);
+        let darken_result = self.adjust_for_contrast(bg, min_ratio, false);
+
+        let lighten_passes = lighten_result.contrast_ratio(bg) >= min_ratio;
+        let darken_passes = darken_result.contrast_ratio(bg) >= min_ratio;
+
+        match (lighten_passes, darken_passes) {
+            (true, false) => lighten_result,
+            (false, true) => darken_result,
+            (true, true) => {
+                let lighten_dist = self.color_distance(&lighten_result);
+                let darken_dist = self.color_distance(&darken_result);
+                if lighten_dist <= darken_dist {
+                    lighten_result
+                } else {
+                    darken_result
+                }
+            }
+            (false, false) => {
+                if lighten_result.contrast_ratio(bg) > darken_result.contrast_ratio(bg) {
+                    lighten_result
+                } else {
+                    darken_result
+                }
+            }
+        }
+    }
+
+    fn adjust_for_contrast(&self, bg: &Iterm2Color, min_ratio: f64, lighten: bool) -> Iterm2Color {
+        let mut low = 0.0;
+        let mut high = 1.0;
+        let mut best = self.clone();
+
+        for _ in 0..20 {
+            let mid = (low + high) / 2.0;
+            let adjusted = if lighten {
+                self.lighten(mid)
+            } else {
+                self.darken(mid)
+            };
+
+            if adjusted.contrast_ratio(bg) >= min_ratio {
+                best = adjusted;
+                high = mid;
+            } else {
+                low = mid;
+            }
+        }
+
+        best
+    }
+
+    fn color_distance(&self, other: &Iterm2Color) -> f64 {
+        let dr = self.r - other.r;
+        let dg = self.g - other.g;
+        let db = self.b - other.b;
+        (dr * dr + dg * dg + db * db).sqrt()
     }
 }
 
@@ -297,17 +406,28 @@ pub fn parse_scheme(plist_content: &[u8]) -> Result<Iterm2Scheme, Iterm2Error> {
 impl Iterm2Scheme {
     fn to_colors_toml(&self) -> String {
         let bg = &self.background;
-        let fg = &self.foreground;
+        let fg = self.foreground.ensure_contrast(bg, MIN_CONTRAST_RATIO);
         let dialog_bg = bg.blend(&self.ansi[8], 0.15);
         let border_color = bg.blend(&self.ansi[8], 0.4);
 
-        let ansi_red = &self.ansi[1];
-        let ansi_green = &self.ansi[2];
-        let ansi_yellow = &self.ansi[3];
-        let ansi_blue = &self.ansi[4];
-        let ansi_magenta = &self.ansi[5];
-        let ansi_bright_black = &self.ansi[8];
-        let ansi_bright_yellow = &self.ansi[11];
+        let accent = self.ansi[4]
+            .ensure_contrast(bg, MIN_CONTRAST_RATIO)
+            .ensure_contrast(&dialog_bg, MIN_CONTRAST_RATIO);
+        let accent_secondary = self.ansi[5]
+            .ensure_contrast(bg, MIN_CONTRAST_RATIO)
+            .ensure_contrast(&dialog_bg, MIN_CONTRAST_RATIO);
+        let highlight = self.ansi[3].ensure_contrast(bg, MIN_CONTRAST_RATIO);
+        let success = self.ansi[2].ensure_contrast(bg, MIN_CONTRAST_RATIO);
+        let danger = self.ansi[1].ensure_contrast(bg, MIN_CONTRAST_RATIO);
+
+        let muted = self.derive_muted_color(bg);
+        let warning = self.derive_warning_color(bg);
+
+        let graph_line = accent.clone();
+
+        let selection_fg = self
+            .selection_fg
+            .ensure_contrast(&self.selection_bg, MIN_CONTRAST_RATIO);
 
         format!(
             r##"bg = "{}"
@@ -327,18 +447,44 @@ graph_line = "{}""##,
             bg.to_hex(),
             dialog_bg.to_hex(),
             fg.to_hex(),
-            ansi_blue.to_hex(),
-            ansi_magenta.to_hex(),
-            ansi_yellow.to_hex(),
-            ansi_bright_black.to_hex(),
-            ansi_green.to_hex(),
-            ansi_bright_yellow.to_hex(),
-            ansi_red.to_hex(),
+            accent.to_hex(),
+            accent_secondary.to_hex(),
+            highlight.to_hex(),
+            muted.to_hex(),
+            success.to_hex(),
+            warning.to_hex(),
+            danger.to_hex(),
             border_color.to_hex(),
             self.selection_bg.to_hex(),
-            self.selection_fg.to_hex(),
-            ansi_blue.to_hex(),
+            selection_fg.to_hex(),
+            graph_line.to_hex(),
         )
+    }
+
+    fn derive_muted_color(&self, bg: &Iterm2Color) -> Iterm2Color {
+        let candidates = [&self.ansi[8], &self.foreground.blend(bg, 0.5)];
+
+        for candidate in candidates {
+            let adjusted = candidate.ensure_contrast(bg, MIN_CONTRAST_RATIO);
+            if adjusted.contrast_ratio(bg) >= MIN_CONTRAST_RATIO {
+                return adjusted;
+            }
+        }
+
+        self.foreground.blend(bg, 0.4)
+    }
+
+    fn derive_warning_color(&self, bg: &Iterm2Color) -> Iterm2Color {
+        let candidates = [&self.ansi[11], &self.ansi[3], &self.ansi[9]];
+
+        for candidate in candidates {
+            let adjusted = candidate.ensure_contrast(bg, MIN_CONTRAST_RATIO);
+            if adjusted.contrast_ratio(bg) >= MIN_CONTRAST_RATIO {
+                return adjusted;
+            }
+        }
+
+        self.ansi[3].ensure_contrast(bg, MIN_CONTRAST_RATIO)
     }
 }
 
