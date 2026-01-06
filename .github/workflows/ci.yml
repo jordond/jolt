@@ -41,7 +41,7 @@ jobs:
     name: Rust Format
     needs: changes
     if: needs.changes.outputs.rust == 'true'
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: ./cli
@@ -56,7 +56,7 @@ jobs:
     name: Rust Clippy
     needs: changes
     if: needs.changes.outputs.rust == 'true'
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: ./cli
@@ -74,7 +74,7 @@ jobs:
     name: Rust Check
     needs: changes
     if: needs.changes.outputs.rust == 'true'
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: ./cli
@@ -90,7 +90,7 @@ jobs:
     name: Rust Build
     needs: changes
     if: needs.changes.outputs.rust == 'true'
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: ./cli
