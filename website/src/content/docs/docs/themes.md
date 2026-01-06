@@ -9,10 +9,10 @@ jolt supports extensive theming with 300+ importable themes from iTerm2 Color Sc
 
 jolt supports three appearance modes:
 
-| Mode | Description |
-|------|-------------|
-| **Auto** | Follow macOS system appearance |
-| **Dark** | Always use dark theme variant |
+| Mode      | Description                    |
+| --------- | ------------------------------ |
+| **Auto**  | Follow macOS system appearance |
+| **Dark**  | Always use dark theme variant  |
 | **Light** | Always use light theme variant |
 
 Toggle with `t` key or set in config:
@@ -113,20 +113,20 @@ impact_high = "#ff5555"
 
 ## Color Tokens
 
-| Token | Usage |
-|-------|-------|
-| `background` | Main background |
-| `foreground` | Default text |
-| `border` | Panel borders |
-| `accent` | Highlights, selection |
-| `muted` | Secondary text |
-| `battery_high` | Battery > 50% |
-| `battery_medium` | Battery 20-50% |
-| `battery_low` | Battery < 20% |
-| `impact_low` | Low energy impact |
-| `impact_moderate` | Moderate impact |
-| `impact_elevated` | Elevated impact |
-| `impact_high` | High impact |
+| Token             | Usage                 |
+| ----------------- | --------------------- |
+| `background`      | Main background       |
+| `foreground`      | Default text          |
+| `border`          | Panel borders         |
+| `accent`          | Highlights, selection |
+| `muted`           | Secondary text        |
+| `battery_high`    | Battery > 50%         |
+| `battery_medium`  | Battery 20-50%        |
+| `battery_low`     | Battery < 20%         |
+| `impact_low`      | Low energy impact     |
+| `impact_moderate` | Moderate impact       |
+| `impact_elevated` | Elevated impact       |
+| `impact_high`     | High impact           |
 
 ## Creating Custom Themes
 
@@ -145,6 +145,7 @@ jolt theme check --theme my-theme
 ```
 
 Warnings are shown for:
+
 - Insufficient contrast ratios
 - Missing required colors
 - Invalid color values

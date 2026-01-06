@@ -1,8 +1,5 @@
 ---
-import type { Props } from '@astrojs/starlight/props';
-import Default from '@astrojs/starlight/components/Header.astro';
-
-const isSplash = Astro.props.entry?.data?.template === 'splash';
+import Default from '@astrojs/starlight/components/Header.astro'
 ---
 
 <Default {...Astro.props}><slot /></Default>
@@ -45,25 +42,25 @@ const isSplash = Astro.props.entry?.data?.template === 'splash';
 
 <script>
   function setupHeader() {
-    const isHeroPage = document.documentElement.hasAttribute('data-has-hero');
-    const header = document.querySelector('header.header');
-    const nav = document.querySelector('.header-nav');
-    const rightGroup = header?.querySelector('.right-group');
-    const socialIcons = header?.querySelector('.sl-flex.social-icons');
-    
+    const isHeroPage = document.documentElement.hasAttribute('data-has-hero')
+    const header = document.querySelector('header.header')
+    const nav = document.querySelector('.header-nav')
+    const rightGroup = header?.querySelector('.right-group')
+    const socialIcons = header?.querySelector('.sl-flex.social-icons')
+
     if (isHeroPage && rightGroup && !document.querySelector('.landing-docs-link')) {
-      const docsLink = document.createElement('a');
-      docsLink.href = '/jolt/docs/getting-started/';
-      docsLink.className = 'landing-docs-link';
-      docsLink.textContent = 'Documentation';
-      rightGroup.insertBefore(docsLink, rightGroup.firstChild);
+      const docsLink = document.createElement('a')
+      docsLink.href = '/jolt/docs/getting-started/'
+      docsLink.className = 'landing-docs-link'
+      docsLink.textContent = 'Documentation'
+      rightGroup.insertBefore(docsLink, rightGroup.firstChild)
     }
-    
+
     if (!isHeroPage && nav && socialIcons) {
-      socialIcons.parentElement?.insertBefore(nav, socialIcons);
+      socialIcons.parentElement?.insertBefore(nav, socialIcons)
     }
   }
-  
-  setupHeader();
-  document.addEventListener('astro:page-load', setupHeader);
+
+  setupHeader()
+  document.addEventListener('astro:page-load', setupHeader)
 </script>

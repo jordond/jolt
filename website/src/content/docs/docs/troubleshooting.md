@@ -12,6 +12,7 @@ Solutions to common issues you might encounter with jolt.
 The jolt binary isn't in your PATH.
 
 **Homebrew install:**
+
 ```bash
 # Verify installation
 brew list jolt
@@ -21,6 +22,7 @@ eval "$(/opt/homebrew/bin/brew shellenv)"
 ```
 
 **Cargo install:**
+
 ```bash
 # Add cargo bin to PATH
 export PATH="$HOME/.cargo/bin:$PATH"
@@ -30,6 +32,7 @@ cargo install jolt-tui --force
 ```
 
 **Source install:**
+
 ```bash
 # Copy to PATH
 sudo cp ./target/release/jolt /usr/local/bin/
@@ -38,16 +41,19 @@ sudo cp ./target/release/jolt /usr/local/bin/
 ### Build fails from source
 
 **Missing Xcode tools:**
+
 ```bash
 xcode-select --install
 ```
 
 **Rust not installed:**
+
 ```bash
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 ```
 
 **Outdated Rust:**
+
 ```bash
 rustup update
 ```
@@ -61,6 +67,7 @@ rustup update
 2. **Force redraw** — Press `Ctrl+L`
 
 3. **Check TERM variable:**
+
    ```bash
    echo $TERM
    # Should be xterm-256color or similar
@@ -75,12 +82,14 @@ rustup update
 ### Colors look wrong
 
 1. **Verify 256 color support:**
+
    ```bash
    # Should show colored gradient
    for i in {0..255}; do printf "\e[48;5;${i}m \e[0m"; done; echo
    ```
 
 2. **Check theme:**
+
    ```bash
    jolt --theme default
    ```
@@ -92,6 +101,7 @@ rustup update
 ### UI doesn't fit terminal
 
 jolt needs a minimum terminal size:
+
 - **Width:** 80 columns
 - **Height:** 24 rows
 
@@ -102,10 +112,12 @@ Resize your terminal or reduce font size.
 ### "No power metrics available"
 
 Power metrics require Apple Silicon:
+
 - M1, M2, M3, M4 series chips
 - Intel Macs cannot report power consumption
 
 Verify your chip:
+
 ```bash
 sysctl -n machdep.cpu.brand_string
 ```
@@ -113,11 +125,13 @@ sysctl -n machdep.cpu.brand_string
 ### Battery data is stale/wrong
 
 1. **Check macOS battery:**
+
    ```bash
    pmset -g batt
    ```
 
 2. **Compare with ioreg:**
+
    ```bash
    ioreg -r -c AppleSmartBattery | grep -E "Cycle|Capacity|Health"
    ```
@@ -131,6 +145,7 @@ sysctl -n machdep.cpu.brand_string
    - Add your terminal app
 
 2. **Run debug:**
+
    ```bash
    jolt debug
    ```
@@ -145,17 +160,20 @@ sysctl -n machdep.cpu.brand_string
 ### Daemon won't start
 
 1. **Check if already running:**
+
    ```bash
    jolt daemon status
    pgrep -f "jolt daemon"
    ```
 
 2. **Check logs:**
+
    ```bash
    jolt daemon logs
    ```
 
 3. **Try foreground mode:**
+
    ```bash
    jolt daemon start --foreground
    ```
@@ -168,11 +186,13 @@ sysctl -n machdep.cpu.brand_string
 ### TUI can't connect to daemon
 
 1. **Verify daemon is running:**
+
    ```bash
    jolt daemon status
    ```
 
 2. **Check socket permissions:**
+
    ```bash
    ls -la ~/.local/share/jolt/daemon.sock
    ```
@@ -194,6 +214,7 @@ sample_interval = 120  # Every 2 minutes
 ```
 
 Then restart:
+
 ```bash
 jolt daemon stop && jolt daemon start
 ```
@@ -218,6 +239,7 @@ jolt config --reset
 ### Config changes not taking effect
 
 1. **Verify syntax:**
+
    ```bash
    cat ~/.config/jolt/config.toml
    ```
@@ -239,6 +261,7 @@ jolt config --reset
 ```
 
 Or manually delete:
+
 ```bash
 rm ~/.config/jolt/config.toml
 ```
@@ -248,11 +271,13 @@ rm ~/.config/jolt/config.toml
 ### jolt is slow/laggy
 
 1. **Reduce refresh rate:**
+
    ```bash
    jolt --refresh-ms 2000
    ```
 
 2. **Enable low power mode:**
+
    ```bash
    jolt --low-power
    ```
@@ -262,11 +287,13 @@ rm ~/.config/jolt/config.toml
 ### High CPU from jolt itself
 
 1. **Check refresh rate:**
+
    ```toml
    refresh_ms = 1000  # Don't go below 500
    ```
 
 2. **Disable process tracking:**
+
    ```toml
    [panels]
    processes = false
@@ -291,6 +318,7 @@ jolt --version
 ### Report issues
 
 Include in bug reports:
+
 - jolt version
 - macOS version
 - Chip type (Intel/M1/M2/etc)

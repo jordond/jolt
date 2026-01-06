@@ -147,10 +147,10 @@ Changes made in the config editor are saved immediately to the config file.
 
 Some settings can be overridden with environment variables:
 
-| Variable | Description |
-|----------|-------------|
-| `JOLT_CONFIG` | Custom config file path |
-| `JOLT_THEME` | Override theme |
+| Variable          | Description              |
+| ----------------- | ------------------------ |
+| `JOLT_CONFIG`     | Custom config file path  |
+| `JOLT_THEME`      | Override theme           |
 | `JOLT_APPEARANCE` | Override appearance mode |
 
 Example:

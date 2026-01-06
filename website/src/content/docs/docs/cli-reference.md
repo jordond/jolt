@@ -7,10 +7,10 @@ Complete reference for all jolt commands and options.
 
 ## Global Options
 
-| Option | Short | Description |
-|--------|-------|-------------|
-| `--help` | `-h` | Show help information |
-| `--version` | `-V` | Show version |
+| Option      | Short | Description           |
+| ----------- | ----- | --------------------- |
+| `--help`    | `-h`  | Show help information |
+| `--version` | `-V`  | Show version          |
 
 ## Commands
 
@@ -22,12 +22,12 @@ Launch the interactive TUI.
 jolt [OPTIONS]
 ```
 
-| Option | Short | Default | Description |
-|--------|-------|---------|-------------|
-| `--refresh-ms` | `-r` | 1000 | Update interval in milliseconds |
-| `--appearance` | `-a` | auto | Theme mode: `auto`, `dark`, `light` |
-| `--theme` | `-t` | default | Theme name |
-| `--low-power` | `-L` | false | Reduced refresh rate for battery savings |
+| Option         | Short | Default | Description                              |
+| -------------- | ----- | ------- | ---------------------------------------- |
+| `--refresh-ms` | `-r`  | 1000    | Update interval in milliseconds          |
+| `--appearance` | `-a`  | auto    | Theme mode: `auto`, `dark`, `light`      |
+| `--theme`      | `-t`  | default | Theme name                               |
+| `--low-power`  | `-L`  | false   | Reduced refresh rate for battery savings |
 
 Examples:
 
@@ -53,12 +53,12 @@ Output metrics as JSON for scripting.
 jolt pipe [OPTIONS]
 ```
 
-| Option | Short | Default | Description |
-|--------|-------|---------|-------------|
-| `--samples` | `-s` | 0 | Number of samples (0 = infinite) |
-| `--interval` | `-i` | 1000 | Interval between samples (ms) |
-| `--compact` | `-c` | false | One-line JSON output (JSONL) |
-| `--include-processes` | `-p` | false | Include process data |
+| Option                | Short | Default | Description                      |
+| --------------------- | ----- | ------- | -------------------------------- |
+| `--samples`           | `-s`  | 0       | Number of samples (0 = infinite) |
+| `--interval`          | `-i`  | 1000    | Interval between samples (ms)    |
+| `--compact`           | `-c`  | false   | One-line JSON output (JSONL)     |
+| `--include-processes` | `-p`  | false   | Include process data             |
 
 Examples:
 
@@ -82,6 +82,7 @@ jolt debug
 ```
 
 Shows:
+
 - System model and chip
 - macOS version
 - Battery information source
@@ -96,12 +97,12 @@ Manage configuration.
 jolt config [OPTIONS]
 ```
 
-| Option | Description |
-|--------|-------------|
-| (none) | Show current config |
-| `--path` | Show config file path |
-| `--reset` | Reset to defaults |
-| `--edit` | Open in $EDITOR |
+| Option    | Description           |
+| --------- | --------------------- |
+| (none)    | Show current config   |
+| `--path`  | Show config file path |
+| `--reset` | Reset to defaults     |
+| `--edit`  | Open in $EDITOR       |
 
 Examples:
 
@@ -135,10 +136,10 @@ List available themes.
 jolt theme list [OPTIONS]
 ```
 
-| Option | Description |
-|--------|-------------|
-| `--iterm2` | List importable iTerm2 themes |
-| `--search <QUERY>` | Search themes by name |
+| Option                | Description                               |
+| --------------------- | ----------------------------------------- |
+| `--iterm2`            | List importable iTerm2 themes             |
+| `--search <QUERY>`    | Search themes by name                     |
 | `--variant <VARIANT>` | Filter by variant: `dark`, `light`, `all` |
 
 #### `jolt theme check`
@@ -149,10 +150,10 @@ Validate themes for contrast issues.
 jolt theme check [OPTIONS]
 ```
 
-| Option | Description |
-|--------|-------------|
-| `--theme <NAME>` | Check specific theme |
-| `--fix` | Attempt to auto-fix issues |
+| Option           | Description                |
+| ---------------- | -------------------------- |
+| `--theme <NAME>` | Check specific theme       |
+| `--fix`          | Attempt to auto-fix issues |
 
 #### `jolt theme import`
 
@@ -194,8 +195,8 @@ Start the background daemon.
 jolt daemon start [OPTIONS]
 ```
 
-| Option | Description |
-|--------|-------------|
+| Option         | Description                         |
+| -------------- | ----------------------------------- |
 | `--foreground` | Run in foreground (don't daemonize) |
 
 #### `jolt daemon stop`
@@ -222,10 +223,10 @@ View daemon logs.
 jolt daemon logs [OPTIONS]
 ```
 
-| Option | Description |
-|--------|-------------|
-| `--follow` / `-f` | Follow log output |
-| `--lines <N>` | Number of lines to show |
+| Option            | Description             |
+| ----------------- | ----------------------- |
+| `--follow` / `-f` | Follow log output       |
+| `--lines <N>`     | Number of lines to show |
 
 #### `jolt daemon install`
 
@@ -259,8 +260,8 @@ Show data summary.
 jolt history summary [OPTIONS]
 ```
 
-| Option | Description |
-|--------|-------------|
+| Option              | Description                                  |
+| ------------------- | -------------------------------------------- |
 | `--period <PERIOD>` | Time period: `today`, `week`, `month`, `all` |
 
 #### `jolt history top`
@@ -271,11 +272,11 @@ Show top power consumers.
 jolt history top [OPTIONS]
 ```
 
-| Option | Default | Description |
-|--------|---------|-------------|
-| `--limit` | 10 | Number of results |
-| `--period` | week | Time period |
-| `--sort` | energy | Sort by: `energy`, `cpu`, `time` |
+| Option     | Default | Description                      |
+| ---------- | ------- | -------------------------------- |
+| `--limit`  | 10      | Number of results                |
+| `--period` | week    | Time period                      |
+| `--sort`   | energy  | Sort by: `energy`, `cpu`, `time` |
 
 #### `jolt history export`
 
@@ -285,11 +286,11 @@ Export data to JSON.
 jolt history export [OPTIONS]
 ```
 
-| Option | Description |
-|--------|-------------|
-| `--output <FILE>` | Output file (- for stdout) |
-| `--period <PERIOD>` | Time period to export |
-| `--include-processes` | Include process snapshots |
+| Option                | Description                |
+| --------------------- | -------------------------- |
+| `--output <FILE>`     | Output file (- for stdout) |
+| `--period <PERIOD>`   | Time period to export      |
+| `--include-processes` | Include process snapshots  |
 
 #### `jolt history prune`
 
@@ -299,10 +300,10 @@ Remove old data.
 jolt history prune [OPTIONS]
 ```
 
-| Option | Description |
-|--------|-------------|
+| Option                | Description                   |
+| --------------------- | ----------------------------- |
 | `--older-than <DAYS>` | Delete data older than N days |
-| `--dry-run` | Show what would be deleted |
+| `--dry-run`           | Show what would be deleted    |
 
 #### `jolt history clear`
 
@@ -314,21 +315,21 @@ jolt history clear [--force]
 
 ## Exit Codes
 
-| Code | Meaning |
-|------|---------|
-| 0 | Success |
-| 1 | General error |
-| 2 | Invalid arguments |
-| 3 | Permission denied |
-| 4 | Daemon not running |
-| 5 | Config error |
+| Code | Meaning            |
+| ---- | ------------------ |
+| 0    | Success            |
+| 1    | General error      |
+| 2    | Invalid arguments  |
+| 3    | Permission denied  |
+| 4    | Daemon not running |
+| 5    | Config error       |
 
 ## Environment Variables
 
-| Variable | Description |
-|----------|-------------|
-| `JOLT_CONFIG` | Custom config file path |
-| `JOLT_THEME` | Override theme |
-| `JOLT_APPEARANCE` | Override appearance mode |
-| `JOLT_LOG_LEVEL` | Logging level (error, warn, info, debug) |
-| `NO_COLOR` | Disable colored output |
+| Variable          | Description                              |
+| ----------------- | ---------------------------------------- |
+| `JOLT_CONFIG`     | Custom config file path                  |
+| `JOLT_THEME`      | Override theme                           |
+| `JOLT_APPEARANCE` | Override appearance mode                 |
+| `JOLT_LOG_LEVEL`  | Logging level (error, warn, info, debug) |
+| `NO_COLOR`        | Disable colored output                   |

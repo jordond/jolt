@@ -13,11 +13,11 @@ The current battery charge level (0-100%). This is the same value shown in macOS
 
 ### Battery State
 
-| State | Meaning |
-|-------|---------|
-| **Charging** | Connected to power, battery is charging |
-| **Discharging** | Running on battery power |
-| **Full** | Battery is at 100% and connected to power |
+| State            | Meaning                                                    |
+| ---------------- | ---------------------------------------------------------- |
+| **Charging**     | Connected to power, battery is charging                    |
+| **Discharging**  | Running on battery power                                   |
+| **Full**         | Battery is at 100% and connected to power                  |
 | **Not Charging** | Connected to power but not charging (battery optimization) |
 
 ### Time Remaining
@@ -52,19 +52,20 @@ When connected to power, shows the charger's wattage. Useful for identifying if 
 
 Combined power draw of all system components. This is the primary indicator of how fast your battery will drain.
 
-| Power Level | Typical Activity |
-|-------------|------------------|
-| **2-5W** | Idle, light tasks |
-| **5-15W** | Web browsing, documents |
-| **15-30W** | Development, video calls |
-| **30-50W** | Video editing, compilation |
-| **50W+** | Heavy workloads, gaming |
+| Power Level | Typical Activity           |
+| ----------- | -------------------------- |
+| **2-5W**    | Idle, light tasks          |
+| **5-15W**   | Web browsing, documents    |
+| **15-30W**  | Development, video calls   |
+| **30-50W**  | Video editing, compilation |
+| **50W+**    | Heavy workloads, gaming    |
 
 ### CPU Power
 
 Power consumed by the processor cores (both efficiency and performance cores on Apple Silicon).
 
 Higher values indicate:
+
 - More active processes
 - Computationally intensive tasks
 - Background indexing or updates
@@ -74,6 +75,7 @@ Higher values indicate:
 Power consumed by the graphics processor.
 
 Higher values when:
+
 - External display connected
 - Video playback
 - Graphics-intensive applications
@@ -84,6 +86,7 @@ Higher values when:
 Power consumed by Apple's Neural Engine for machine learning tasks.
 
 Active during:
+
 - Photo analysis
 - Siri/dictation
 - ML-based app features
@@ -93,15 +96,16 @@ Active during:
 
 macOS power management mode:
 
-| Mode | Description |
-|------|-------------|
-| **Low Power** | Reduced performance to save battery |
-| **Normal** | Balanced performance and efficiency |
+| Mode                 | Description                           |
+| -------------------- | ------------------------------------- |
+| **Low Power**        | Reduced performance to save battery   |
+| **Normal**           | Balanced performance and efficiency   |
 | **High Performance** | Maximum performance (when plugged in) |
 
 ## Process Energy Impact
 
 The energy impact rating is a composite score that considers:
+
 - CPU usage over time
 - GPU usage
 - Disk activity
@@ -109,12 +113,12 @@ The energy impact rating is a composite score that considers:
 
 ### Impact Levels
 
-| Level | Color | Description |
-|-------|-------|-------------|
-| **Low** | Green | Minimal battery impact |
-| **Moderate** | Yellow | Normal usage |
-| **Elevated** | Orange | Higher than typical |
-| **High** | Red | Significant battery drain |
+| Level        | Color  | Description               |
+| ------------ | ------ | ------------------------- |
+| **Low**      | Green  | Minimal battery impact    |
+| **Moderate** | Yellow | Normal usage              |
+| **Elevated** | Orange | Higher than typical       |
+| **High**     | Red    | Significant battery drain |
 
 ### Interpreting Process Data
 

@@ -81,7 +81,11 @@ This is easier to parse line-by-line in scripts.
 ### Compact Output
 
 ```json
-{"timestamp":"2024-01-15T10:30:00.123Z","battery":{"percentage":85,"state":"discharging"},"power":{"total_watts":12.5}}
+{
+  "timestamp": "2024-01-15T10:30:00.123Z",
+  "battery": { "percentage": 85, "state": "discharging" },
+  "power": { "total_watts": 12.5 }
+}
 ```
 
 ### With Process Data
@@ -128,11 +132,11 @@ THRESHOLD=20
 
 while true; do
   LEVEL=$(jolt pipe --samples 1 | jq '.battery.percentage')
-  
+
   if [ "$LEVEL" -lt "$THRESHOLD" ]; then
     osascript -e "display notification \"Battery at ${LEVEL}%\" with title \"Low Battery\""
   fi
-  
+
   sleep 300
 done
 ```
@@ -203,7 +207,7 @@ sensor:
   - platform: command_line
     name: Mac Battery
     command: "jolt pipe --samples 1 | jq '.battery.percentage'"
-    unit_of_measurement: "%"
+    unit_of_measurement: '%'
     scan_interval: 60
 ```
 

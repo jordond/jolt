@@ -69,42 +69,42 @@ impact_high = "#8c4351"
 
 ### Core Colors
 
-| Token | Description | Required |
-|-------|-------------|----------|
-| `background` | Main background color | Yes |
-| `foreground` | Default text color | Yes |
-| `border` | Panel and box borders | Yes |
-| `accent` | Highlights, selection, focus | Yes |
-| `muted` | Secondary/dimmed text | No |
+| Token        | Description                  | Required |
+| ------------ | ---------------------------- | -------- |
+| `background` | Main background color        | Yes      |
+| `foreground` | Default text color           | Yes      |
+| `border`     | Panel and box borders        | Yes      |
+| `accent`     | Highlights, selection, focus | Yes      |
+| `muted`      | Secondary/dimmed text        | No       |
 
 ### Battery Colors
 
-| Token | Description | Fallback |
-|-------|-------------|----------|
-| `battery_high` | Battery > 50% | Green |
-| `battery_medium` | Battery 20-50% | Yellow |
-| `battery_low` | Battery < 20% | Red |
-| `battery_charging` | Charging indicator | Accent |
+| Token              | Description        | Fallback |
+| ------------------ | ------------------ | -------- |
+| `battery_high`     | Battery > 50%      | Green    |
+| `battery_medium`   | Battery 20-50%     | Yellow   |
+| `battery_low`      | Battery < 20%      | Red      |
+| `battery_charging` | Charging indicator | Accent   |
 
 ### Energy Impact Colors
 
-| Token | Description | Fallback |
-|-------|-------------|----------|
-| `impact_low` | Low energy processes | Green |
-| `impact_moderate` | Moderate energy | Yellow |
-| `impact_elevated` | Elevated energy | Orange |
-| `impact_high` | High energy processes | Red |
+| Token             | Description           | Fallback |
+| ----------------- | --------------------- | -------- |
+| `impact_low`      | Low energy processes  | Green    |
+| `impact_moderate` | Moderate energy       | Yellow   |
+| `impact_elevated` | Elevated energy       | Orange   |
+| `impact_high`     | High energy processes | Red      |
 
 ### Additional Colors
 
-| Token | Description | Fallback |
-|-------|-------------|----------|
-| `graph_line` | Graph line color | Accent |
-| `graph_fill` | Graph fill color | Accent (dimmed) |
-| `selection` | Selected item background | Accent |
-| `error` | Error messages | Red |
-| `warning` | Warning messages | Yellow |
-| `success` | Success messages | Green |
+| Token        | Description              | Fallback        |
+| ------------ | ------------------------ | --------------- |
+| `graph_line` | Graph line color         | Accent          |
+| `graph_fill` | Graph fill color         | Accent (dimmed) |
+| `selection`  | Selected item background | Accent          |
+| `error`      | Error messages           | Red             |
+| `warning`    | Warning messages         | Yellow          |
+| `success`    | Success messages         | Green           |
 
 ## Color Formats
 
@@ -166,6 +166,7 @@ jolt theme check --theme my-theme
 ```
 
 This checks:
+
 - Text/background contrast ratios (WCAG guidelines)
 - Required colors are present
 - Color values are valid

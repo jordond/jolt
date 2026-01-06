@@ -10,6 +10,7 @@ Common questions and answers about jolt.
 ### Does jolt work on Intel Macs?
 
 Yes, but with limited functionality. Intel Macs will show:
+
 - ✅ Battery status (percentage, state, health, cycles)
 - ✅ Process list with CPU usage
 - ❌ Power metrics (watts) — requires Apple Silicon
@@ -37,6 +38,7 @@ set -g default-terminal "screen-256color"
 ### How much battery does jolt itself use?
 
 Very little. At the default 1-second refresh rate:
+
 - ~0.1-0.2% CPU usage
 - ~15-20 MB memory
 
@@ -66,6 +68,7 @@ A battery at 100% charge but 80% health can only hold 80% of its original capaci
 ### Why don't I see power metrics (watts)?
 
 Power metrics require:
+
 1. Apple Silicon Mac (M1/M2/M3/M4)
 2. macOS 11.0 or later
 
@@ -74,6 +77,7 @@ Intel Macs cannot report per-component power consumption.
 ### What does "Not Charging" mean?
 
 Your Mac is connected to power but not charging. This happens when:
+
 - Battery is optimizing charge (staying at 80%)
 - Charger wattage is too low
 - Battery temperature is too high/low
@@ -87,6 +91,7 @@ Very accurate. jolt reads directly from Apple's IOReport framework, the same sou
 ### Why do some processes show high energy impact with low CPU?
 
 Energy impact considers more than CPU:
+
 - Disk I/O
 - Network activity
 - GPU usage
@@ -127,12 +132,14 @@ jolt theme import "Dracula"
 ### My theme looks wrong
 
 1. Check terminal color support:
+
    ```bash
    echo $TERM
    # Should show xterm-256color or similar
    ```
 
 2. Validate theme:
+
    ```bash
    jolt theme check --theme my-theme
    ```
@@ -147,6 +154,7 @@ jolt theme import "Dracula"
 ### Why use the daemon?
 
 The daemon collects data continuously, even when you're not running jolt. This enables:
+
 - Historical analysis
 - Trend tracking
 - Export and reporting
@@ -154,6 +162,7 @@ The daemon collects data continuously, even when you're not running jolt. This e
 ### Does the daemon use a lot of resources?
 
 No. The daemon:
+
 - Uses <0.1% CPU
 - Uses ~10 MB memory
 - Writes to disk once per minute (by default)
@@ -184,6 +193,7 @@ Grant permissions in System Settings → Privacy & Security.
 ### The display looks corrupted
 
 Try:
+
 1. Resize your terminal window
 2. Press `Ctrl+L` to redraw
 3. Check terminal color support
@@ -192,11 +202,13 @@ Try:
 ### jolt is slow/laggy
 
 1. Increase refresh interval:
+
    ```bash
    jolt --refresh-ms 2000
    ```
 
 2. Use low power mode:
+
    ```bash
    jolt --low-power
    ```
@@ -206,11 +218,13 @@ Try:
 ### Config changes aren't applying
 
 1. Check config file location:
+
    ```bash
    jolt config --path
    ```
 
 2. Validate config syntax:
+
    ```bash
    cat ~/.config/jolt/config.toml
    ```

@@ -45,6 +45,7 @@ jolt daemon status
 ```
 
 Shows:
+
 - Running state
 - PID
 - Uptime
@@ -97,12 +98,12 @@ socket_path = "~/.local/share/jolt/daemon.sock"
 
 Controls how often the daemon records data:
 
-| Interval | Storage/Day | Use Case |
-|----------|-------------|----------|
-| 30s | ~2.8 MB | Detailed analysis |
-| 60s | ~1.4 MB | Default, balanced |
-| 120s | ~0.7 MB | Long-term storage |
-| 300s | ~0.3 MB | Minimal overhead |
+| Interval | Storage/Day | Use Case          |
+| -------- | ----------- | ----------------- |
+| 30s      | ~2.8 MB     | Detailed analysis |
+| 60s      | ~1.4 MB     | Default, balanced |
+| 120s     | ~0.7 MB     | Long-term storage |
+| 300s     | ~0.3 MB     | Minimal overhead  |
 
 ```toml
 [daemon]
@@ -130,6 +131,7 @@ jolt history prune --older-than 30
 ## TUI Integration
 
 When the daemon is running, the TUI automatically:
+
 - Connects via IPC socket
 - Displays daemon status in the UI
 - Uses daemon data for extended history
@@ -142,11 +144,13 @@ Press `d` in the TUI to view daemon status.
 ### Daemon Won't Start
 
 1. Check if already running:
+
    ```bash
    jolt daemon status
    ```
 
 2. Check logs for errors:
+
    ```bash
    jolt daemon logs
    ```
@@ -170,11 +174,13 @@ sample_interval = 120
 If TUI can't connect to daemon:
 
 1. Verify daemon is running:
+
    ```bash
    jolt daemon status
    ```
 
 2. Check socket file exists:
+
    ```bash
    ls ~/.local/share/jolt/daemon.sock
    ```

@@ -28,26 +28,26 @@ The interface is organized into these main areas:
 
 Shows your Mac's battery status:
 
-| Field | Description |
-|-------|-------------|
-| **Charge** | Current battery percentage with visual gauge |
-| **State** | Charging, Discharging, Full, or Not Charging |
-| **Time** | Estimated time to full/empty |
-| **Health** | Battery health percentage (capacity vs. design) |
-| **Cycles** | Total charge cycle count |
-| **Charger** | Connected charger wattage (if plugged in) |
+| Field       | Description                                     |
+| ----------- | ----------------------------------------------- |
+| **Charge**  | Current battery percentage with visual gauge    |
+| **State**   | Charging, Discharging, Full, or Not Charging    |
+| **Time**    | Estimated time to full/empty                    |
+| **Health**  | Battery health percentage (capacity vs. design) |
+| **Cycles**  | Total charge cycle count                        |
+| **Charger** | Connected charger wattage (if plugged in)       |
 
 ## Power Panel
 
 Real-time power consumption metrics:
 
-| Metric | Description |
-|--------|-------------|
-| **Total** | Combined system power draw in watts |
-| **CPU** | Processor cores power consumption |
-| **GPU** | Graphics processor power |
-| **ANE** | Apple Neural Engine power (ML workloads) |
-| **Mode** | Current power mode (Low Power, Normal, High Performance) |
+| Metric    | Description                                              |
+| --------- | -------------------------------------------------------- |
+| **Total** | Combined system power draw in watts                      |
+| **CPU**   | Processor cores power consumption                        |
+| **GPU**   | Graphics processor power                                 |
+| **ANE**   | Apple Neural Engine power (ML workloads)                 |
+| **Mode**  | Current power mode (Low Power, Normal, High Performance) |
 
 :::note
 Power metrics require Apple Silicon (M1/M2/M3/M4). Intel Macs will show battery data only.
@@ -64,16 +64,17 @@ Displays running processes sorted by energy impact:
 
 ### Energy Impact Colors
 
-| Color | Level | Description |
-|-------|-------|-------------|
-| 🟢 Green | Low | Minimal battery impact |
-| 🟡 Yellow | Moderate | Some battery drain |
-| 🟠 Orange | Elevated | Above normal usage |
-| 🔴 Red | High | Significant battery drain |
+| Color     | Level    | Description               |
+| --------- | -------- | ------------------------- |
+| 🟢 Green  | Low      | Minimal battery impact    |
+| 🟡 Yellow | Moderate | Some battery drain        |
+| 🟠 Orange | Elevated | Above normal usage        |
+| 🔴 Red    | High     | Significant battery drain |
 
 ### Process Groups
 
 Parent processes can be expanded to show child processes:
+
 - Press `Enter` or `Space` to expand/collapse
 - Collapsed groups show aggregated CPU/energy
 - Expanded groups show individual children indented
@@ -92,6 +93,7 @@ The graph shows the last ~60 data points (approximately 1 minute at default refr
 ## Status Bar
 
 The bottom status bar shows:
+
 - Current theme and appearance mode
 - Refresh rate
 - Key hints for common actions
@@ -106,6 +108,7 @@ Shows all keyboard shortcuts organized by category.
 ### Config Editor (`c`)
 
 In-TUI configuration editor for:
+
 - Appearance mode
 - Refresh rate
 - Process display options
@@ -114,6 +117,7 @@ In-TUI configuration editor for:
 ### Theme Picker (`T`)
 
 Browse and select from 300+ themes:
+
 - Preview themes in real-time
 - Import iTerm2 color schemes
 - Filter by light/dark variants

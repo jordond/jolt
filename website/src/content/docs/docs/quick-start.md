@@ -14,6 +14,7 @@ jolt
 ```
 
 You'll see the main TUI interface with:
+
 - Battery gauge showing charge level
 - Power metrics (CPU, GPU, total watts)
 - Process list sorted by energy impact
@@ -21,19 +22,20 @@ You'll see the main TUI interface with:
 
 ## Basic Navigation
 
-| Key | Action |
-|-----|--------|
-| `↑` / `k` | Move selection up |
-| `↓` / `j` | Move selection down |
-| `Enter` | Expand/collapse process group |
-| `?` / `h` | Show help |
-| `q` | Quit |
+| Key       | Action                        |
+| --------- | ----------------------------- |
+| `↑` / `k` | Move selection up             |
+| `↓` / `j` | Move selection down           |
+| `Enter`   | Expand/collapse process group |
+| `?` / `h` | Show help                     |
+| `q`       | Quit                          |
 
 ## Try These Features
 
 ### 1. Check Battery Health
 
 Look at the battery panel in the top-left. You'll see:
+
 - Current charge percentage
 - Charging state (charging, discharging, full)
 - Time remaining estimate
@@ -43,6 +45,7 @@ Look at the battery panel in the top-left. You'll see:
 ### 2. Monitor Power Usage
 
 The power panel shows real-time wattage:
+
 - **Total** — Combined system power draw
 - **CPU** — Processor power consumption
 - **GPU** — Graphics power consumption
@@ -51,6 +54,7 @@ The power panel shows real-time wattage:
 ### 3. Find Energy Hogs
 
 The process list shows apps by energy impact:
+
 - 🔴 **High** — Significantly impacting battery
 - 🟠 **Elevated** — Above normal usage
 - 🟡 **Moderate** — Some impact
@@ -61,6 +65,7 @@ Press `Enter` on a parent process to see its children.
 ### 4. Switch Themes
 
 Press `t` to cycle through appearance modes:
+
 - **Auto** — Follow system dark/light mode
 - **Dark** — Force dark theme
 - **Light** — Force light theme
@@ -70,6 +75,7 @@ Press `T` (shift) to open the theme picker for 300+ themes.
 ### 5. View Graphs
 
 Press `g` to toggle the graph metric between:
+
 - Battery percentage over time
 - Power consumption over time
 

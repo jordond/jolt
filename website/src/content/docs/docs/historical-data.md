@@ -30,6 +30,7 @@ jolt history summary
 ```
 
 Shows:
+
 - Total records
 - Date range
 - Average battery level
@@ -201,12 +202,12 @@ The main TUI graph can show historical data:
 
 For long-term storage efficiency, jolt aggregates old data:
 
-| Age | Resolution |
-|-----|------------|
+| Age        | Resolution      |
+| ---------- | --------------- |
 | < 24 hours | Full resolution |
-| 1-7 days | Hourly averages |
-| 7-30 days | 4-hour averages |
-| > 30 days | Daily averages |
+| 1-7 days   | Hourly averages |
+| 7-30 days  | 4-hour averages |
+| > 30 days  | Daily averages  |
 
 This keeps the database size manageable while preserving useful trends.
 
