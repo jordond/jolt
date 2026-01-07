@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::data::{DailyStat, DailyTopProcess, HourlyStat};
+use crate::data::{DailyStat, DailyTopProcess, HourlyStat, Sample};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum DaemonRequest {
@@ -17,6 +17,9 @@ pub enum DaemonRequest {
         from: String,
         to: String,
         limit: usize,
+    },
+    GetRecentSamples {
+        window_secs: u64,
     },
     Shutdown,
 }
@@ -37,6 +40,7 @@ pub enum DaemonResponse {
     HourlyStats(Vec<HourlyStat>),
     DailyStats(Vec<DailyStat>),
     TopProcesses(Vec<DailyTopProcess>),
+    RecentSamples(Vec<Sample>),
     Ok,
     Error(String),
 }

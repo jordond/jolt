@@ -4,7 +4,7 @@ use std::time::Duration;
 
 use crate::daemon::protocol::{DaemonRequest, DaemonResponse, DaemonStatus};
 use crate::daemon::socket_path;
-use crate::data::{DailyStat, DailyTopProcess, HourlyStat};
+use crate::data::{DailyStat, DailyTopProcess, HourlyStat, Sample};
 
 #[derive(Debug, thiserror::Error)]
 pub enum ClientError {
@@ -95,6 +95,14 @@ impl DaemonClient {
     pub fn shutdown(&mut self) -> Result<()> {
         match self.send_request(DaemonRequest::Shutdown)? {
             DaemonResponse::Ok => Ok(()),
+            DaemonResponse::Error(e) => Err(ClientError::Daemon(e)),
+            _ => Err(ClientError::Protocol("Unexpected response".into())),
+        }
+    }
+
+    pub fn get_recent_samples(&mut self, window_secs: u64) -> Result<Vec<Sample>> {
+        match self.send_request(DaemonRequest::GetRecentSamples { window_secs })? {
+            DaemonResponse::RecentSamples(samples) => Ok(samples),
             DaemonResponse::Error(e) => Err(ClientError::Daemon(e)),
             _ => Err(ClientError::Protocol("Unexpected response".into())),
         }

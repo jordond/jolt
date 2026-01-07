@@ -3,8 +3,8 @@ use color_eyre::eyre::Result;
 use crate::config::{GraphMetric, RuntimeConfig, UserConfig};
 use crate::daemon::{DaemonClient, DaemonStatus};
 use crate::data::{
-    BatteryData, DailyStat, DailyTopProcess, HistoryData, HistoryMetric, HourlyStat, PowerData,
-    ProcessData, ProcessInfo, SystemInfo,
+    BatteryData, DailyStat, DailyTopProcess, ForecastData, HistoryData, HistoryMetric, HourlyStat,
+    PowerData, ProcessData, ProcessInfo, SystemInfo,
 };
 use crate::theme::cache::ThemeGroup;
 use crate::theme::{get_all_themes, NamedTheme, ThemeColors};
@@ -170,6 +170,7 @@ pub struct App {
     pub power: PowerData,
     pub processes: ProcessData,
     pub history: HistoryData,
+    pub forecast: ForecastData,
     pub selected_process_index: usize,
     pub process_scroll_offset: usize,
     pub expanded_groups: std::collections::HashSet<u32>,
@@ -182,6 +183,7 @@ pub struct App {
     frozen_processes: Option<Vec<ProcessInfo>>,
     process_to_kill: Option<ProcessInfo>,
     tick_count: u32,
+    forecast_tick_count: u32,
     config_snapshot: Option<(UserConfig, u64, bool)>,
     pub theme_picker_themes: Vec<NamedTheme>,
     pub theme_picker_index: usize,
@@ -228,6 +230,7 @@ impl App {
             power: PowerData::new()?,
             processes: ProcessData::with_exclusions(excluded)?,
             history: HistoryData::with_metric(graph_metric),
+            forecast: ForecastData::new(),
             selected_process_index: 0,
             process_scroll_offset: 0,
             expanded_groups: std::collections::HashSet::new(),
@@ -240,6 +243,7 @@ impl App {
             frozen_processes: None,
             process_to_kill: None,
             tick_count: 0,
+            forecast_tick_count: 0,
             config_snapshot: None,
             theme_picker_themes: Vec::new(),
             theme_picker_index: 0,
@@ -270,6 +274,7 @@ impl App {
 
     pub fn tick(&mut self) -> Result<()> {
         self.tick_count = self.tick_count.wrapping_add(1);
+        self.forecast_tick_count = self.forecast_tick_count.wrapping_add(1);
 
         self.battery.refresh()?;
         self.power.refresh()?;
@@ -291,7 +296,37 @@ impl App {
             self.power.total_power_watts(),
         );
 
+        self.refresh_forecast();
+
         Ok(())
+    }
+
+    fn refresh_forecast(&mut self) {
+        use crate::data::battery::ChargeState;
+        use crate::data::history::DataPoint;
+
+        if self.battery.state() != ChargeState::Discharging {
+            return;
+        }
+
+        let battery_percent = self.battery.charge_percent();
+        let battery_capacity_wh = self.battery.max_capacity_wh();
+
+        if let Ok(mut client) = DaemonClient::connect() {
+            if let Ok(samples) = client.get_recent_samples(300) {
+                if self.forecast.calculate_from_daemon_samples(
+                    &samples,
+                    battery_percent,
+                    battery_capacity_wh,
+                ) {
+                    return;
+                }
+            }
+        }
+
+        let points: Vec<DataPoint> = self.history.points.iter().copied().collect();
+        self.forecast
+            .calculate_from_session_data(&points, battery_percent, battery_capacity_wh);
     }
 
     pub fn handle_action(&mut self, action: Action) -> bool {
