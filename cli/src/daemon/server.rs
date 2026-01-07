@@ -156,7 +156,7 @@ impl DaemonState {
             database_size_bytes: self.recorder.store().size_bytes().unwrap_or(0),
             version: env!("CARGO_PKG_VERSION").to_string(),
             subscriber_count,
-            history_enabled: self.config.enabled,
+            history_enabled: self.config.background_recording,
         }
     }
 
@@ -374,7 +374,11 @@ async fn client_writer_task(
     }
 }
 
-pub fn run_daemon(foreground: bool) -> Result<()> {
+pub fn run_daemon(
+    foreground: bool,
+    log_level: crate::config::LogLevel,
+    log_level_override: Option<crate::config::LogLevel>,
+) -> Result<()> {
     let socket = socket_path();
 
     if socket.exists() {
@@ -394,6 +398,9 @@ pub fn run_daemon(foreground: bool) -> Result<()> {
             Ok(_) => {}
             Err(e) => return Err(DaemonError::Daemonize(e.to_string())),
         }
+        let _guard =
+            crate::logging::init(log_level, crate::logging::LogMode::File, log_level_override);
+        std::mem::forget(_guard);
     }
 
     info!(version = env!("CARGO_PKG_VERSION"), "Daemon starting");

@@ -295,12 +295,16 @@ impl App {
         }
 
         if !crate::daemon::is_daemon_running() {
-            self.auto_start_daemon();
-            for _ in 0..5 {
-                std::thread::sleep(std::time::Duration::from_millis(200));
-                if self.try_subscribe_to_daemon() {
-                    return;
+            debug!("Daemon not running, attempting auto-start");
+            if self.auto_start_daemon() {
+                std::thread::sleep(std::time::Duration::from_millis(500));
+                for _ in 0..5 {
+                    if self.try_subscribe_to_daemon() {
+                        return;
+                    }
+                    std::thread::sleep(std::time::Duration::from_millis(200));
                 }
+                debug!("Failed to subscribe after auto-start");
             }
         }
     }
@@ -318,13 +322,26 @@ impl App {
         false
     }
 
-    fn auto_start_daemon(&self) {
-        if let Ok(exe) = std::env::current_exe() {
-            let _ = std::process::Command::new(exe)
-                .args(["daemon", "start"])
-                .stdout(std::process::Stdio::null())
-                .stderr(std::process::Stdio::null())
-                .spawn();
+    fn auto_start_daemon(&self) -> bool {
+        let Ok(exe) = std::env::current_exe() else {
+            debug!("Failed to get current exe path");
+            return false;
+        };
+
+        match std::process::Command::new(&exe)
+            .args(["daemon", "start"])
+            .stdout(std::process::Stdio::null())
+            .stderr(std::process::Stdio::null())
+            .spawn()
+        {
+            Ok(_) => {
+                debug!("Daemon spawn initiated");
+                true
+            }
+            Err(e) => {
+                debug!("Failed to spawn daemon: {}", e);
+                false
+            }
         }
     }
 
@@ -1159,7 +1176,7 @@ impl App {
     }
 
     pub const HISTORY_CONFIG_ITEMS: &'static [&'static str] = &[
-        "Recording Enabled",
+        "Background Recording",
         "Sample Interval (s)",
         "Raw Retention (days)",
         "Hourly Retention (days)",
@@ -1170,7 +1187,12 @@ impl App {
     pub fn history_config_item_value(&self, index: usize) -> String {
         let history = &self.config.user_config.history;
         match index {
-            0 => if history.enabled { "On" } else { "Off" }.to_string(),
+            0 => if history.background_recording {
+                "On"
+            } else {
+                "Off"
+            }
+            .to_string(),
             1 => history.sample_interval_secs.to_string(),
             2 => history.retention_raw_days.to_string(),
             3 => history.retention_hourly_days.to_string(),
@@ -1188,7 +1210,8 @@ impl App {
 
     fn toggle_history_config_value(&mut self) {
         if self.history_config_selected_item == 0 {
-            self.config.user_config.history.enabled = !self.config.user_config.history.enabled;
+            self.config.user_config.history.background_recording =
+                !self.config.user_config.history.background_recording;
             let _ = self.config.user_config.save();
         }
     }
@@ -1525,5 +1548,18 @@ impl App {
             }
         }
         let _ = self.processes.kill_process(pid);
+    }
+
+    pub fn cleanup(&mut self) {
+        if let Some(ref mut client) = self.daemon_subscription {
+            let _ = client.unsubscribe();
+        }
+        self.daemon_subscription = None;
+
+        if !self.config.user_config.history.background_recording {
+            if let Ok(mut client) = DaemonClient::connect() {
+                let _ = client.shutdown();
+            }
+        }
     }
 }

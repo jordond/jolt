@@ -405,6 +405,7 @@ fn run_tui_loop(
         }
     }
 
+    app.cleanup();
     Ok(())
 }
 
@@ -957,20 +958,16 @@ fn run_daemon_command(
                 return Ok(());
             }
 
-            let mode = if foreground {
-                LogMode::Both
-            } else {
-                LogMode::File
-            };
-            let _guard = logging::init(log_level, mode, log_level_override);
-
             if foreground {
+                let _guard = logging::init(log_level, LogMode::Both, log_level_override);
                 println!("Starting daemon in foreground...");
                 println!("Press Ctrl+C to stop.");
-                run_daemon(true).map_err(|e| color_eyre::eyre::eyre!("{}", e))?;
+                run_daemon(true, log_level, log_level_override)
+                    .map_err(|e| color_eyre::eyre::eyre!("{}", e))?;
             } else {
                 println!("Starting daemon...");
-                run_daemon(false).map_err(|e| color_eyre::eyre::eyre!("{}", e))?;
+                run_daemon(false, log_level, log_level_override)
+                    .map_err(|e| color_eyre::eyre::eyre!("{}", e))?;
                 std::thread::sleep(Duration::from_millis(500));
 
                 let mut started = false;

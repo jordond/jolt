@@ -75,13 +75,7 @@ pub fn render_status_bar(frame: &mut Frame, area: Rect, app: &App, theme: &Theme
         ));
     }
 
-    let daemon_running = crate::daemon::is_daemon_running();
-    let history_status = if daemon_running { "recording" } else { "off" };
-    let history_color = if daemon_running {
-        theme.success
-    } else {
-        theme.muted
-    };
+    let background_recording = app.config.user_config.history.background_recording;
 
     let mut right_spans: Vec<Span> = Vec::new();
 
@@ -96,14 +90,19 @@ pub fn render_status_bar(frame: &mut Frame, area: Rect, app: &App, theme: &Theme
         right_spans.push(Span::styled("│ ", Style::default().fg(theme.border)));
     }
 
+    if background_recording {
+        right_spans.extend(vec![
+            Span::styled("background: ", Style::default().fg(theme.muted)),
+            Span::styled("on", Style::default().fg(theme.success)),
+            Span::styled(" │ ", Style::default().fg(theme.border)),
+        ]);
+    }
+
     right_spans.extend(vec![
-        Span::styled("history: ", Style::default().fg(theme.muted)),
-        Span::styled(history_status, Style::default().fg(history_color)),
-        Span::styled(" │ ", Style::default().fg(theme.border)),
         Span::styled(keys::HISTORY, Style::default().fg(theme.accent)),
-        Span::styled(" view ", Style::default().fg(theme.muted)),
+        Span::styled(" history ", Style::default().fg(theme.muted)),
         Span::styled(keys::DAEMON, Style::default().fg(theme.accent)),
-        Span::styled(" manage ", Style::default().fg(theme.muted)),
+        Span::styled(" settings ", Style::default().fg(theme.muted)),
     ]);
 
     let left_width: usize = left_spans.iter().map(|s| s.width()).sum();

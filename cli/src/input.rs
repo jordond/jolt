@@ -19,8 +19,6 @@ pub mod keys {
     pub const PERIOD_PREV: &str = "←";
     pub const PERIOD_NEXT: &str = "→";
     pub const ESC: &str = "Esc";
-    pub const DAEMON_START: &str = "s";
-    pub const DAEMON_STOP: &str = "x";
     pub const HISTORY_CONFIG: &str = "c";
 }
 

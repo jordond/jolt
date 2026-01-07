@@ -44,6 +44,13 @@ pub fn render(frame: &mut Frame, app: &App, theme: &ThemeColors) {
         history_cfg.retention_raw_days, history_cfg.retention_hourly_days
     );
 
+    let background_enabled = history_cfg.background_recording;
+    let (bg_status, bg_color) = if background_enabled {
+        ("On", theme.success)
+    } else {
+        ("Off", theme.warning)
+    };
+
     if let Some(ref status) = app.daemon_status {
         let uptime_str = format_uptime(status.uptime_secs);
         let size_str = format_bytes(status.database_size_bytes);
@@ -58,12 +65,10 @@ pub fn render(frame: &mut Frame, app: &App, theme: &ThemeColors) {
 
         let lines = vec![
             Line::from(vec![
-                Span::styled("Status:        ", Style::default().fg(theme.muted)),
+                Span::styled("Background:    ", Style::default().fg(theme.muted)),
                 Span::styled(
-                    "Recording",
-                    Style::default()
-                        .fg(theme.success)
-                        .add_modifier(Modifier::BOLD),
+                    bg_status,
+                    Style::default().fg(bg_color).add_modifier(Modifier::BOLD),
                 ),
             ]),
             Line::from(vec![
@@ -101,7 +106,11 @@ pub fn render(frame: &mut Frame, app: &App, theme: &ThemeColors) {
             ]),
             Line::from(""),
             Line::from(vec![Span::styled(
-                "Run on login: jolt daemon install",
+                if background_enabled {
+                    "Daemon continues after TUI closes"
+                } else {
+                    "Daemon stops when TUI closes"
+                },
                 Style::default().fg(theme.muted),
             )]),
         ];
@@ -111,21 +120,19 @@ pub fn render(frame: &mut Frame, app: &App, theme: &ThemeColors) {
     } else {
         let lines = vec![
             Line::from(vec![
-                Span::styled("Status:        ", Style::default().fg(theme.muted)),
+                Span::styled("Background:    ", Style::default().fg(theme.muted)),
                 Span::styled(
-                    "Off",
-                    Style::default()
-                        .fg(theme.warning)
-                        .add_modifier(Modifier::BOLD),
+                    bg_status,
+                    Style::default().fg(bg_color).add_modifier(Modifier::BOLD),
                 ),
             ]),
             Line::from(""),
             Line::from(vec![Span::styled(
-                "Recording tracks your battery and power usage",
+                "History recording tracks battery and power",
                 Style::default().fg(theme.fg),
             )]),
             Line::from(vec![Span::styled(
-                "over time, helping you:",
+                "usage over time, helping you:",
                 Style::default().fg(theme.fg),
             )]),
             Line::from(""),
@@ -152,7 +159,11 @@ pub fn render(frame: &mut Frame, app: &App, theme: &ThemeColors) {
             ]),
             Line::from(""),
             Line::from(vec![Span::styled(
-                "Run on login: jolt daemon install",
+                if background_enabled {
+                    "Daemon continues after TUI closes"
+                } else {
+                    "Daemon stops when TUI closes"
+                },
                 Style::default().fg(theme.muted),
             )]),
         ];
@@ -161,47 +172,23 @@ pub fn render(frame: &mut Frame, app: &App, theme: &ThemeColors) {
         frame.render_widget(para, chunks[0]);
     }
 
-    let daemon_running = app.daemon_status.is_some();
-    let action_key = if daemon_running {
-        keys::DAEMON_STOP
-    } else {
-        keys::DAEMON_START
-    };
-    let action_label = if daemon_running {
-        "Stop"
-    } else {
-        "Start Recording"
-    };
-
-    let footer = Paragraph::new(vec![
-        Line::from(vec![
-            Span::styled(
-                format!("[{}]", action_key),
-                Style::default().fg(theme.accent),
-            ),
-            Span::styled(
-                format!(" {}  ", action_label),
-                Style::default().fg(theme.muted),
-            ),
-            Span::styled(
-                format!("[{}]", keys::HISTORY),
-                Style::default().fg(theme.accent),
-            ),
-            Span::styled(" History  ", Style::default().fg(theme.muted)),
-            Span::styled(
-                format!("[{}]", keys::HISTORY_CONFIG),
-                Style::default().fg(theme.accent),
-            ),
-            Span::styled(" Config", Style::default().fg(theme.muted)),
-        ]),
-        Line::from(vec![
-            Span::styled(
-                format!("[{}]", keys::ESC),
-                Style::default().fg(theme.accent),
-            ),
-            Span::styled(" Close", Style::default().fg(theme.muted)),
-        ]),
-    ])
+    let footer = Paragraph::new(vec![Line::from(vec![
+        Span::styled(
+            format!("[{}]", keys::HISTORY),
+            Style::default().fg(theme.accent),
+        ),
+        Span::styled(" View History  ", Style::default().fg(theme.muted)),
+        Span::styled(
+            format!("[{}]", keys::HISTORY_CONFIG),
+            Style::default().fg(theme.accent),
+        ),
+        Span::styled(" Config  ", Style::default().fg(theme.muted)),
+        Span::styled(
+            format!("[{}]", keys::ESC),
+            Style::default().fg(theme.accent),
+        ),
+        Span::styled(" Close", Style::default().fg(theme.muted)),
+    ])])
     .centered();
     frame.render_widget(footer, chunks[1]);
 }

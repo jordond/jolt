@@ -96,7 +96,8 @@ fn default_theme_name() -> String {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]
 pub struct HistoryConfig {
-    pub enabled: bool,
+    #[serde(alias = "enabled")]
+    pub background_recording: bool,
     pub sample_interval_secs: u64,
     pub retention_raw_days: u32,
     pub retention_hourly_days: u32,
@@ -107,7 +108,7 @@ pub struct HistoryConfig {
 impl Default for HistoryConfig {
     fn default() -> Self {
         Self {
-            enabled: true,
+            background_recording: false,
             sample_interval_secs: 60,
             retention_raw_days: 30,
             retention_hourly_days: 180,

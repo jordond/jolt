@@ -42,7 +42,7 @@ impl Recorder {
     }
 
     pub fn should_record(&self) -> bool {
-        if !self.config.enabled {
+        if !self.config.background_recording {
             return false;
         }
 
