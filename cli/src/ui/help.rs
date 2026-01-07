@@ -20,7 +20,8 @@ fn centered_fixed_rect(area: Rect, width: u16, height: u16) -> Rect {
 }
 
 pub fn render_help(frame: &mut Frame, app: &App, theme: &ThemeColors) {
-    let content_height = KEY_BINDINGS.len() as u16 + 8;
+    let legend_lines = 8;
+    let content_height = KEY_BINDINGS.len() as u16 + legend_lines + 10;
     let content_width = 55;
     let area = centered_fixed_rect(frame.area(), content_width, content_height);
 
@@ -37,7 +38,11 @@ pub fn render_help(frame: &mut Frame, app: &App, theme: &ThemeColors) {
 
     let chunks = Layout::default()
         .direction(Direction::Vertical)
-        .constraints([Constraint::Length(3), Constraint::Min(1)])
+        .constraints([
+            Constraint::Length(3),
+            Constraint::Length(KEY_BINDINGS.len() as u16 + 1),
+            Constraint::Min(1),
+        ])
         .margin(2)
         .split(inner);
 
@@ -77,8 +82,54 @@ pub fn render_help(frame: &mut Frame, app: &App, theme: &ThemeColors) {
         .collect();
 
     let help_text = Paragraph::new(lines);
-
     frame.render_widget(help_text, chunks[1]);
+
+    let legend = vec![
+        Line::from(vec![Span::styled(
+            "Column Legend",
+            Style::default()
+                .fg(theme.accent)
+                .add_modifier(Modifier::BOLD),
+        )]),
+        Line::from(vec![
+            Span::styled("S     ", Style::default().fg(theme.highlight)),
+            Span::styled(
+                "Status: R=Run S=Sleep I=Idle T=Stop Z=Zombie",
+                Style::default().fg(theme.fg),
+            ),
+        ]),
+        Line::from(vec![
+            Span::styled("Disk  ", Style::default().fg(theme.highlight)),
+            Span::styled(
+                "Disk I/O since last refresh (read+write)",
+                Style::default().fg(theme.fg),
+            ),
+        ]),
+        Line::from(vec![
+            Span::styled("Run   ", Style::default().fg(theme.highlight)),
+            Span::styled(
+                "Process runtime (how long it's been running)",
+                Style::default().fg(theme.fg),
+            ),
+        ]),
+        Line::from(vec![
+            Span::styled("CPU   ", Style::default().fg(theme.highlight)),
+            Span::styled(
+                "Accumulated CPU time consumed by process",
+                Style::default().fg(theme.fg),
+            ),
+        ]),
+        Line::from(vec![
+            Span::styled("Imp   ", Style::default().fg(theme.highlight)),
+            Span::styled(
+                "Energy impact score (higher = more drain)",
+                Style::default().fg(theme.fg),
+            ),
+        ]),
+    ];
+
+    let legend_text = Paragraph::new(legend);
+    frame.render_widget(legend_text, chunks[2]);
 }
 
 pub fn render_kill_confirm(frame: &mut Frame, app: &App, theme: &ThemeColors) {
