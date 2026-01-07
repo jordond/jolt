@@ -30,9 +30,15 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) {
         ])
         .split(inner);
 
-    let total_power = format!("{:.1}W", app.power.total_power_watts());
-    let cpu_power = format!("CPU: {:.1}W", app.power.cpu_power_watts());
-    let gpu_power = format!("GPU: {:.1}W", app.power.gpu_power_watts());
+    let (total_power, cpu_power, gpu_power) = if app.power.is_warmed_up() {
+        (
+            format!("{:.1}W", app.power.total_power_watts()),
+            format!("CPU: {:.1}W", app.power.cpu_power_watts()),
+            format!("GPU: {:.1}W", app.power.gpu_power_watts()),
+        )
+    } else {
+        ("—".to_string(), "CPU: —".to_string(), "GPU: —".to_string())
+    };
 
     let mode_icon = match app.power.power_mode() {
         PowerMode::LowPower => "🐢",
@@ -42,7 +48,9 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) {
     };
     let mode_text = format!("{} {}", mode_icon, app.power.power_mode_label());
 
-    let power_color = if app.power.total_power_watts() > 15.0 {
+    let power_color = if !app.power.is_warmed_up() {
+        theme.muted
+    } else if app.power.total_power_watts() > 15.0 {
         theme.danger
     } else if app.power.total_power_watts() > 8.0 {
         theme.warning

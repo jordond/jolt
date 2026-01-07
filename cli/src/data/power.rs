@@ -7,12 +7,26 @@ use core_foundation_sys::dictionary::{
 use core_foundation_sys::string::{
     kCFStringEncodingUTF8, CFStringCreateWithBytesNoCopy, CFStringGetCString, CFStringRef,
 };
-use std::collections::HashMap;
+use std::collections::{HashMap, VecDeque};
 use std::ffi::c_void;
 use std::mem::size_of;
 use std::process::Command;
 use std::ptr::null;
 use std::time::{Duration, Instant};
+
+/// Number of samples to collect for smoothing power readings
+const SMOOTHING_SAMPLE_COUNT: usize = 5;
+
+/// Minimum samples required before displaying power data (warmup period)
+const MIN_WARMUP_SAMPLES: usize = 3;
+
+/// A single power reading sample
+#[derive(Debug, Clone, Copy)]
+struct PowerSample {
+    cpu_power: f32,
+    gpu_power: f32,
+    system_power: f32,
+}
 
 type IOReportSubscriptionRef = *const c_void;
 type CFArrayRef = *const c_void;
@@ -435,6 +449,8 @@ pub struct PowerData {
     package_power: f32,
     system_power: f32,
     power_mode: PowerMode,
+    samples: VecDeque<PowerSample>,
+    is_warmed_up: bool,
 }
 
 impl PowerData {
@@ -453,6 +469,8 @@ impl PowerData {
             package_power: 0.0,
             system_power: 0.0,
             power_mode: PowerMode::Unknown,
+            samples: VecDeque::with_capacity(SMOOTHING_SAMPLE_COUNT),
+            is_warmed_up: false,
         };
 
         if let Some(ref sub) = data.subscription {
@@ -478,7 +496,36 @@ impl PowerData {
         self.refresh_power_metrics();
         self.refresh_system_power();
         self.refresh_power_mode();
+        self.record_sample();
         Ok(())
+    }
+
+    fn record_sample(&mut self) {
+        let sample = PowerSample {
+            cpu_power: self.cpu_power,
+            gpu_power: self.gpu_power,
+            system_power: self.system_power,
+        };
+
+        if self.samples.len() >= SMOOTHING_SAMPLE_COUNT {
+            self.samples.pop_front();
+        }
+        self.samples.push_back(sample);
+
+        if !self.is_warmed_up && self.samples.len() >= MIN_WARMUP_SAMPLES {
+            self.is_warmed_up = true;
+        }
+    }
+
+    fn smoothed_value<F>(&self, extractor: F) -> f32
+    where
+        F: Fn(&PowerSample) -> f32,
+    {
+        if self.samples.is_empty() {
+            return 0.0;
+        }
+        let sum: f32 = self.samples.iter().map(&extractor).sum();
+        sum / self.samples.len() as f32
     }
 
     fn refresh_system_power(&mut self) {
@@ -613,15 +660,19 @@ impl PowerData {
     }
 
     pub fn cpu_power_watts(&self) -> f32 {
-        self.cpu_power
+        self.smoothed_value(|s| s.cpu_power)
     }
 
     pub fn gpu_power_watts(&self) -> f32 {
-        self.gpu_power
+        self.smoothed_value(|s| s.gpu_power)
     }
 
     pub fn total_power_watts(&self) -> f32 {
-        self.system_power
+        self.smoothed_value(|s| s.system_power)
+    }
+
+    pub fn is_warmed_up(&self) -> bool {
+        self.is_warmed_up
     }
 
     pub fn power_mode(&self) -> PowerMode {
