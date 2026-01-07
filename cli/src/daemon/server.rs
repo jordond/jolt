@@ -1,15 +1,17 @@
+use std::collections::HashMap;
 use std::fs;
-use std::io::{BufRead, BufReader, Write};
-use std::os::unix::net::{UnixListener, UnixStream};
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::Arc;
-use std::thread;
 use std::time::{Duration, Instant};
 
+use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
+use tokio::net::UnixListener;
+use tokio::sync::mpsc;
 use tracing::{debug, error, info, warn};
 
 use crate::config::{runtime_dir, HistoryConfig, UserConfig};
-use crate::daemon::protocol::{DaemonRequest, DaemonResponse, DaemonStatus};
+use crate::daemon::protocol::{
+    BatterySnapshot, BatteryState, DaemonRequest, DaemonResponse, DaemonStatus, DataSnapshot,
+    KillProcessResult, PowerMode, PowerSnapshot, ProcessSnapshot, ProcessState, MAX_SUBSCRIBERS,
+};
 use crate::daemon::socket_path;
 use crate::data::aggregator::Aggregator;
 use crate::data::{BatteryData, PowerData, ProcessData, Recorder};
@@ -30,6 +32,18 @@ pub enum DaemonError {
 }
 
 pub type Result<T> = std::result::Result<T, DaemonError>;
+
+type ClientId = u64;
+
+enum ClientMessage {
+    Request { request: DaemonRequest },
+    Disconnect,
+}
+
+struct ClientHandle {
+    response_tx: mpsc::Sender<DaemonResponse>,
+    is_subscriber: bool,
+}
 
 struct DaemonState {
     battery: BatteryData,
@@ -131,7 +145,7 @@ impl DaemonState {
         self.last_prune = Instant::now();
     }
 
-    fn get_status(&self) -> DaemonStatus {
+    fn get_status(&self, subscriber_count: usize) -> DaemonStatus {
         let stats = self.recorder.store().get_stats().ok();
 
         DaemonStatus {
@@ -141,22 +155,118 @@ impl DaemonState {
             last_sample_time: stats.and_then(|s| s.newest_sample),
             database_size_bytes: self.recorder.store().size_bytes().unwrap_or(0),
             version: env!("CARGO_PKG_VERSION").to_string(),
-            subscriber_count: 0,
+            subscriber_count,
             history_enabled: self.config.enabled,
         }
     }
 
-    fn handle_request(&self, request: DaemonRequest) -> DaemonResponse {
+    fn create_snapshot(&self) -> DataSnapshot {
+        DataSnapshot {
+            timestamp: chrono::Utc::now().timestamp(),
+            battery: self.create_battery_snapshot(),
+            power: self.create_power_snapshot(),
+            processes: self.create_process_snapshots(),
+        }
+    }
+
+    fn create_battery_snapshot(&self) -> BatterySnapshot {
+        let state = match self.battery.state_label() {
+            "Charging" => BatteryState::Charging,
+            "On Battery" => BatteryState::Discharging,
+            "Full" => BatteryState::Full,
+            "Not Charging" => BatteryState::NotCharging,
+            _ => BatteryState::Unknown,
+        };
+
+        BatterySnapshot {
+            charge_percent: self.battery.charge_percent(),
+            state,
+            state_label: self.battery.state_label().to_string(),
+            health_percent: self.battery.health_percent(),
+            max_capacity_wh: self.battery.max_capacity_wh(),
+            design_capacity_wh: self.battery.design_capacity_wh(),
+            cycle_count: self.battery.cycle_count(),
+            time_remaining_mins: self.battery.time_remaining_minutes(),
+            time_remaining_formatted: self.battery.time_remaining_formatted(),
+            charging_watts: self.battery.charging_watts(),
+            charger_watts: self.battery.charger_watts(),
+            discharge_watts: self.battery.discharge_watts(),
+            voltage_mv: 0,
+            amperage_ma: 0,
+            external_connected: false,
+        }
+    }
+
+    fn create_power_snapshot(&self) -> PowerSnapshot {
+        let mode = match self.power.power_mode() {
+            crate::data::power::PowerMode::LowPower => PowerMode::LowPower,
+            crate::data::power::PowerMode::Automatic => PowerMode::Automatic,
+            crate::data::power::PowerMode::HighPerformance => PowerMode::HighPerformance,
+            crate::data::power::PowerMode::Unknown => PowerMode::Unknown,
+        };
+
+        PowerSnapshot {
+            cpu_power_watts: self.power.cpu_power_watts(),
+            gpu_power_watts: self.power.gpu_power_watts(),
+            total_power_watts: self.power.total_power_watts(),
+            power_mode: mode,
+            power_mode_label: self.power.power_mode_label().to_string(),
+            is_warmed_up: self.power.is_warmed_up(),
+        }
+    }
+
+    fn create_process_snapshots(&self) -> Vec<ProcessSnapshot> {
+        self.processes
+            .processes
+            .iter()
+            .map(|p| self.process_info_to_snapshot(p))
+            .collect()
+    }
+
+    fn process_info_to_snapshot(&self, p: &crate::data::ProcessInfo) -> ProcessSnapshot {
+        let status = match p.status {
+            crate::data::ProcessState::Running => ProcessState::Running,
+            crate::data::ProcessState::Sleeping => ProcessState::Sleeping,
+            crate::data::ProcessState::Idle => ProcessState::Idle,
+            crate::data::ProcessState::Stopped => ProcessState::Stopped,
+            crate::data::ProcessState::Zombie => ProcessState::Zombie,
+            crate::data::ProcessState::Unknown => ProcessState::Unknown,
+        };
+
+        ProcessSnapshot {
+            pid: p.pid,
+            name: p.name.clone(),
+            command: p.command.clone(),
+            cpu_usage: p.cpu_usage,
+            memory_mb: p.memory_mb,
+            energy_impact: p.energy_impact,
+            parent_pid: p.parent_pid,
+            children: p.children.as_ref().map(|children| {
+                children
+                    .iter()
+                    .map(|c| self.process_info_to_snapshot(c))
+                    .collect()
+            }),
+            is_killable: p.is_killable,
+            disk_read_bytes: p.disk_read_bytes,
+            disk_write_bytes: p.disk_write_bytes,
+            status,
+            run_time_secs: p.run_time_secs,
+            total_cpu_time_secs: p.total_cpu_time_secs,
+        }
+    }
+
+    fn handle_request(&self, request: &DaemonRequest, subscriber_count: usize) -> DaemonResponse {
         match request {
-            DaemonRequest::GetStatus => DaemonResponse::Status(self.get_status()),
+            DaemonRequest::GetStatus => DaemonResponse::Status(self.get_status(subscriber_count)),
             DaemonRequest::GetHourlyStats { from, to } => {
-                match self.recorder.store().get_hourly_stats(from, to) {
+                match self.recorder.store().get_hourly_stats(*from, *to) {
                     Ok(stats) => DaemonResponse::HourlyStats(stats),
                     Err(e) => DaemonResponse::Error(e.to_string()),
                 }
             }
             DaemonRequest::GetDailyStats { from, to } => {
-                match self.recorder.store().get_daily_stats(&from, &to) {
+                match self.recorder.store().get_daily_stats(from, to) {
                     Ok(stats) => DaemonResponse::DailyStats(stats),
                     Err(e) => DaemonResponse::Error(e.to_string()),
                 }
@@ -165,7 +275,7 @@ impl DaemonState {
                 match self
                     .recorder
                     .store()
-                    .get_top_processes_range(&from, &to, limit)
+                    .get_top_processes_range(from, to, *limit)
                 {
                     Ok(processes) => DaemonResponse::TopProcesses(processes),
                     Err(e) => DaemonResponse::Error(e.to_string()),
@@ -173,95 +283,95 @@ impl DaemonState {
             }
             DaemonRequest::GetRecentSamples { window_secs } => {
                 let now = chrono::Utc::now().timestamp();
-                let from = now - window_secs as i64;
+                let from = now - *window_secs as i64;
                 match self.recorder.store().get_samples(from, now) {
                     Ok(samples) => DaemonResponse::RecentSamples(samples),
                     Err(e) => DaemonResponse::Error(e.to_string()),
                 }
             }
-            DaemonRequest::Shutdown => DaemonResponse::Ok,
-            DaemonRequest::Subscribe => {
-                DaemonResponse::Error("Subscribe not implemented in sync server".to_string())
-            }
-            DaemonRequest::Unsubscribe => {
-                DaemonResponse::Error("Unsubscribe not implemented in sync server".to_string())
-            }
-            DaemonRequest::GetCurrentData => {
-                DaemonResponse::Error("GetCurrentData not implemented in sync server".to_string())
-            }
+            DaemonRequest::GetCurrentData => DaemonResponse::CurrentData(self.create_snapshot()),
             DaemonRequest::KillProcess { pid } => {
                 match std::process::Command::new("kill")
                     .args(["-9", &pid.to_string()])
                     .output()
                 {
-                    Ok(output) => {
-                        if output.status.success() {
-                            DaemonResponse::KillResult(crate::daemon::protocol::KillProcessResult {
-                                pid,
-                                success: true,
-                                error: None,
-                            })
+                    Ok(output) => DaemonResponse::KillResult(KillProcessResult {
+                        pid: *pid,
+                        success: output.status.success(),
+                        error: if output.status.success() {
+                            None
                         } else {
-                            DaemonResponse::KillResult(crate::daemon::protocol::KillProcessResult {
-                                pid,
-                                success: false,
-                                error: Some("kill command failed".to_string()),
-                            })
-                        }
-                    }
-                    Err(e) => {
-                        DaemonResponse::KillResult(crate::daemon::protocol::KillProcessResult {
-                            pid,
-                            success: false,
-                            error: Some(e.to_string()),
-                        })
-                    }
+                            Some("kill command failed".to_string())
+                        },
+                    }),
+                    Err(e) => DaemonResponse::KillResult(KillProcessResult {
+                        pid: *pid,
+                        success: false,
+                        error: Some(e.to_string()),
+                    }),
                 }
+            }
+            DaemonRequest::Shutdown => DaemonResponse::Ok,
+            DaemonRequest::Subscribe | DaemonRequest::Unsubscribe => {
+                DaemonResponse::Error("Handled separately".to_string())
             }
         }
     }
 }
 
-fn handle_client(stream: UnixStream, state: &DaemonState, shutdown: &AtomicBool) -> bool {
-    let reader = BufReader::new(&stream);
-    let mut writer = &stream;
-
-    for line in reader.lines() {
-        let line = match line {
-            Ok(l) => l,
-            Err(e) => {
-                debug!(error = %e, "Client read error");
+async fn client_reader_task(
+    mut reader: BufReader<tokio::net::unix::OwnedReadHalf>,
+    msg_tx: mpsc::Sender<(ClientId, ClientMessage)>,
+    client_id: ClientId,
+) {
+    let mut line = String::new();
+    loop {
+        line.clear();
+        match reader.read_line(&mut line).await {
+            Ok(0) => {
+                let _ = msg_tx.send((client_id, ClientMessage::Disconnect)).await;
                 break;
             }
-        };
-
-        let request = match DaemonRequest::from_json(&line) {
-            Ok(r) => r,
+            Ok(_) => match DaemonRequest::from_json(line.trim()) {
+                Ok(request) => {
+                    if msg_tx
+                        .send((client_id, ClientMessage::Request { request }))
+                        .await
+                        .is_err()
+                    {
+                        break;
+                    }
+                }
+                Err(e) => {
+                    warn!(client_id, error = %e, "Invalid request from client");
+                }
+            },
             Err(e) => {
-                warn!(error = %e, "Invalid client request");
-                let response = DaemonResponse::Error(format!("Invalid request: {}", e));
-                let _ = writeln!(writer, "{}", response.to_json().unwrap_or_default());
-                continue;
+                debug!(client_id, error = %e, "Client read error");
+                let _ = msg_tx.send((client_id, ClientMessage::Disconnect)).await;
+                break;
             }
-        };
-
-        debug!(request = ?request, "Handling client request");
-        let is_shutdown = matches!(request, DaemonRequest::Shutdown);
-        let response = state.handle_request(request);
-
-        if writeln!(writer, "{}", response.to_json().unwrap_or_default()).is_err() {
-            debug!("Client write error");
-            break;
-        }
-
-        if is_shutdown {
-            info!("Shutdown requested by client");
-            shutdown.store(true, Ordering::SeqCst);
-            return true;
         }
     }
+}
 
-    false
+async fn client_writer_task(
+    mut writer: tokio::net::unix::OwnedWriteHalf,
+    mut response_rx: mpsc::Receiver<DaemonResponse>,
+) {
+    while let Some(response) = response_rx.recv().await {
+        let json = match response.to_json() {
+            Ok(j) => j,
+            Err(_) => continue,
+        };
+        if writer
+            .write_all(format!("{}\n", json).as_bytes())
+            .await
+            .is_err()
+        {
+            break;
+        }
+    }
 }
 
 pub fn run_daemon(foreground: bool) -> Result<()> {
@@ -288,19 +398,25 @@ pub fn run_daemon(foreground: bool) -> Result<()> {
 
     info!(version = env!("CARGO_PKG_VERSION"), "Daemon starting");
 
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?;
+
+    let local = tokio::task::LocalSet::new();
+    local.block_on(&runtime, run_daemon_async(socket))
+}
+
+async fn run_daemon_async(socket: std::path::PathBuf) -> Result<()> {
     let user_config = UserConfig::load();
     let mut state = DaemonState::new(&user_config)?;
-    let shutdown = Arc::new(AtomicBool::new(false));
 
     let listener = UnixListener::bind(&socket)?;
-    listener.set_nonblocking(true)?;
-
     info!(socket = ?socket, "Listening for connections");
 
     let sample_interval = Duration::from_secs(state.config.sample_interval_secs);
     let aggregation_interval = Duration::from_secs(3600);
     let prune_interval = Duration::from_secs(86400);
-    let mut last_sample = Instant::now();
+    let broadcast_interval = Duration::from_secs(1);
 
     debug!(
         sample_interval_secs = state.config.sample_interval_secs,
@@ -308,38 +424,141 @@ pub fn run_daemon(foreground: bool) -> Result<()> {
     );
     state.run_aggregation();
 
-    while !shutdown.load(Ordering::SeqCst) {
-        if last_sample.elapsed() >= sample_interval {
-            if let Err(e) = state.refresh() {
-                error!(error = %e, "Error refreshing data");
-            }
-            last_sample = Instant::now();
-        }
+    let mut sample_tick = tokio::time::interval(sample_interval);
+    let mut aggregation_tick = tokio::time::interval(aggregation_interval);
+    let mut prune_tick = tokio::time::interval(prune_interval);
+    let mut broadcast_tick = tokio::time::interval(broadcast_interval);
 
-        if state.last_aggregation.elapsed() >= aggregation_interval {
-            state.run_aggregation();
-        }
+    sample_tick.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
+    aggregation_tick.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
+    prune_tick.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
+    broadcast_tick.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
 
-        if state.last_prune.elapsed() >= prune_interval {
-            state.run_prune();
-        }
+    let (msg_tx, mut msg_rx) = mpsc::channel::<(ClientId, ClientMessage)>(256);
+    let mut clients: HashMap<ClientId, ClientHandle> = HashMap::new();
+    let mut next_client_id: ClientId = 1;
+    let mut shutdown_requested = false;
 
-        match listener.accept() {
-            Ok((stream, _)) => {
-                debug!("Client connected");
-                stream.set_nonblocking(false).ok();
-                stream.set_read_timeout(Some(Duration::from_secs(30))).ok();
-                stream.set_write_timeout(Some(Duration::from_secs(30))).ok();
-
-                if handle_client(stream, &state, &shutdown) {
-                    break;
+    loop {
+        tokio::select! {
+            _ = sample_tick.tick() => {
+                if let Err(e) = state.refresh() {
+                    error!(error = %e, "Error refreshing data");
                 }
             }
-            Err(ref e) if e.kind() == std::io::ErrorKind::WouldBlock => {
-                thread::sleep(Duration::from_millis(100));
+            _ = aggregation_tick.tick() => {
+                if state.last_aggregation.elapsed() >= aggregation_interval {
+                    state.run_aggregation();
+                }
             }
-            Err(e) => {
-                error!(error = %e, "Socket accept error");
+            _ = prune_tick.tick() => {
+                if state.last_prune.elapsed() >= prune_interval {
+                    state.run_prune();
+                }
+            }
+            _ = broadcast_tick.tick() => {
+                let subscriber_count: usize = clients.values().filter(|c| c.is_subscriber).count();
+                if subscriber_count > 0 {
+                    let snapshot = state.create_snapshot();
+                    let update = DaemonResponse::DataUpdate(snapshot);
+
+                    let mut disconnected = Vec::new();
+                    for (id, client) in &clients {
+                        if client.is_subscriber
+                            && client.response_tx.send(update.clone()).await.is_err()
+                        {
+                            disconnected.push(*id);
+                        }
+                    }
+                    for id in disconnected {
+                        clients.remove(&id);
+                        debug!(client_id = id, "Removed disconnected subscriber");
+                    }
+                }
+            }
+            result = listener.accept() => {
+                match result {
+                    Ok((stream, _)) => {
+                        let client_id = next_client_id;
+                        next_client_id += 1;
+                        debug!(client_id, "Client connected");
+
+                        let (reader, writer) = stream.into_split();
+                        let (response_tx, response_rx) = mpsc::channel::<DaemonResponse>(64);
+
+                        clients.insert(client_id, ClientHandle {
+                            response_tx,
+                            is_subscriber: false,
+                        });
+
+                        let msg_tx_clone = msg_tx.clone();
+                        tokio::task::spawn_local(client_reader_task(
+                            BufReader::new(reader),
+                            msg_tx_clone,
+                            client_id,
+                        ));
+                        tokio::task::spawn_local(client_writer_task(writer, response_rx));
+                    }
+                    Err(e) => {
+                        error!(error = %e, "Socket accept error");
+                    }
+                }
+            }
+            Some((client_id, msg)) = msg_rx.recv() => {
+                match msg {
+                    ClientMessage::Disconnect => {
+                        if clients.remove(&client_id).is_some() {
+                            debug!(client_id, count = clients.len(), "Client disconnected");
+                        }
+                    }
+                    ClientMessage::Request { request } => {
+                        debug!(client_id, request = ?request, "Handling request");
+
+                        let response = match &request {
+                            DaemonRequest::Subscribe => {
+                                let subscriber_count = clients.values().filter(|c| c.is_subscriber).count();
+                                if subscriber_count >= MAX_SUBSCRIBERS {
+                                    DaemonResponse::SubscriptionRejected {
+                                        reason: format!("Maximum subscribers ({}) reached", MAX_SUBSCRIBERS),
+                                    }
+                                } else if let Some(client) = clients.get_mut(&client_id) {
+                                    client.is_subscriber = true;
+                                    info!(client_id, count = subscriber_count + 1, "Subscriber added");
+                                    DaemonResponse::Subscribed
+                                } else {
+                                    DaemonResponse::Error("Client not found".to_string())
+                                }
+                            }
+                            DaemonRequest::Unsubscribe => {
+                                if let Some(client) = clients.get_mut(&client_id) {
+                                    if client.is_subscriber {
+                                        client.is_subscriber = false;
+                                        let subscriber_count = clients.values().filter(|c| c.is_subscriber).count();
+                                        info!(client_id, count = subscriber_count, "Subscriber removed");
+                                    }
+                                }
+                                DaemonResponse::Unsubscribed
+                            }
+                            DaemonRequest::Shutdown => {
+                                info!("Shutdown requested by client");
+                                shutdown_requested = true;
+                                DaemonResponse::Ok
+                            }
+                            _ => {
+                                let subscriber_count = clients.values().filter(|c| c.is_subscriber).count();
+                                state.handle_request(&request, subscriber_count)
+                            }
+                        };
+
+                        if let Some(client) = clients.get(&client_id) {
+                            let _ = client.response_tx.send(response).await;
+                        }
+
+                        if shutdown_requested {
+                            break;
+                        }
+                    }
+                }
             }
         }
     }

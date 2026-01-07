@@ -2,6 +2,8 @@ mod client;
 mod protocol;
 mod server;
 
+#[allow(unused_imports)]
+pub use client::async_client::{AsyncClientError, AsyncDaemonClient};
 pub use client::DaemonClient;
 #[allow(unused_imports)]
 pub use protocol::{
