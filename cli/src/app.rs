@@ -769,6 +769,7 @@ impl App {
                 existing.disk_read_bytes += process.disk_read_bytes;
                 existing.disk_write_bytes += process.disk_write_bytes;
                 existing.total_cpu_time_secs += process.total_cpu_time_secs;
+                existing.run_time_secs = existing.run_time_secs.max(process.run_time_secs);
                 if let Some(ref mut children) = existing.children {
                     children.push(process);
                     existing.name = format!("{} ({})", base_name, children.len());

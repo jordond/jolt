@@ -20,7 +20,7 @@ fn centered_fixed_rect(area: Rect, width: u16, height: u16) -> Rect {
 }
 
 pub fn render_help(frame: &mut Frame, app: &App, theme: &ThemeColors) {
-    let legend_lines = 8;
+    let legend_lines = 6;
     let content_height = KEY_BINDINGS.len() as u16 + legend_lines + 10;
     let content_width = 55;
     let area = centered_fixed_rect(frame.area(), content_width, content_height);
@@ -122,7 +122,7 @@ pub fn render_help(frame: &mut Frame, app: &App, theme: &ThemeColors) {
         Line::from(vec![
             Span::styled("CPU    ", Style::default().fg(theme.highlight)),
             Span::styled(
-                "Accumulated CPU time consumed by process",
+                "CPU Time: accumulated CPU time consumed by process",
                 Style::default().fg(theme.fg),
             ),
         ]),
