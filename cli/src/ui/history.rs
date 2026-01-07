@@ -498,10 +498,10 @@ fn render_footer(frame: &mut Frame, area: Rect, theme: &ThemeColors) {
         ),
         Span::styled(" Period  ", Style::default().fg(theme.muted)),
         Span::styled(
-            format!("[{}]", keys::DAEMON),
+            format!("[{}]", keys::SETTINGS),
             Style::default().fg(theme.accent),
         ),
-        Span::styled(" Daemon  ", Style::default().fg(theme.muted)),
+        Span::styled(" Settings  ", Style::default().fg(theme.muted)),
         Span::styled(
             format!("[{}]", keys::ESC),
             Style::default().fg(theme.accent),
