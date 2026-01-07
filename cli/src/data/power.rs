@@ -20,11 +20,16 @@ const SMOOTHING_SAMPLE_COUNT: usize = 5;
 /// Minimum samples required before displaying power data (warmup period)
 const MIN_WARMUP_SAMPLES: usize = 3;
 
-/// A single power reading sample
+/// A single instantaneous power reading sample.
+///
+/// All power values are measured in watts.
 #[derive(Debug, Clone, Copy)]
 struct PowerSample {
+    /// Estimated CPU package power in watts.
     cpu_power: f32,
+    /// Estimated GPU power in watts.
     gpu_power: f32,
+    /// Estimated total system power draw in watts.
     system_power: f32,
 }
 
@@ -450,7 +455,6 @@ pub struct PowerData {
     system_power: f32,
     power_mode: PowerMode,
     samples: VecDeque<PowerSample>,
-    is_warmed_up: bool,
 }
 
 impl PowerData {
@@ -470,7 +474,6 @@ impl PowerData {
             system_power: 0.0,
             power_mode: PowerMode::Unknown,
             samples: VecDeque::with_capacity(SMOOTHING_SAMPLE_COUNT),
-            is_warmed_up: false,
         };
 
         if let Some(ref sub) = data.subscription {
@@ -489,6 +492,7 @@ impl PowerData {
 
         data.refresh_system_power();
         data.refresh_power_mode();
+        data.record_sample();
         Ok(data)
     }
 
@@ -500,6 +504,7 @@ impl PowerData {
         Ok(())
     }
 
+    /// Records the current power readings into the ring buffer for smoothing.
     fn record_sample(&mut self) {
         let sample = PowerSample {
             cpu_power: self.cpu_power,
@@ -511,12 +516,9 @@ impl PowerData {
             self.samples.pop_front();
         }
         self.samples.push_back(sample);
-
-        if !self.is_warmed_up && self.samples.len() >= MIN_WARMUP_SAMPLES {
-            self.is_warmed_up = true;
-        }
     }
 
+    /// Computes the average of buffered samples using the provided extractor function.
     fn smoothed_value<F>(&self, extractor: F) -> f32
     where
         F: Fn(&PowerSample) -> f32,
@@ -524,7 +526,7 @@ impl PowerData {
         if self.samples.is_empty() {
             return 0.0;
         }
-        let sum: f32 = self.samples.iter().map(&extractor).sum();
+        let sum: f32 = self.samples.iter().map(extractor).sum();
         sum / self.samples.len() as f32
     }
 
@@ -659,20 +661,34 @@ impl PowerData {
         }
     }
 
+    /// Returns the smoothed CPU power draw in watts.
+    ///
+    /// Values are averaged over the last [`SMOOTHING_SAMPLE_COUNT`] samples.
+    /// Returns 0.0 if no samples have been collected yet.
     pub fn cpu_power_watts(&self) -> f32 {
         self.smoothed_value(|s| s.cpu_power)
     }
 
+    /// Returns the smoothed GPU power draw in watts.
+    ///
+    /// Values are averaged over the last [`SMOOTHING_SAMPLE_COUNT`] samples.
+    /// Returns 0.0 if no samples have been collected yet.
     pub fn gpu_power_watts(&self) -> f32 {
         self.smoothed_value(|s| s.gpu_power)
     }
 
+    /// Returns the smoothed total system power draw in watts.
+    ///
+    /// Values are averaged over the last [`SMOOTHING_SAMPLE_COUNT`] samples.
+    /// Returns 0.0 if no samples have been collected yet.
     pub fn total_power_watts(&self) -> f32 {
         self.smoothed_value(|s| s.system_power)
     }
 
+    /// Returns `true` once enough samples have been collected for reliable averaged
+    /// power readings (after the initial warmup period).
     pub fn is_warmed_up(&self) -> bool {
-        self.is_warmed_up
+        self.samples.len() >= MIN_WARMUP_SAMPLES
     }
 
     pub fn power_mode(&self) -> PowerMode {
