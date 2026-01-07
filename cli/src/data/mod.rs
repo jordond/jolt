@@ -14,6 +14,6 @@ pub use history_store::{
     HistoryStoreError, HourlyStat, Sample,
 };
 pub use power::PowerData;
-pub use processes::{ProcessData, ProcessInfo};
+pub use processes::{ProcessData, ProcessInfo, ProcessState};
 pub use recorder::Recorder;
 pub use system::SystemInfo;

@@ -2,9 +2,46 @@ use color_eyre::eyre::Result;
 use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
-use sysinfo::{ProcessesToUpdate, System};
+use sysinfo::{ProcessStatus, ProcessesToUpdate, System};
 
 use crate::config::cache_dir;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum ProcessState {
+    Running,
+    Sleeping,
+    Idle,
+    Stopped,
+    Zombie,
+    #[default]
+    Unknown,
+}
+
+impl From<ProcessStatus> for ProcessState {
+    fn from(status: ProcessStatus) -> Self {
+        match status {
+            ProcessStatus::Run => ProcessState::Running,
+            ProcessStatus::Sleep => ProcessState::Sleeping,
+            ProcessStatus::Idle => ProcessState::Idle,
+            ProcessStatus::Stop => ProcessState::Stopped,
+            ProcessStatus::Zombie => ProcessState::Zombie,
+            _ => ProcessState::Unknown,
+        }
+    }
+}
+
+impl ProcessState {
+    pub fn as_char(&self) -> char {
+        match self {
+            ProcessState::Running => 'R',
+            ProcessState::Sleeping => 'S',
+            ProcessState::Idle => 'I',
+            ProcessState::Stopped => 'T',
+            ProcessState::Zombie => 'Z',
+            ProcessState::Unknown => '?',
+        }
+    }
+}
 
 #[derive(Debug, Clone)]
 pub struct ProcessInfo {
@@ -17,6 +54,11 @@ pub struct ProcessInfo {
     pub parent_pid: Option<u32>,
     pub children: Option<Vec<ProcessInfo>>,
     pub is_killable: bool,
+    pub disk_read_bytes: u64,
+    pub disk_write_bytes: u64,
+    pub status: ProcessState,
+    pub run_time_secs: u64,
+    pub total_cpu_time_secs: u64,
 }
 
 pub struct ProcessData {
@@ -108,6 +150,11 @@ impl ProcessData {
 
             let is_killable = is_process_killable(pid_u32, &binary_name);
 
+            let disk_usage = process.disk_usage();
+            let status = ProcessState::from(process.status());
+            let run_time_secs = process.run_time();
+            let total_cpu_time_secs = process.accumulated_cpu_time();
+
             let info = ProcessInfo {
                 pid: pid_u32,
                 name: display_name,
@@ -118,6 +165,11 @@ impl ProcessData {
                 parent_pid,
                 children: None,
                 is_killable,
+                disk_read_bytes: disk_usage.read_bytes,
+                disk_write_bytes: disk_usage.written_bytes,
+                status,
+                run_time_secs,
+                total_cpu_time_secs,
             };
 
             process_map.insert(pid_u32, info.clone());

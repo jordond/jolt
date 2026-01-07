@@ -766,6 +766,9 @@ impl App {
                 existing.cpu_usage += process.cpu_usage;
                 existing.memory_mb += process.memory_mb;
                 existing.energy_impact += process.energy_impact;
+                existing.disk_read_bytes += process.disk_read_bytes;
+                existing.disk_write_bytes += process.disk_write_bytes;
+                existing.total_cpu_time_secs += process.total_cpu_time_secs;
                 if let Some(ref mut children) = existing.children {
                     children.push(process);
                     existing.name = format!("{} ({})", base_name, children.len());
@@ -780,7 +783,12 @@ impl App {
                     memory_mb: process.memory_mb,
                     energy_impact: process.energy_impact,
                     is_killable: process.is_killable,
-                    children: Some(vec![process]),
+                    children: Some(vec![process.clone()]),
+                    disk_read_bytes: process.disk_read_bytes,
+                    disk_write_bytes: process.disk_write_bytes,
+                    status: process.status,
+                    run_time_secs: process.run_time_secs,
+                    total_cpu_time_secs: process.total_cpu_time_secs,
                 };
                 merged.insert(base_name, group);
             }
