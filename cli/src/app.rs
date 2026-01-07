@@ -1,4 +1,5 @@
 use color_eyre::eyre::Result;
+use tracing::{debug, info};
 
 use crate::config::{GraphMetric, RuntimeConfig, UserConfig};
 
@@ -210,6 +211,8 @@ pub struct App {
 
 impl App {
     pub fn new(user_config: UserConfig, refresh_from_cli: bool) -> Result<Self> {
+        info!(refresh_ms = user_config.refresh_ms, "Initializing app");
+
         let refresh_ms = user_config.refresh_ms;
         let merge_mode = user_config.merge_mode;
         let graph_metric = match user_config.graph_metric {
@@ -222,6 +225,8 @@ impl App {
             .map(|s| s.to_string())
             .collect();
         let config = RuntimeConfig::new(user_config, refresh_from_cli);
+
+        debug!("Data sources initialized");
 
         Ok(Self {
             config,
@@ -442,6 +447,7 @@ impl App {
             }
             Action::ConfirmKill => {
                 if let Some(ref process) = self.process_to_kill {
+                    info!(pid = process.pid, name = %process.name, "Killing process");
                     let _ = self.processes.kill_process(process.pid);
                 }
                 self.process_to_kill = None;

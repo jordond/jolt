@@ -1,4 +1,5 @@
 use chrono::{DateTime, Duration, Timelike, Utc};
+use tracing::debug;
 
 use crate::config::HistoryConfig;
 use crate::data::{DailyStat, HistoryStore, HistoryStoreError, HourlyStat};
@@ -193,6 +194,11 @@ impl<'a> Aggregator<'a> {
             let current_size = self.store.size_bytes()?;
 
             if current_size > max_bytes {
+                debug!(
+                    current_mb = current_size / (1024 * 1024),
+                    max_mb = self.config.max_database_mb,
+                    "Database size exceeded limit, pruning"
+                );
                 let stats = self.store.get_stats()?;
                 if stats.oldest_sample.is_some() {
                     let target_size = max_bytes * 80 / 100;

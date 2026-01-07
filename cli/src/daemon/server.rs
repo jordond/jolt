@@ -6,11 +6,11 @@ use std::sync::Arc;
 use std::thread;
 use std::time::{Duration, Instant};
 
-use chrono::Utc;
+use tracing::{debug, error, info, warn};
 
 use crate::config::{runtime_dir, HistoryConfig, UserConfig};
 use crate::daemon::protocol::{DaemonRequest, DaemonResponse, DaemonStatus};
-use crate::daemon::{log_path, socket_path};
+use crate::daemon::socket_path;
 use crate::data::aggregator::Aggregator;
 use crate::data::{BatteryData, PowerData, ProcessData, Recorder};
 
@@ -82,20 +82,20 @@ impl DaemonState {
 
         match aggregator.aggregate_completed_hours() {
             Ok(count) if count > 0 => {
-                log_message(&format!("Aggregated {} hourly stats", count));
+                info!(count, "Aggregated hourly stats");
             }
             Err(e) => {
-                log_message(&format!("Error aggregating hourly stats: {}", e));
+                error!(error = %e, "Error aggregating hourly stats");
             }
             _ => {}
         }
 
         match aggregator.aggregate_completed_days() {
             Ok(count) if count > 0 => {
-                log_message(&format!("Aggregated {} daily stats", count));
+                info!(count, "Aggregated daily stats");
             }
             Err(e) => {
-                log_message(&format!("Error aggregating daily stats: {}", e));
+                error!(error = %e, "Error aggregating daily stats");
             }
             _ => {}
         }
@@ -113,18 +113,18 @@ impl DaemonState {
                     + result.daily_deleted
                     + result.processes_deleted;
                 if total > 0 {
-                    log_message(&format!(
-                        "Pruned {} records ({} samples, {} hourly, {} daily, {} processes)",
+                    info!(
                         total,
-                        result.samples_deleted,
-                        result.hourly_deleted,
-                        result.daily_deleted,
-                        result.processes_deleted
-                    ));
+                        samples = result.samples_deleted,
+                        hourly = result.hourly_deleted,
+                        daily = result.daily_deleted,
+                        processes = result.processes_deleted,
+                        "Pruned old records"
+                    );
                 }
             }
             Err(e) => {
-                log_message(&format!("Error pruning data: {}", e));
+                error!(error = %e, "Error pruning data");
             }
         }
 
@@ -189,40 +189,39 @@ fn handle_client(stream: UnixStream, state: &DaemonState, shutdown: &AtomicBool)
     for line in reader.lines() {
         let line = match line {
             Ok(l) => l,
-            Err(_) => break,
+            Err(e) => {
+                debug!(error = %e, "Client read error");
+                break;
+            }
         };
 
         let request = match DaemonRequest::from_json(&line) {
             Ok(r) => r,
             Err(e) => {
+                warn!(error = %e, "Invalid client request");
                 let response = DaemonResponse::Error(format!("Invalid request: {}", e));
                 let _ = writeln!(writer, "{}", response.to_json().unwrap_or_default());
                 continue;
             }
         };
 
+        debug!(request = ?request, "Handling client request");
         let is_shutdown = matches!(request, DaemonRequest::Shutdown);
         let response = state.handle_request(request);
 
         if writeln!(writer, "{}", response.to_json().unwrap_or_default()).is_err() {
+            debug!("Client write error");
             break;
         }
 
         if is_shutdown {
+            info!("Shutdown requested by client");
             shutdown.store(true, Ordering::SeqCst);
             return true;
         }
     }
 
     false
-}
-
-fn log_message(msg: &str) {
-    let path = log_path();
-    if let Ok(mut file) = fs::OpenOptions::new().create(true).append(true).open(&path) {
-        let timestamp = Utc::now().format("%Y-%m-%d %H:%M:%S");
-        let _ = writeln!(file, "[{}] {}", timestamp, msg);
-    }
 }
 
 pub fn run_daemon(foreground: bool) -> Result<()> {
@@ -247,7 +246,7 @@ pub fn run_daemon(foreground: bool) -> Result<()> {
         }
     }
 
-    log_message("Daemon starting...");
+    info!(version = env!("CARGO_PKG_VERSION"), "Daemon starting");
 
     let user_config = UserConfig::load();
     let mut state = DaemonState::new(&user_config)?;
@@ -256,19 +255,23 @@ pub fn run_daemon(foreground: bool) -> Result<()> {
     let listener = UnixListener::bind(&socket)?;
     listener.set_nonblocking(true)?;
 
-    log_message(&format!("Listening on {:?}", socket));
+    info!(socket = ?socket, "Listening for connections");
 
     let sample_interval = Duration::from_secs(state.config.sample_interval_secs);
     let aggregation_interval = Duration::from_secs(3600);
     let prune_interval = Duration::from_secs(86400);
     let mut last_sample = Instant::now();
 
+    debug!(
+        sample_interval_secs = state.config.sample_interval_secs,
+        "Running initial aggregation"
+    );
     state.run_aggregation();
 
     while !shutdown.load(Ordering::SeqCst) {
         if last_sample.elapsed() >= sample_interval {
             if let Err(e) = state.refresh() {
-                log_message(&format!("Error refreshing data: {}", e));
+                error!(error = %e, "Error refreshing data");
             }
             last_sample = Instant::now();
         }
@@ -283,6 +286,7 @@ pub fn run_daemon(foreground: bool) -> Result<()> {
 
         match listener.accept() {
             Ok((stream, _)) => {
+                debug!("Client connected");
                 stream.set_nonblocking(false).ok();
                 stream.set_read_timeout(Some(Duration::from_secs(30))).ok();
                 stream.set_write_timeout(Some(Duration::from_secs(30))).ok();
@@ -295,12 +299,12 @@ pub fn run_daemon(foreground: bool) -> Result<()> {
                 thread::sleep(Duration::from_millis(100));
             }
             Err(e) => {
-                log_message(&format!("Accept error: {}", e));
+                error!(error = %e, "Socket accept error");
             }
         }
     }
 
-    log_message("Daemon shutting down...");
+    info!("Daemon shutting down");
     fs::remove_file(&socket).ok();
 
     Ok(())

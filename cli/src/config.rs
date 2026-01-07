@@ -3,6 +3,56 @@ use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::PathBuf;
 use std::process::Command;
+use tracing::Level;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "lowercase")]
+pub enum LogLevel {
+    Off,
+    Error,
+    Warn,
+    #[default]
+    Info,
+    Debug,
+    Trace,
+}
+
+impl LogLevel {
+    pub fn as_tracing_level(self) -> Option<Level> {
+        match self {
+            LogLevel::Off => None,
+            LogLevel::Error => Some(Level::ERROR),
+            LogLevel::Warn => Some(Level::WARN),
+            LogLevel::Info => Some(Level::INFO),
+            LogLevel::Debug => Some(Level::DEBUG),
+            LogLevel::Trace => Some(Level::TRACE),
+        }
+    }
+
+    pub fn from_str(s: &str) -> Self {
+        match s.to_lowercase().as_str() {
+            "off" => LogLevel::Off,
+            "error" => LogLevel::Error,
+            "warn" | "warning" => LogLevel::Warn,
+            "info" => LogLevel::Info,
+            "debug" => LogLevel::Debug,
+            "trace" => LogLevel::Trace,
+            _ => LogLevel::Info,
+        }
+    }
+
+    #[allow(dead_code)]
+    pub fn label(&self) -> &'static str {
+        match self {
+            LogLevel::Off => "off",
+            LogLevel::Error => "error",
+            LogLevel::Warn => "warn",
+            LogLevel::Info => "info",
+            LogLevel::Debug => "debug",
+            LogLevel::Trace => "trace",
+        }
+    }
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "lowercase")]
@@ -85,6 +135,8 @@ pub struct UserConfig {
     pub excluded_processes: Vec<String>,
     #[serde(default)]
     pub history: HistoryConfig,
+    #[serde(default)]
+    pub log_level: LogLevel,
 }
 
 impl Default for UserConfig {
@@ -102,6 +154,7 @@ impl Default for UserConfig {
             forecast_window_secs: 300,
             excluded_processes: Vec::new(),
             history: HistoryConfig::default(),
+            log_level: LogLevel::Info,
         }
     }
 }
@@ -150,7 +203,13 @@ pub fn themes_dir() -> PathBuf {
 pub fn ensure_dirs() -> std::io::Result<()> {
     fs::create_dir_all(config_dir())?;
     fs::create_dir_all(cache_dir())?;
+    fs::create_dir_all(runtime_dir())?;
     Ok(())
+}
+
+#[allow(dead_code)]
+pub fn log_file_path() -> PathBuf {
+    runtime_dir().join("jolt.log")
 }
 
 impl UserConfig {

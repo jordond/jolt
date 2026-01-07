@@ -3,6 +3,7 @@ mod config;
 mod daemon;
 mod data;
 mod input;
+mod logging;
 mod theme;
 mod ui;
 
@@ -20,7 +21,8 @@ use crossterm::{
 };
 use ratatui::prelude::*;
 
-use config::{config_path, ensure_dirs, UserConfig};
+use config::{config_path, ensure_dirs, LogLevel, UserConfig};
+use logging::LogMode;
 
 #[derive(Debug, Subcommand)]
 enum ThemeCommands {
@@ -285,6 +287,10 @@ struct Cli {
     /// Low power mode
     #[arg(short = 'L', long, global = true)]
     low_power: bool,
+
+    /// Log level (off, error, warn, info, debug, trace)
+    #[arg(long, global = true)]
+    log_level: Option<String>,
 }
 
 fn main() -> Result<()> {
@@ -292,30 +298,51 @@ fn main() -> Result<()> {
     let _ = ensure_dirs();
 
     let cli = Cli::parse();
+    let config = UserConfig::load();
+    let log_level_override = cli.log_level.as_deref().map(LogLevel::from_str);
 
     match cli.command {
         Some(Commands::Pipe {
             samples,
             interval,
             compact,
-        }) => run_pipe(samples, interval, compact),
-        Some(Commands::Debug) => run_debug(),
-        Some(Commands::Config { path, reset, edit }) => run_config(path, reset, edit),
-        Some(Commands::Theme { command }) => run_theme(command),
-        Some(Commands::Daemon { command }) => run_daemon_command(command),
-        Some(Commands::History { command }) => run_history_command(command),
+        }) => {
+            let _guard = logging::init(config.log_level, LogMode::Stderr, log_level_override);
+            run_pipe(samples, interval, compact)
+        }
+        Some(Commands::Debug) => {
+            let _guard = logging::init(config.log_level, LogMode::Stderr, log_level_override);
+            run_debug()
+        }
+        Some(Commands::Config { path, reset, edit }) => {
+            let _guard = logging::init(config.log_level, LogMode::Stderr, log_level_override);
+            run_config(path, reset, edit)
+        }
+        Some(Commands::Theme { command }) => {
+            let _guard = logging::init(config.log_level, LogMode::Stderr, log_level_override);
+            run_theme(command)
+        }
+        Some(Commands::Daemon { command }) => {
+            run_daemon_command(command, config.log_level, log_level_override)
+        }
+        Some(Commands::History { command }) => {
+            let _guard = logging::init(config.log_level, LogMode::Stderr, log_level_override);
+            run_history_command(command)
+        }
         Some(Commands::Ui {
             refresh_ms,
             appearance,
             low_power,
         }) => {
-            let mut config = UserConfig::load();
+            let _guard = logging::init(config.log_level, LogMode::File, log_level_override);
+            let mut config = config;
             let refresh_from_cli =
                 config.merge_with_args(appearance.as_deref(), refresh_ms, low_power);
             run_tui(config, refresh_from_cli)
         }
         None => {
-            let mut config = UserConfig::load();
+            let _guard = logging::init(config.log_level, LogMode::File, log_level_override);
+            let mut config = config;
             let refresh_from_cli =
                 config.merge_with_args(cli.appearance.as_deref(), cli.refresh_ms, cli.low_power);
             run_tui(config, refresh_from_cli)
@@ -916,7 +943,11 @@ fn run_theme(command: Option<ThemeCommands>) -> Result<()> {
     Ok(())
 }
 
-fn run_daemon_command(command: DaemonCommands) -> Result<()> {
+fn run_daemon_command(
+    command: DaemonCommands,
+    log_level: LogLevel,
+    log_level_override: Option<LogLevel>,
+) -> Result<()> {
     use daemon::{is_daemon_running, log_path, run_daemon, socket_path, DaemonClient};
 
     match command {
@@ -925,6 +956,13 @@ fn run_daemon_command(command: DaemonCommands) -> Result<()> {
                 println!("Daemon is already running.");
                 return Ok(());
             }
+
+            let mode = if foreground {
+                LogMode::Both
+            } else {
+                LogMode::File
+            };
+            let _guard = logging::init(log_level, mode, log_level_override);
 
             if foreground {
                 println!("Starting daemon in foreground...");

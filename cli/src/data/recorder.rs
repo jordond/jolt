@@ -1,6 +1,7 @@
 use std::time::{Duration, Instant};
 
 use chrono::Utc;
+use tracing::debug;
 
 use crate::config::HistoryConfig;
 use crate::data::{
@@ -22,6 +23,11 @@ impl Recorder {
         excluded_processes: Vec<String>,
     ) -> Result<Self, HistoryStoreError> {
         let store = HistoryStore::open()?;
+        debug!(
+            sample_interval_secs = config.sample_interval_secs,
+            retention_raw_days = config.retention_raw_days,
+            "Recorder initialized"
+        );
         Ok(Self {
             store,
             config,
