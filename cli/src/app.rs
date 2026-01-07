@@ -1551,15 +1551,17 @@ impl App {
     }
 
     pub fn cleanup(&mut self) {
+        if !self.config.user_config.history.background_recording {
+            if let Some(ref mut client) = self.daemon_subscription {
+                let _ = client.shutdown();
+            } else if let Ok(mut client) = DaemonClient::connect() {
+                let _ = client.shutdown();
+            }
+        }
+
         if let Some(ref mut client) = self.daemon_subscription {
             let _ = client.unsubscribe();
         }
         self.daemon_subscription = None;
-
-        if !self.config.user_config.history.background_recording {
-            if let Ok(mut client) = DaemonClient::connect() {
-                let _ = client.shutdown();
-            }
-        }
     }
 }

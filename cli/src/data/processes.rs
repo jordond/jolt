@@ -56,7 +56,7 @@ impl From<ProcessSnapshot> for ProcessInfo {
             parent_pid: snapshot.parent_pid,
             children: snapshot
                 .children
-                .map(|c: Vec<ProcessSnapshot>| c.into_iter().map(ProcessInfo::from).collect()),
+                .map(|c| c.into_iter().map(ProcessInfo::from).collect()),
             is_killable: snapshot.is_killable,
             disk_read_bytes: snapshot.disk_read_bytes,
             disk_write_bytes: snapshot.disk_write_bytes,

@@ -52,8 +52,6 @@ struct DaemonState {
     recorder: Recorder,
     start_time: Instant,
     config: HistoryConfig,
-    last_aggregation: Instant,
-    last_prune: Instant,
 }
 
 impl DaemonState {
@@ -64,7 +62,6 @@ impl DaemonState {
             .map(|s| s.to_string())
             .collect();
 
-        let now = Instant::now();
         Ok(Self {
             battery: BatteryData::new()
                 .map_err(|e| DaemonError::Io(std::io::Error::other(e.to_string())))?,
@@ -73,10 +70,8 @@ impl DaemonState {
             processes: ProcessData::with_exclusions(excluded.clone())
                 .map_err(|e| DaemonError::Io(std::io::Error::other(e.to_string())))?,
             recorder: Recorder::new(user_config.history.clone(), excluded)?,
-            start_time: now,
+            start_time: Instant::now(),
             config: user_config.history.clone(),
-            last_aggregation: now,
-            last_prune: now,
         })
     }
 
@@ -113,8 +108,6 @@ impl DaemonState {
             }
             _ => {}
         }
-
-        self.last_aggregation = Instant::now();
     }
 
     fn run_prune(&mut self) {
@@ -141,8 +134,6 @@ impl DaemonState {
                 error!(error = %e, "Error pruning data");
             }
         }
-
-        self.last_prune = Instant::now();
     }
 
     fn get_status(&self, subscriber_count: usize) -> DaemonStatus {
@@ -191,9 +182,9 @@ impl DaemonState {
             charging_watts: self.battery.charging_watts(),
             charger_watts: self.battery.charger_watts(),
             discharge_watts: self.battery.discharge_watts(),
-            voltage_mv: 0,
-            amperage_ma: 0,
-            external_connected: false,
+            voltage_mv: self.battery.voltage_mv(),
+            amperage_ma: self.battery.amperage_ma(),
+            external_connected: self.battery.external_connected(),
         }
     }
 
@@ -295,15 +286,28 @@ impl DaemonState {
                     .args(["-9", &pid.to_string()])
                     .output()
                 {
-                    Ok(output) => DaemonResponse::KillResult(KillProcessResult {
-                        pid: *pid,
-                        success: output.status.success(),
-                        error: if output.status.success() {
+                    Ok(output) => {
+                        let success = output.status.success();
+                        let error = if success {
                             None
                         } else {
-                            Some("kill command failed".to_string())
-                        },
-                    }),
+                            let mut msg = String::from("kill command failed");
+                            if let Some(code) = output.status.code() {
+                                msg = format!("{msg} with exit code {code}");
+                            }
+                            let stderr = String::from_utf8_lossy(&output.stderr);
+                            let stderr = stderr.trim();
+                            if !stderr.is_empty() {
+                                msg = format!("{msg}: {stderr}");
+                            }
+                            Some(msg)
+                        };
+                        DaemonResponse::KillResult(KillProcessResult {
+                            pid: *pid,
+                            success,
+                            error,
+                        })
+                    }
                     Err(e) => DaemonResponse::KillResult(KillProcessResult {
                         pid: *pid,
                         success: false,
@@ -398,9 +402,12 @@ pub fn run_daemon(
             Ok(_) => {}
             Err(e) => return Err(DaemonError::Daemonize(e.to_string())),
         }
-        let _guard =
+        // Keep the logging guard alive for the daemon's entire lifetime.
+        // mem::forget is intentional - the guard must not drop or logging stops.
+        // The OS reclaims all resources when the daemon process exits.
+        let guard =
             crate::logging::init(log_level, crate::logging::LogMode::File, log_level_override);
-        std::mem::forget(_guard);
+        std::mem::forget(guard);
     }
 
     info!(version = env!("CARGO_PKG_VERSION"), "Daemon starting");
@@ -454,14 +461,10 @@ async fn run_daemon_async(socket: std::path::PathBuf) -> Result<()> {
                 }
             }
             _ = aggregation_tick.tick() => {
-                if state.last_aggregation.elapsed() >= aggregation_interval {
-                    state.run_aggregation();
-                }
+                state.run_aggregation();
             }
             _ = prune_tick.tick() => {
-                if state.last_prune.elapsed() >= prune_interval {
-                    state.run_prune();
-                }
+                state.run_prune();
             }
             _ = broadcast_tick.tick() => {
                 let subscriber_count: usize = clients.values().filter(|c| c.is_subscriber).count();

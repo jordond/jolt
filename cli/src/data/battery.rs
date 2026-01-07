@@ -293,6 +293,18 @@ impl BatteryData {
         self.charger_watts
     }
 
+    pub fn voltage_mv(&self) -> u32 {
+        self.voltage_mv
+    }
+
+    pub fn amperage_ma(&self) -> i32 {
+        self.amperage_ma
+    }
+
+    pub fn external_connected(&self) -> bool {
+        self.external_connected
+    }
+
     pub fn discharge_watts(&self) -> Option<f32> {
         if self.state == ChargeState::Discharging && self.amperage_ma < 0 {
             let watts =

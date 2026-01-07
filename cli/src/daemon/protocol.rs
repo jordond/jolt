@@ -333,6 +333,15 @@ mod tests {
     }
 
     #[test]
+    fn test_daemon_request_unsubscribe() {
+        let req = DaemonRequest::Unsubscribe;
+        let json = req.to_json().unwrap();
+        let deserialized = DaemonRequest::from_json(&json).unwrap();
+
+        assert!(matches!(deserialized, DaemonRequest::Unsubscribe));
+    }
+
+    #[test]
     fn test_daemon_request_kill_process() {
         let req = DaemonRequest::KillProcess { pid: 12345 };
         let json = req.to_json().unwrap();
@@ -360,6 +369,15 @@ mod tests {
         let deserialized = DaemonResponse::from_json(&json).unwrap();
 
         assert!(matches!(deserialized, DaemonResponse::Subscribed));
+    }
+
+    #[test]
+    fn test_daemon_response_unsubscribed() {
+        let resp = DaemonResponse::Unsubscribed;
+        let json = resp.to_json().unwrap();
+        let deserialized = DaemonResponse::from_json(&json).unwrap();
+
+        assert!(matches!(deserialized, DaemonResponse::Unsubscribed));
     }
 
     #[test]
