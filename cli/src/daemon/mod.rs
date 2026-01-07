@@ -19,14 +19,9 @@ use std::path::PathBuf;
 use crate::config::runtime_dir;
 
 const SOCKET_NAME: &str = "jolt.sock";
-const LOG_NAME: &str = "daemon.log";
 
 pub fn socket_path() -> PathBuf {
     runtime_dir().join(SOCKET_NAME)
-}
-
-pub fn log_path() -> PathBuf {
-    runtime_dir().join(LOG_NAME)
 }
 
 pub fn is_daemon_running() -> bool {

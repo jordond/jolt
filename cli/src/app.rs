@@ -207,7 +207,7 @@ pub struct App {
 }
 
 impl App {
-    pub fn new(user_config: UserConfig, refresh_from_cli: bool) -> Result<Self> {
+    pub fn new(user_config: UserConfig) -> Result<Self> {
         info!(refresh_ms = user_config.refresh_ms, "Initializing app");
 
         let refresh_ms = user_config.refresh_ms;
@@ -223,7 +223,7 @@ impl App {
             .into_iter()
             .map(|s| s.to_string())
             .collect();
-        let config = RuntimeConfig::new(user_config, refresh_from_cli);
+        let config = RuntimeConfig::new(user_config);
 
         debug!("Data sources initialized");
 
@@ -336,10 +336,6 @@ impl App {
                 false
             }
         }
-    }
-
-    pub fn low_power_mode(&self) -> bool {
-        self.config.user_config.low_power_mode
     }
 
     pub fn is_data_stale(&self) -> bool {
@@ -463,15 +459,8 @@ impl App {
         self.battery.refresh()?;
         self.power.refresh()?;
 
-        let should_refresh_processes = if self.selection_mode {
-            false
-        } else if self.low_power_mode() {
-            self.tick_count.is_multiple_of(3)
-        } else {
-            true
-        };
-
-        if should_refresh_processes {
+        // Skip process refresh during selection to prevent list from jumping
+        if !self.selection_mode {
             self.processes.refresh()?;
         }
 
@@ -722,10 +711,8 @@ impl App {
             }
             Action::IncreaseRefreshRate => {
                 self.refresh_ms = (self.refresh_ms + REFRESH_STEP_MS).min(MAX_REFRESH_MS);
-                if !self.config.refresh_from_cli {
-                    self.config.user_config.refresh_ms = self.refresh_ms;
-                    let _ = self.config.user_config.save();
-                }
+                self.config.user_config.refresh_ms = self.refresh_ms;
+                let _ = self.config.user_config.save();
                 self.sync_daemon_broadcast_interval();
             }
             Action::DecreaseRefreshRate => {
@@ -733,10 +720,8 @@ impl App {
                     .refresh_ms
                     .saturating_sub(REFRESH_STEP_MS)
                     .max(MIN_REFRESH_MS);
-                if !self.config.refresh_from_cli {
-                    self.config.user_config.refresh_ms = self.refresh_ms;
-                    let _ = self.config.user_config.save();
-                }
+                self.config.user_config.refresh_ms = self.refresh_ms;
+                let _ = self.config.user_config.save();
                 self.sync_daemon_broadcast_interval();
             }
             Action::OpenThemeImporter => {
@@ -1005,7 +990,6 @@ impl App {
         ("Theme", false),
         ("Appearance", false),
         ("Refresh Rate (ms)", false),
-        ("Low Power Mode", false),
         ("Display", true),
         ("Show Graph", false),
         ("Merge Mode", false),
@@ -1048,12 +1032,6 @@ impl App {
             "Theme" => format!("{} \u{2192}", self.config.theme_name()),
             "Appearance" => self.config.appearance_label().to_string(),
             "Refresh Rate (ms)" => self.refresh_ms.to_string(),
-            "Low Power Mode" => if self.config.user_config.low_power_mode {
-                "On"
-            } else {
-                "Off"
-            }
-            .to_string(),
             "Show Graph" => if self.config.user_config.show_graph {
                 "On"
             } else {
@@ -1113,10 +1091,6 @@ impl App {
         match *name {
             "Theme" => return true,
             "Appearance" => self.config.cycle_appearance(),
-            "Low Power Mode" => {
-                self.config.user_config.low_power_mode = !self.config.user_config.low_power_mode;
-                let _ = self.config.user_config.save();
-            }
             "Show Graph" => {
                 self.config.user_config.show_graph = !self.config.user_config.show_graph;
                 let _ = self.config.user_config.save();
@@ -1151,10 +1125,8 @@ impl App {
             "Appearance" => self.config.cycle_appearance(),
             "Refresh Rate (ms)" => {
                 self.refresh_ms = (self.refresh_ms + REFRESH_STEP_MS).min(MAX_REFRESH_MS);
-                if !self.config.refresh_from_cli {
-                    self.config.user_config.refresh_ms = self.refresh_ms;
-                    let _ = self.config.user_config.save();
-                }
+                self.config.user_config.refresh_ms = self.refresh_ms;
+                let _ = self.config.user_config.save();
                 self.sync_daemon_broadcast_interval();
             }
             "Process Count" => {
@@ -1215,10 +1187,8 @@ impl App {
                     .refresh_ms
                     .saturating_sub(REFRESH_STEP_MS)
                     .max(MIN_REFRESH_MS);
-                if !self.config.refresh_from_cli {
-                    self.config.user_config.refresh_ms = self.refresh_ms;
-                    let _ = self.config.user_config.save();
-                }
+                self.config.user_config.refresh_ms = self.refresh_ms;
+                let _ = self.config.user_config.save();
                 self.sync_daemon_broadcast_interval();
             }
             "Process Count" => {

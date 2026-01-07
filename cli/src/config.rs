@@ -64,14 +64,6 @@ pub enum AppearanceMode {
 }
 
 impl AppearanceMode {
-    pub fn from_str(s: &str) -> Self {
-        match s.to_lowercase().as_str() {
-            "dark" => AppearanceMode::Dark,
-            "light" => AppearanceMode::Light,
-            _ => AppearanceMode::Auto,
-        }
-    }
-
     pub fn label(&self) -> &'static str {
         match self {
             AppearanceMode::Auto => "Auto",
@@ -125,7 +117,6 @@ pub struct UserConfig {
     #[serde(default = "default_theme_name")]
     pub theme: String,
     pub refresh_ms: u64,
-    pub low_power_mode: bool,
     pub show_graph: bool,
     pub graph_metric: GraphMetric,
     pub process_count: usize,
@@ -146,7 +137,6 @@ impl Default for UserConfig {
             appearance: AppearanceMode::Auto,
             theme: "default".to_string(),
             refresh_ms: 2000,
-            low_power_mode: false,
             show_graph: true,
             graph_metric: GraphMetric::Merged,
             process_count: 50,
@@ -231,25 +221,6 @@ impl UserConfig {
         fs::write(path, content)
     }
 
-    pub fn merge_with_args(
-        &mut self,
-        appearance: Option<&str>,
-        refresh_ms: Option<u64>,
-        low_power: bool,
-    ) -> bool {
-        if let Some(a) = appearance {
-            self.appearance = AppearanceMode::from_str(a);
-        }
-        let refresh_from_cli = refresh_ms.is_some();
-        if let Some(ms) = refresh_ms {
-            self.refresh_ms = ms;
-        }
-        if low_power {
-            self.low_power_mode = true;
-        }
-        refresh_from_cli
-    }
-
     pub fn effective_excluded_processes(&self) -> Vec<&str> {
         let mut excluded: Vec<&str> = vec!["launchd"];
         excluded.extend(self.excluded_processes.iter().map(|s| s.as_str()));
@@ -260,12 +231,11 @@ impl UserConfig {
 pub struct RuntimeConfig {
     pub user_config: UserConfig,
     pub system_is_dark: bool,
-    pub refresh_from_cli: bool,
     current_theme: NamedTheme,
 }
 
 impl RuntimeConfig {
-    pub fn new(user_config: UserConfig, refresh_from_cli: bool) -> Self {
+    pub fn new(user_config: UserConfig) -> Self {
         let system_is_dark = detect_system_dark_mode();
         let current_theme = get_theme_by_id(&user_config.theme)
             .unwrap_or_else(|| get_theme_by_id("default").expect("Default theme must exist"));
@@ -273,7 +243,6 @@ impl RuntimeConfig {
         Self {
             user_config,
             system_is_dark,
-            refresh_from_cli,
             current_theme,
         }
     }

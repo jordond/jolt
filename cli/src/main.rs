@@ -8,7 +8,6 @@ mod theme;
 mod ui;
 
 use std::io;
-use std::os::unix::process::CommandExt;
 use std::time::Duration;
 
 use app::App;
@@ -108,19 +107,7 @@ enum ThemeCommands {
 enum Commands {
     /// Launch the TUI interface (default)
     #[command(alias = "tui")]
-    Ui {
-        /// Update interval in milliseconds
-        #[arg(short, long)]
-        refresh_ms: Option<u64>,
-
-        /// Appearance mode (auto, dark, light)
-        #[arg(short, long)]
-        appearance: Option<String>,
-
-        /// Low power mode - reduced refresh rate
-        #[arg(short = 'L', long)]
-        low_power: bool,
-    },
+    Ui,
 
     /// Output metrics in JSON format (suitable for piping)
     #[command(alias = "raw")]
@@ -174,6 +161,17 @@ enum Commands {
         #[command(subcommand)]
         command: Option<HistoryCommands>,
     },
+
+    /// View application logs
+    Logs {
+        /// Number of lines to show
+        #[arg(short, long, default_value_t = 50)]
+        lines: usize,
+
+        /// Follow log output
+        #[arg(short, long)]
+        follow: bool,
+    },
 }
 
 #[derive(Debug, Subcommand)]
@@ -190,17 +188,6 @@ enum DaemonCommands {
 
     /// Check daemon status
     Status,
-
-    /// View daemon logs
-    Logs {
-        /// Number of lines to show
-        #[arg(short, long, default_value_t = 50)]
-        lines: usize,
-
-        /// Follow log output
-        #[arg(short, long)]
-        follow: bool,
-    },
 
     /// Install daemon to start on login (via launchd)
     Install,
@@ -276,18 +263,6 @@ struct Cli {
     #[command(subcommand)]
     command: Option<Commands>,
 
-    /// Update interval in milliseconds (for default TUI mode)
-    #[arg(short, long, global = true)]
-    refresh_ms: Option<u64>,
-
-    /// Appearance mode (auto, dark, light)
-    #[arg(short, long, global = true)]
-    appearance: Option<String>,
-
-    /// Low power mode
-    #[arg(short = 'L', long, global = true)]
-    low_power: bool,
-
     /// Log level (off, error, warn, info, debug, trace)
     #[arg(long, global = true)]
     log_level: Option<String>,
@@ -329,23 +304,10 @@ fn main() -> Result<()> {
             let _guard = logging::init(config.log_level, LogMode::Stderr, log_level_override);
             run_history_command(command)
         }
-        Some(Commands::Ui {
-            refresh_ms,
-            appearance,
-            low_power,
-        }) => {
+        Some(Commands::Logs { lines, follow }) => run_logs(lines, follow),
+        Some(Commands::Ui) | None => {
             let _guard = logging::init(config.log_level, LogMode::File, log_level_override);
-            let mut config = config;
-            let refresh_from_cli =
-                config.merge_with_args(appearance.as_deref(), refresh_ms, low_power);
-            run_tui(config, refresh_from_cli)
-        }
-        None => {
-            let _guard = logging::init(config.log_level, LogMode::File, log_level_override);
-            let mut config = config;
-            let refresh_from_cli =
-                config.merge_with_args(cli.appearance.as_deref(), cli.refresh_ms, cli.low_power);
-            run_tui(config, refresh_from_cli)
+            run_tui(config)
         }
     }
 }
@@ -366,9 +328,9 @@ fn restore_terminal(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Re
     Ok(())
 }
 
-fn run_tui(user_config: UserConfig, refresh_from_cli: bool) -> Result<()> {
+fn run_tui(user_config: UserConfig) -> Result<()> {
     let mut terminal = setup_terminal()?;
-    let result = run_tui_loop(&mut terminal, user_config, refresh_from_cli);
+    let result = run_tui_loop(&mut terminal, user_config);
     restore_terminal(&mut terminal)?;
     result
 }
@@ -376,9 +338,8 @@ fn run_tui(user_config: UserConfig, refresh_from_cli: bool) -> Result<()> {
 fn run_tui_loop(
     terminal: &mut Terminal<CrosstermBackend<io::Stdout>>,
     user_config: UserConfig,
-    refresh_from_cli: bool,
 ) -> Result<()> {
-    let mut app = App::new(user_config, refresh_from_cli)?;
+    let mut app = App::new(user_config)?;
 
     loop {
         app.tick()?;
@@ -948,7 +909,7 @@ fn run_daemon_command(
     log_level: LogLevel,
     log_level_override: Option<LogLevel>,
 ) -> Result<()> {
-    use daemon::{is_daemon_running, log_path, run_daemon, socket_path, DaemonClient};
+    use daemon::{is_daemon_running, run_daemon, socket_path, DaemonClient};
 
     match command {
         DaemonCommands::Start { foreground } => {
@@ -983,7 +944,7 @@ fn run_daemon_command(
                     println!("Socket: {:?}", socket_path());
                 } else {
                     println!("Daemon may have failed to start. Check logs:");
-                    println!("  jolt daemon logs");
+                    println!("  jolt logs");
                 }
             }
         }
@@ -1035,28 +996,6 @@ fn run_daemon_command(
                     eprintln!("Failed to connect to daemon: {}", e);
                     std::process::exit(1);
                 }
-            }
-        }
-        DaemonCommands::Logs { lines, follow } => {
-            let path = log_path();
-            if !path.exists() {
-                println!("No log file found at {:?}", path);
-                return Ok(());
-            }
-
-            if follow {
-                // Use exec() to replace this process with tail, so Ctrl+C works properly
-                let err = std::process::Command::new("tail")
-                    .args(["-f", "-n", &lines.to_string()])
-                    .arg(&path)
-                    .exec();
-                // exec() only returns if it fails
-                return Err(err.into());
-            } else {
-                std::process::Command::new("tail")
-                    .args(["-n", &lines.to_string()])
-                    .arg(&path)
-                    .status()?;
             }
         }
         DaemonCommands::Install => {
@@ -1132,6 +1071,49 @@ fn run_daemon_command(
             std::fs::remove_file(&plist_path)?;
             println!("Daemon uninstalled.");
         }
+    }
+
+    Ok(())
+}
+
+fn run_logs(lines: usize, follow: bool) -> Result<()> {
+    use std::os::unix::process::CommandExt;
+
+    let log_dir = config::runtime_dir();
+
+    let mut log_files: Vec<_> = std::fs::read_dir(&log_dir)
+        .map(|entries| {
+            entries
+                .filter_map(|e| e.ok())
+                .filter(|e| {
+                    let name = e.file_name();
+                    let name = name.to_string_lossy();
+                    name.starts_with("jolt.") && name.ends_with(".log")
+                })
+                .map(|e| e.path())
+                .collect()
+        })
+        .unwrap_or_default();
+
+    log_files.sort();
+
+    let Some(path) = log_files.last() else {
+        println!("No log files found in {:?}", log_dir);
+        println!("Log files are created when running jolt or the daemon.");
+        return Ok(());
+    };
+
+    if follow {
+        let err = std::process::Command::new("tail")
+            .args(["-f", "-n", &lines.to_string()])
+            .arg(path)
+            .exec();
+        return Err(err.into());
+    } else {
+        std::process::Command::new("tail")
+            .args(["-n", &lines.to_string()])
+            .arg(path)
+            .status()?;
     }
 
     Ok(())

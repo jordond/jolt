@@ -117,7 +117,7 @@ fn init_both_logging(level: Level) -> Option<WorkerGuard> {
 
     let file_appender = RollingFileAppender::builder()
         .rotation(Rotation::DAILY)
-        .filename_prefix("jolt-daemon")
+        .filename_prefix("jolt")
         .filename_suffix("log")
         .max_log_files(7)
         .build(&log_dir)
