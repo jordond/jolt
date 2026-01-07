@@ -169,6 +169,14 @@ impl DaemonState {
                     Err(e) => DaemonResponse::Error(e.to_string()),
                 }
             }
+            DaemonRequest::GetRecentSamples { window_secs } => {
+                let now = chrono::Utc::now().timestamp();
+                let from = now - window_secs as i64;
+                match self.recorder.store().get_samples(from, now) {
+                    Ok(samples) => DaemonResponse::RecentSamples(samples),
+                    Err(e) => DaemonResponse::Error(e.to_string()),
+                }
+            }
             DaemonRequest::Shutdown => DaemonResponse::Ok,
         }
     }

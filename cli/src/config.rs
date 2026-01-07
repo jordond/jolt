@@ -80,6 +80,7 @@ pub struct UserConfig {
     pub process_count: usize,
     pub energy_threshold: f32,
     pub merge_mode: bool,
+    pub forecast_window_secs: u64,
     #[serde(default)]
     pub excluded_processes: Vec<String>,
     #[serde(default)]
@@ -98,6 +99,7 @@ impl Default for UserConfig {
             process_count: 50,
             energy_threshold: 0.5,
             merge_mode: true,
+            forecast_window_secs: 300,
             excluded_processes: Vec::new(),
             history: HistoryConfig::default(),
         }

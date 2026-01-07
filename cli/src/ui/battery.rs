@@ -199,6 +199,27 @@ fn render_battery_info_card(frame: &mut Frame, area: Rect, app: &App, theme: &Th
         ChargeState::Unknown => ("Status:", "—".to_string()),
     };
 
+    let forecast_info: Option<(String, bool)> = if app.battery.state() == ChargeState::Discharging {
+        Some(match app.forecast.formatted() {
+            Some(f) => {
+                let source_hint = match app.forecast.source() {
+                    crate::data::ForecastSource::Daemon => "d",
+                    crate::data::ForecastSource::Session => "s",
+                    crate::data::ForecastSource::None => "",
+                };
+                let text = if source_hint.is_empty() {
+                    f
+                } else {
+                    format!("{} ({})", f, source_hint)
+                };
+                (text, true)
+            }
+            None => ("Calculating...".to_string(), false),
+        })
+    } else {
+        None
+    };
+
     let power_text = if app.battery.is_charging() {
         app.battery.charging_watts().map(|w| {
             app.battery
@@ -226,6 +247,7 @@ fn render_battery_info_card(frame: &mut Frame, area: Rect, app: &App, theme: &Th
         app.battery.state_label(),
         time_label,
         &time_value,
+        forecast_info.as_ref().map(|(t, v)| (t.as_str(), *v)),
         power_text.as_deref(),
         app.battery.health_percent(),
         &cycles_text,
@@ -257,7 +279,7 @@ fn render_battery_info_card(frame: &mut Frame, area: Rect, app: &App, theme: &Th
             ])
             .split(inner);
 
-        let row1 = Line::from(vec![
+        let mut row1_spans = vec![
             Span::styled(
                 format!("{} ", state_icon),
                 Style::default().fg(theme.accent),
@@ -276,11 +298,25 @@ fn render_battery_info_card(frame: &mut Frame, area: Rect, app: &App, theme: &Th
             Span::styled("  │  ", Style::default().fg(theme.border)),
             Span::styled(format!("{} ", time_label), Style::default().fg(theme.muted)),
             Span::styled(&time_value, Style::default().fg(theme.fg)),
-            Span::styled(
-                power_text.map_or(String::new(), |p| format!("  │  {}", p)),
-                Style::default().fg(theme.accent),
-            ),
-        ]);
+        ];
+
+        if let Some((ref text, has_value)) = forecast_info {
+            row1_spans.push(Span::styled("  │  ", Style::default().fg(theme.border)));
+            row1_spans.push(Span::styled("Forecast: ", Style::default().fg(theme.muted)));
+            let color = if has_value {
+                theme.success
+            } else {
+                theme.muted
+            };
+            row1_spans.push(Span::styled(text, Style::default().fg(color)));
+        }
+
+        row1_spans.push(Span::styled(
+            power_text.map_or(String::new(), |p| format!("  │  {}", p)),
+            Style::default().fg(theme.accent),
+        ));
+
+        let row1 = Line::from(row1_spans);
 
         let row2 = Line::from(vec![
             Span::styled("Health: ", Style::default().fg(theme.muted)),
@@ -314,6 +350,7 @@ fn build_single_line<'a>(
     state: &'a str,
     time_label: &'a str,
     time_value: &'a str,
+    forecast: Option<(&'a str, bool)>,
     power: Option<&'a str>,
     health: f32,
     cycles: &'a str,
@@ -339,6 +376,17 @@ fn build_single_line<'a>(
         Span::styled(format!("{} ", time_label), Style::default().fg(theme.muted)),
         Span::styled(time_value, Style::default().fg(theme.fg)),
     ];
+
+    if let Some((text, has_value)) = forecast {
+        spans.push(Span::styled("  │  ", Style::default().fg(theme.border)));
+        spans.push(Span::styled("Forecast: ", Style::default().fg(theme.muted)));
+        let color = if has_value {
+            theme.success
+        } else {
+            theme.muted
+        };
+        spans.push(Span::styled(text, Style::default().fg(color)));
+    }
 
     if let Some(p) = power {
         spans.push(Span::styled(
