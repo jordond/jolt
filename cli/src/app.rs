@@ -4,7 +4,7 @@ use tracing::{debug, info};
 use crate::config::{GraphMetric, RuntimeConfig, UserConfig};
 
 const FORECAST_REFRESH_TICKS: u32 = 10;
-use crate::daemon::{DaemonClient, DaemonStatus};
+use crate::daemon::{DaemonClient, DaemonStatus, DataSnapshot};
 use crate::data::{
     BatteryData, DailyStat, DailyTopProcess, ForecastData, HistoryData, HistoryMetric, HourlyStat,
     PowerData, ProcessData, ProcessInfo, SystemInfo,
@@ -207,6 +207,12 @@ pub struct App {
     pub daemon_status: Option<DaemonStatus>,
     pub daemon_connected: bool,
     pub history_config_selected_item: usize,
+    daemon_subscription: Option<DaemonClient>,
+    last_snapshot: Option<DataSnapshot>,
+    pub using_daemon_data: bool,
+    last_daemon_update: Option<std::time::Instant>,
+    reconnect_attempts: u32,
+    last_reconnect_attempt: Option<std::time::Instant>,
 }
 
 impl App {
@@ -228,7 +234,7 @@ impl App {
 
         debug!("Data sources initialized");
 
-        Ok(Self {
+        let mut app = Self {
             config,
             view: AppView::Main,
             system_info: SystemInfo::new(),
@@ -270,16 +276,170 @@ impl App {
             daemon_status: None,
             daemon_connected: false,
             history_config_selected_item: 0,
-        })
+            daemon_subscription: None,
+            last_snapshot: None,
+            using_daemon_data: false,
+            last_daemon_update: None,
+            reconnect_attempts: 0,
+            last_reconnect_attempt: None,
+        };
+
+        app.try_connect_daemon();
+
+        Ok(app)
+    }
+
+    fn try_connect_daemon(&mut self) {
+        if self.try_subscribe_to_daemon() {
+            return;
+        }
+
+        if !crate::daemon::is_daemon_running() {
+            self.auto_start_daemon();
+            for _ in 0..5 {
+                std::thread::sleep(std::time::Duration::from_millis(200));
+                if self.try_subscribe_to_daemon() {
+                    return;
+                }
+            }
+        }
+    }
+
+    fn try_subscribe_to_daemon(&mut self) -> bool {
+        if let Ok(mut client) = DaemonClient::connect() {
+            if client.subscribe().is_ok() && client.set_nonblocking(true).is_ok() {
+                info!("Subscribed to daemon for real-time data");
+                self.daemon_subscription = Some(client);
+                self.using_daemon_data = true;
+                self.daemon_connected = true;
+                return true;
+            }
+        }
+        false
+    }
+
+    fn auto_start_daemon(&self) {
+        if let Ok(exe) = std::env::current_exe() {
+            let _ = std::process::Command::new(exe)
+                .args(["daemon", "start"])
+                .stdout(std::process::Stdio::null())
+                .stderr(std::process::Stdio::null())
+                .spawn();
+        }
     }
 
     pub fn low_power_mode(&self) -> bool {
         self.config.user_config.low_power_mode
     }
 
+    pub fn is_data_stale(&self) -> bool {
+        if !self.using_daemon_data {
+            return false;
+        }
+        if let Some(last_update) = self.last_daemon_update {
+            last_update.elapsed() > std::time::Duration::from_secs(2)
+        } else {
+            false
+        }
+    }
+
+    pub fn is_reconnecting(&self) -> bool {
+        self.using_daemon_data && self.daemon_subscription.is_none() && self.reconnect_attempts > 0
+    }
+
     pub fn tick(&mut self) -> Result<()> {
         self.tick_count = self.tick_count.wrapping_add(1);
 
+        if self.using_daemon_data {
+            self.tick_from_daemon()?;
+        } else {
+            self.tick_from_local()?;
+        }
+
+        self.history.record(
+            self.battery.charge_percent(),
+            self.power.total_power_watts(),
+        );
+
+        if self.tick_count.is_multiple_of(FORECAST_REFRESH_TICKS) {
+            self.refresh_forecast();
+        }
+
+        Ok(())
+    }
+
+    fn tick_from_daemon(&mut self) -> Result<()> {
+        let mut received_data = false;
+
+        if let Some(ref mut client) = self.daemon_subscription {
+            match client.read_update() {
+                Ok(Some(snapshot)) => {
+                    self.apply_snapshot(&snapshot);
+                    self.last_snapshot = Some(snapshot);
+                    self.last_daemon_update = Some(std::time::Instant::now());
+                    self.reconnect_attempts = 0;
+                    received_data = true;
+                }
+                Ok(None) => {}
+                Err(_) => {
+                    debug!("Daemon connection lost");
+                    self.daemon_subscription = None;
+                    self.daemon_connected = false;
+                    self.attempt_reconnect();
+                }
+            }
+        }
+
+        if !received_data {
+            if let Some(last_update) = self.last_daemon_update {
+                if last_update.elapsed() > std::time::Duration::from_secs(5) {
+                    debug!("No daemon data for 5s, attempting reconnect");
+                    self.daemon_subscription = None;
+                    self.attempt_reconnect();
+                }
+            }
+        }
+
+        if !self.using_daemon_data {
+            self.tick_from_local()?;
+        }
+
+        Ok(())
+    }
+
+    fn attempt_reconnect(&mut self) {
+        const MAX_RECONNECT_ATTEMPTS: u32 = 3;
+        const RECONNECT_BACKOFF_MS: u64 = 1000;
+
+        if self.reconnect_attempts >= MAX_RECONNECT_ATTEMPTS {
+            debug!("Max reconnect attempts reached, falling back to local data");
+            self.using_daemon_data = false;
+            self.daemon_connected = false;
+            return;
+        }
+
+        let backoff_duration = std::time::Duration::from_millis(
+            RECONNECT_BACKOFF_MS * (self.reconnect_attempts + 1) as u64,
+        );
+        if let Some(last_attempt) = self.last_reconnect_attempt {
+            if last_attempt.elapsed() < backoff_duration {
+                return;
+            }
+        }
+
+        self.reconnect_attempts += 1;
+        self.last_reconnect_attempt = Some(std::time::Instant::now());
+        debug!(
+            attempt = self.reconnect_attempts,
+            "Attempting daemon reconnect"
+        );
+
+        if self.try_subscribe_to_daemon() {
+            self.reconnect_attempts = 0;
+        }
+    }
+
+    fn tick_from_local(&mut self) -> Result<()> {
         self.battery.refresh()?;
         self.power.refresh()?;
 
@@ -295,16 +455,17 @@ impl App {
             self.processes.refresh()?;
         }
 
-        self.history.record(
-            self.battery.charge_percent(),
-            self.power.total_power_watts(),
-        );
-
-        if self.tick_count.is_multiple_of(FORECAST_REFRESH_TICKS) {
-            self.refresh_forecast();
-        }
-
         Ok(())
+    }
+
+    fn apply_snapshot(&mut self, snapshot: &DataSnapshot) {
+        self.battery.update_from_snapshot(&snapshot.battery);
+        self.power.update_from_snapshot(&snapshot.power);
+
+        if !self.selection_mode {
+            self.processes
+                .update_from_snapshots(snapshot.processes.clone());
+        }
     }
 
     fn refresh_forecast(&mut self) {
@@ -448,7 +609,7 @@ impl App {
             Action::ConfirmKill => {
                 if let Some(ref process) = self.process_to_kill {
                     info!(pid = process.pid, name = %process.name, "Killing process");
-                    let _ = self.processes.kill_process(process.pid);
+                    self.kill_process_impl(process.pid);
                 }
                 self.process_to_kill = None;
                 self.view = AppView::Main;
@@ -1354,5 +1515,15 @@ impl App {
         }
         self.daemon_connected = false;
         self.daemon_status = None;
+    }
+
+    fn kill_process_impl(&self, pid: u32) {
+        if self.using_daemon_data {
+            if let Ok(mut client) = DaemonClient::connect() {
+                let _ = client.kill_process(pid);
+                return;
+            }
+        }
+        let _ = self.processes.kill_process(pid);
     }
 }

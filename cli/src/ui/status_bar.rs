@@ -83,7 +83,20 @@ pub fn render_status_bar(frame: &mut Frame, area: Rect, app: &App, theme: &Theme
         theme.muted
     };
 
-    let right_spans: Vec<Span> = vec![
+    let mut right_spans: Vec<Span> = Vec::new();
+
+    if app.is_reconnecting() {
+        right_spans.push(Span::styled(
+            "⟳ reconnecting ",
+            Style::default().fg(theme.warning),
+        ));
+        right_spans.push(Span::styled("│ ", Style::default().fg(theme.border)));
+    } else if app.is_data_stale() {
+        right_spans.push(Span::styled("⚠ stale ", Style::default().fg(theme.warning)));
+        right_spans.push(Span::styled("│ ", Style::default().fg(theme.border)));
+    }
+
+    right_spans.extend(vec![
         Span::styled("history: ", Style::default().fg(theme.muted)),
         Span::styled(history_status, Style::default().fg(history_color)),
         Span::styled(" │ ", Style::default().fg(theme.border)),
@@ -91,7 +104,7 @@ pub fn render_status_bar(frame: &mut Frame, area: Rect, app: &App, theme: &Theme
         Span::styled(" view ", Style::default().fg(theme.muted)),
         Span::styled(keys::DAEMON, Style::default().fg(theme.accent)),
         Span::styled(" manage ", Style::default().fg(theme.muted)),
-    ];
+    ]);
 
     let left_width: usize = left_spans.iter().map(|s| s.width()).sum();
     let right_width: usize = right_spans.iter().map(|s| s.width()).sum();

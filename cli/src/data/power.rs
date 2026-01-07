@@ -14,6 +14,8 @@ use std::process::Command;
 use std::ptr::null;
 use std::time::{Duration, Instant};
 
+use crate::daemon::{PowerMode as ProtocolPowerMode, PowerSnapshot};
+
 /// Number of samples to collect for smoothing power readings
 const SMOOTHING_SAMPLE_COUNT: usize = 5;
 
@@ -702,6 +704,31 @@ impl PowerData {
             PowerMode::HighPerformance => "High Performance",
             PowerMode::Unknown => "Unknown",
         }
+    }
+
+    pub fn update_from_snapshot(&mut self, snapshot: &PowerSnapshot) {
+        self.cpu_power = snapshot.cpu_power_watts;
+        self.gpu_power = snapshot.gpu_power_watts;
+        self.system_power = snapshot.total_power_watts;
+        self.package_power = snapshot.cpu_power_watts + snapshot.gpu_power_watts;
+
+        self.power_mode = match snapshot.power_mode {
+            ProtocolPowerMode::LowPower => PowerMode::LowPower,
+            ProtocolPowerMode::Automatic => PowerMode::Automatic,
+            ProtocolPowerMode::HighPerformance => PowerMode::HighPerformance,
+            ProtocolPowerMode::Unknown => PowerMode::Unknown,
+        };
+
+        let sample = PowerSample {
+            cpu_power: snapshot.cpu_power_watts,
+            gpu_power: snapshot.gpu_power_watts,
+            system_power: snapshot.total_power_watts,
+        };
+
+        if self.samples.len() >= SMOOTHING_SAMPLE_COUNT {
+            self.samples.pop_front();
+        }
+        self.samples.push_back(sample);
     }
 }
 

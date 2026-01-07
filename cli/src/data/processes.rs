@@ -5,6 +5,7 @@ use std::path::Path;
 use sysinfo::{ProcessStatus, ProcessesToUpdate, System};
 
 use crate::config::cache_dir;
+use crate::daemon::{ProcessSnapshot, ProcessState as ProtocolProcessState};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum ProcessState {
@@ -26,6 +27,42 @@ impl From<ProcessStatus> for ProcessState {
             ProcessStatus::Stop => ProcessState::Stopped,
             ProcessStatus::Zombie => ProcessState::Zombie,
             _ => ProcessState::Unknown,
+        }
+    }
+}
+
+impl From<ProtocolProcessState> for ProcessState {
+    fn from(state: ProtocolProcessState) -> Self {
+        match state {
+            ProtocolProcessState::Running => ProcessState::Running,
+            ProtocolProcessState::Sleeping => ProcessState::Sleeping,
+            ProtocolProcessState::Idle => ProcessState::Idle,
+            ProtocolProcessState::Stopped => ProcessState::Stopped,
+            ProtocolProcessState::Zombie => ProcessState::Zombie,
+            ProtocolProcessState::Unknown => ProcessState::Unknown,
+        }
+    }
+}
+
+impl From<ProcessSnapshot> for ProcessInfo {
+    fn from(snapshot: ProcessSnapshot) -> Self {
+        Self {
+            pid: snapshot.pid,
+            name: snapshot.name,
+            command: snapshot.command,
+            cpu_usage: snapshot.cpu_usage,
+            memory_mb: snapshot.memory_mb,
+            energy_impact: snapshot.energy_impact,
+            parent_pid: snapshot.parent_pid,
+            children: snapshot
+                .children
+                .map(|c: Vec<ProcessSnapshot>| c.into_iter().map(ProcessInfo::from).collect()),
+            is_killable: snapshot.is_killable,
+            disk_read_bytes: snapshot.disk_read_bytes,
+            disk_write_bytes: snapshot.disk_write_bytes,
+            status: snapshot.status.into(),
+            run_time_secs: snapshot.run_time_secs,
+            total_cpu_time_secs: snapshot.total_cpu_time_secs,
         }
     }
 }
@@ -222,6 +259,10 @@ impl ProcessData {
             .output()?;
 
         Ok(())
+    }
+
+    pub fn update_from_snapshots(&mut self, snapshots: Vec<ProcessSnapshot>) {
+        self.processes = snapshots.into_iter().map(ProcessInfo::from).collect();
     }
 }
 
