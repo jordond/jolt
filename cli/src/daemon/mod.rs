@@ -4,7 +4,10 @@ mod server;
 
 pub use client::DaemonClient;
 #[allow(unused_imports)]
-pub use protocol::{DaemonRequest, DaemonResponse, DaemonStatus};
+pub use protocol::{
+    BatterySnapshot, BatteryState, DaemonRequest, DaemonResponse, DaemonStatus, DataSnapshot,
+    KillProcessResult, PowerMode, PowerSnapshot, ProcessSnapshot, ProcessState, MAX_SUBSCRIBERS,
+};
 pub use server::run_daemon;
 #[allow(unused_imports)]
 pub use server::DaemonError;

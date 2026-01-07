@@ -141,6 +141,8 @@ impl DaemonState {
             last_sample_time: stats.and_then(|s| s.newest_sample),
             database_size_bytes: self.recorder.store().size_bytes().unwrap_or(0),
             version: env!("CARGO_PKG_VERSION").to_string(),
+            subscriber_count: 0,
+            history_enabled: self.config.enabled,
         }
     }
 
@@ -178,6 +180,44 @@ impl DaemonState {
                 }
             }
             DaemonRequest::Shutdown => DaemonResponse::Ok,
+            DaemonRequest::Subscribe => {
+                DaemonResponse::Error("Subscribe not implemented in sync server".to_string())
+            }
+            DaemonRequest::Unsubscribe => {
+                DaemonResponse::Error("Unsubscribe not implemented in sync server".to_string())
+            }
+            DaemonRequest::GetCurrentData => {
+                DaemonResponse::Error("GetCurrentData not implemented in sync server".to_string())
+            }
+            DaemonRequest::KillProcess { pid } => {
+                match std::process::Command::new("kill")
+                    .args(["-9", &pid.to_string()])
+                    .output()
+                {
+                    Ok(output) => {
+                        if output.status.success() {
+                            DaemonResponse::KillResult(crate::daemon::protocol::KillProcessResult {
+                                pid,
+                                success: true,
+                                error: None,
+                            })
+                        } else {
+                            DaemonResponse::KillResult(crate::daemon::protocol::KillProcessResult {
+                                pid,
+                                success: false,
+                                error: Some("kill command failed".to_string()),
+                            })
+                        }
+                    }
+                    Err(e) => {
+                        DaemonResponse::KillResult(crate::daemon::protocol::KillProcessResult {
+                            pid,
+                            success: false,
+                            error: Some(e.to_string()),
+                        })
+                    }
+                }
+            }
         }
     }
 }
