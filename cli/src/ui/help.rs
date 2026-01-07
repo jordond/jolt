@@ -92,37 +92,37 @@ pub fn render_help(frame: &mut Frame, app: &App, theme: &ThemeColors) {
                 .add_modifier(Modifier::BOLD),
         )]),
         Line::from(vec![
-            Span::styled("S     ", Style::default().fg(theme.highlight)),
+            Span::styled("S      ", Style::default().fg(theme.highlight)),
             Span::styled(
                 "Status: R=Run S=Sleep I=Idle T=Stop Z=Zombie",
                 Style::default().fg(theme.fg),
             ),
         ]),
         Line::from(vec![
-            Span::styled("Disk  ", Style::default().fg(theme.highlight)),
+            Span::styled("Impact ", Style::default().fg(theme.highlight)),
+            Span::styled(
+                "Energy impact score (higher = more drain)",
+                Style::default().fg(theme.fg),
+            ),
+        ]),
+        Line::from(vec![
+            Span::styled("Disk   ", Style::default().fg(theme.highlight)),
             Span::styled(
                 "Disk I/O since last refresh (read+write)",
                 Style::default().fg(theme.fg),
             ),
         ]),
         Line::from(vec![
-            Span::styled("Run   ", Style::default().fg(theme.highlight)),
+            Span::styled("Run    ", Style::default().fg(theme.highlight)),
             Span::styled(
                 "Process runtime (how long it's been running)",
                 Style::default().fg(theme.fg),
             ),
         ]),
         Line::from(vec![
-            Span::styled("CPU   ", Style::default().fg(theme.highlight)),
+            Span::styled("CPU    ", Style::default().fg(theme.highlight)),
             Span::styled(
                 "Accumulated CPU time consumed by process",
-                Style::default().fg(theme.fg),
-            ),
-        ]),
-        Line::from(vec![
-            Span::styled("Imp   ", Style::default().fg(theme.highlight)),
-            Span::styled(
-                "Energy impact score (higher = more drain)",
                 Style::default().fg(theme.fg),
             ),
         ]),

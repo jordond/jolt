@@ -13,12 +13,12 @@ use crate::theme::ThemeColors;
 const COL_EXPAND: u16 = 6;
 const COL_PID: u16 = 7;
 const COL_STATUS: u16 = 1;
+const COL_IMPACT: u16 = 8;
 const COL_CPU: u16 = 6;
 const COL_MEMORY: u16 = 8;
 const COL_DISK: u16 = 9;
 const COL_RUNTIME: u16 = 7;
 const COL_CPUTIME: u16 = 7;
-const COL_IMPACT: u16 = 6;
 const COL_KILL: u16 = 4;
 const COL_SPACING: u16 = 10;
 const COL_NAME_MIN: u16 = 15;
@@ -103,12 +103,17 @@ pub fn render(frame: &mut Frame, area: Rect, app: &mut App, theme: &ThemeColors)
         format_header("PID", SortColumn::Pid, app.sort_column, sort_indicator),
         "S".to_string(),
         format_header("Name", SortColumn::Name, app.sort_column, sort_indicator),
-        "Disk".to_string(),
+        format_header(
+            "Impact",
+            SortColumn::Energy,
+            app.sort_column,
+            sort_indicator,
+        ),
         format_header("CPU%", SortColumn::Cpu, app.sort_column, sort_indicator),
         format_header("Mem", SortColumn::Memory, app.sort_column, sort_indicator),
+        "Disk".to_string(),
         "Run".to_string(),
         "CPU".to_string(),
-        format_header("Imp", SortColumn::Energy, app.sort_column, sort_indicator),
         "K".to_string(),
     ];
     let header = Row::new(header_cells.iter().map(|h| {
@@ -197,12 +202,12 @@ pub fn render(frame: &mut Frame, area: Rect, app: &mut App, theme: &ThemeColors)
                 Span::styled(process.pid.to_string(), style),
                 Span::styled(status_char, status_style),
                 Span::styled(truncate_name(display_name, name_width), style),
-                Span::styled(disk_io, style),
+                Span::styled(format!("{:.1}", process.energy_impact), style),
                 Span::styled(format!("{:.1}", process.cpu_usage), style),
                 Span::styled(format_memory(process.memory_mb), style),
+                Span::styled(disk_io, style),
                 Span::styled(runtime, style),
                 Span::styled(cpu_time, style),
-                Span::styled(format!("{:.1}", process.energy_impact), style),
                 Span::styled(killable_indicator, killable_style),
             ];
 
@@ -215,12 +220,12 @@ pub fn render(frame: &mut Frame, area: Rect, app: &mut App, theme: &ThemeColors)
         Constraint::Length(COL_PID),
         Constraint::Length(COL_STATUS),
         Constraint::Min(COL_NAME_MIN),
-        Constraint::Length(COL_DISK),
+        Constraint::Length(COL_IMPACT),
         Constraint::Length(COL_CPU),
         Constraint::Length(COL_MEMORY),
+        Constraint::Length(COL_DISK),
         Constraint::Length(COL_RUNTIME),
         Constraint::Length(COL_CPUTIME),
-        Constraint::Length(COL_IMPACT),
         Constraint::Length(COL_KILL),
     ];
 
