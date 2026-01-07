@@ -395,6 +395,12 @@ fn render_summary_stats(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeC
     frame.render_widget(para, inner);
 }
 
+const HISTORY_COL_AVG_W: u16 = 7;
+const HISTORY_COL_TOTAL_WH: u16 = 9;
+const HISTORY_COL_CPU: u16 = 5;
+const HISTORY_COL_SPACING: u16 = 3;
+const HISTORY_COL_NAME_MIN: u16 = 18;
+
 fn render_top_processes(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) {
     let block = Block::default()
         .title(" Top Power Consumers ")
@@ -413,6 +419,13 @@ fn render_top_processes(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeC
         frame.render_widget(no_data, inner);
         return;
     }
+
+    let fixed_width =
+        HISTORY_COL_AVG_W + HISTORY_COL_TOTAL_WH + HISTORY_COL_CPU + HISTORY_COL_SPACING;
+    let name_width = inner
+        .width
+        .saturating_sub(fixed_width)
+        .max(HISTORY_COL_NAME_MIN) as usize;
 
     let header = Row::new(vec!["Process", "Avg W", "Total Wh", "CPU%"])
         .style(
@@ -436,7 +449,7 @@ fn render_top_processes(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeC
             let power_color = power_level_color(p.avg_power, max_power, theme);
 
             Row::new(vec![
-                truncate_name(&p.process_name, 18),
+                truncate_name(&p.process_name, name_width),
                 format!("{:.1}", p.avg_power),
                 format!("{:.1}", p.total_energy_wh),
                 format!("{:.0}", p.avg_cpu),
@@ -448,10 +461,10 @@ fn render_top_processes(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeC
     let table = Table::new(
         rows,
         [
-            Constraint::Min(18),
-            Constraint::Length(7),
-            Constraint::Length(9),
-            Constraint::Length(5),
+            Constraint::Min(HISTORY_COL_NAME_MIN),
+            Constraint::Length(HISTORY_COL_AVG_W),
+            Constraint::Length(HISTORY_COL_TOTAL_WH),
+            Constraint::Length(HISTORY_COL_CPU),
         ],
     )
     .header(header)

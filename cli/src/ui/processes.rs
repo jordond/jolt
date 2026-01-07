@@ -9,6 +9,15 @@ use ratatui::{
 use crate::app::{App, SortColumn};
 use crate::theme::ThemeColors;
 
+const COL_EXPAND: u16 = 6;
+const COL_PID: u16 = 8;
+const COL_CPU: u16 = 8;
+const COL_MEMORY: u16 = 10;
+const COL_IMPACT: u16 = 8;
+const COL_KILL: u16 = 4;
+const COL_SPACING: u16 = 6;
+const COL_NAME_MIN: u16 = 20;
+
 fn energy_gradient_color(energy: f32, theme: &ThemeColors) -> Color {
     let (low_r, low_g, low_b) = extract_rgb(theme.success);
     let (mid_r, mid_g, mid_b) = extract_rgb(theme.warning);
@@ -69,6 +78,10 @@ pub fn render(frame: &mut Frame, area: Rect, app: &mut App, theme: &ThemeColors)
 
     let inner = block.inner(area);
     frame.render_widget(block, area);
+
+    let fixed_width =
+        COL_EXPAND + COL_PID + COL_CPU + COL_MEMORY + COL_IMPACT + COL_KILL + COL_SPACING;
+    let name_width = inner.width.saturating_sub(fixed_width).max(COL_NAME_MIN) as usize;
 
     let sort_indicator = if app.sort_ascending { "▲" } else { "▼" };
     let header_cells: [String; 7] = [
@@ -158,7 +171,7 @@ pub fn render(frame: &mut Frame, area: Rect, app: &mut App, theme: &ThemeColors)
             let cells = vec![
                 Span::styled(format!("{}{}", indent, expand_icon), style),
                 Span::styled(process.pid.to_string(), style),
-                Span::styled(truncate_name(display_name, 30), style),
+                Span::styled(truncate_name(display_name, name_width), style),
                 Span::styled(format!("{:.1}", process.cpu_usage), style),
                 Span::styled(format!("{:.1}MB", process.memory_mb), style),
                 Span::styled(format!("{:.1}", process.energy_impact), style),
@@ -170,13 +183,13 @@ pub fn render(frame: &mut Frame, area: Rect, app: &mut App, theme: &ThemeColors)
         .collect();
 
     let widths = [
-        Constraint::Length(6),
-        Constraint::Length(8),
-        Constraint::Min(20),
-        Constraint::Length(8),
-        Constraint::Length(10),
-        Constraint::Length(8),
-        Constraint::Length(4),
+        Constraint::Length(COL_EXPAND),
+        Constraint::Length(COL_PID),
+        Constraint::Min(COL_NAME_MIN),
+        Constraint::Length(COL_CPU),
+        Constraint::Length(COL_MEMORY),
+        Constraint::Length(COL_IMPACT),
+        Constraint::Length(COL_KILL),
     ];
 
     let table = Table::new(rows, widths).header(header);
