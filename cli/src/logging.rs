@@ -106,7 +106,14 @@ fn init_stderr_logging(level: Level) {
 
 fn init_both_logging(level: Level) -> Option<WorkerGuard> {
     let log_dir = runtime_dir();
-    let _ = std::fs::create_dir_all(&log_dir);
+
+    if let Err(e) = std::fs::create_dir_all(&log_dir) {
+        eprintln!(
+            "Warning: Failed to create log directory {:?}: {}",
+            log_dir, e
+        );
+        return None;
+    }
 
     let file_appender = RollingFileAppender::builder()
         .rotation(Rotation::DAILY)
@@ -124,25 +131,19 @@ fn init_both_logging(level: Level) -> Option<WorkerGuard> {
         .with_ansi(false)
         .with_target(true)
         .with_file(true)
-        .with_line_number(true)
-        .with_filter(build_env_filter(level));
+        .with_line_number(true);
 
     let stderr_layer = fmt::layer()
         .with_writer(std::io::stderr)
         .with_timer(UtcTime::rfc_3339())
         .with_ansi(true)
-        .with_target(true)
-        .with_filter(build_env_filter(level));
+        .with_target(true);
 
     tracing_subscriber::registry()
+        .with(build_env_filter(level))
         .with(file_layer)
         .with(stderr_layer)
         .init();
 
     Some(guard)
-}
-
-#[allow(dead_code)]
-pub fn log_file_location() -> std::path::PathBuf {
-    runtime_dir().join("jolt.log")
 }

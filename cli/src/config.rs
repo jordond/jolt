@@ -207,11 +207,6 @@ pub fn ensure_dirs() -> std::io::Result<()> {
     Ok(())
 }
 
-#[allow(dead_code)]
-pub fn log_file_path() -> PathBuf {
-    runtime_dir().join("jolt.log")
-}
-
 impl UserConfig {
     pub fn load() -> Self {
         let path = config_path();
