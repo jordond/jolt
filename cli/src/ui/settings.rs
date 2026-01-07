@@ -77,6 +77,14 @@ fn render_status_section(frame: &mut Frame, area: Rect, app: &App, theme: &Theme
         let uptime_str = format_uptime(status.uptime_secs);
         let size_str = format_bytes(status.database_size_bytes);
 
+        const LEFT_COL_WIDTH: usize = 24;
+
+        let bg_text = format!("Background: {}", bg_status);
+        let bg_spacer = " ".repeat(LEFT_COL_WIDTH.saturating_sub(bg_text.len()));
+
+        let samples_text = format!("Samples: {:<8}", status.sample_count);
+        let samples_spacer = " ".repeat(LEFT_COL_WIDTH.saturating_sub(samples_text.len()));
+
         vec![
             Line::from(vec![
                 Span::styled("Background: ", Style::default().fg(theme.muted)),
@@ -84,7 +92,7 @@ fn render_status_section(frame: &mut Frame, area: Rect, app: &App, theme: &Theme
                     bg_status,
                     Style::default().fg(bg_color).add_modifier(Modifier::BOLD),
                 ),
-                Span::styled("              ", Style::default()),
+                Span::raw(bg_spacer),
                 Span::styled("Uptime: ", Style::default().fg(theme.muted)),
                 Span::styled(uptime_str, Style::default().fg(theme.fg)),
             ]),
@@ -94,7 +102,7 @@ fn render_status_section(frame: &mut Frame, area: Rect, app: &App, theme: &Theme
                     format!("{:<8}", status.sample_count),
                     Style::default().fg(theme.accent),
                 ),
-                Span::styled("        ", Style::default()),
+                Span::raw(samples_spacer),
                 Span::styled("DB Size: ", Style::default().fg(theme.muted)),
                 Span::styled(size_str, Style::default().fg(theme.fg)),
             ]),

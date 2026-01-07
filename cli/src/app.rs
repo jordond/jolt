@@ -260,7 +260,7 @@ impl App {
             history_loading: false,
             daemon_status: None,
             daemon_connected: false,
-            settings_selected_item: 0,
+            settings_selected_item: Self::first_selectable_settings_index(),
             daemon_subscription: None,
             last_snapshot: None,
             using_daemon_data: false,
@@ -780,7 +780,7 @@ impl App {
                     AppView::Settings => AppView::Main,
                     _ => {
                         self.refresh_daemon_status();
-                        self.settings_selected_item = 1;
+                        self.settings_selected_item = Self::first_selectable_settings_index();
                         AppView::Settings
                     }
                 };
@@ -999,6 +999,13 @@ impl App {
             .get(index)
             .map(|(_, is_header)| *is_header)
             .unwrap_or(false)
+    }
+
+    pub fn first_selectable_settings_index() -> usize {
+        Self::SETTINGS_ITEMS
+            .iter()
+            .position(|(_, is_header)| !is_header)
+            .unwrap_or(0)
     }
 
     pub fn settings_item_value(&self, index: usize) -> String {
