@@ -6,10 +6,11 @@
 use std::time::Duration;
 
 use crate::data::history::DataPoint;
-use crate::data::history_store::Sample;
+use crate::data::history_store::{ChargingState, Sample};
 
 const MIN_SAMPLES_FOR_FORECAST: usize = 3;
-const MAX_STALENESS_SECS: i64 = 300;
+const MIN_POWER_THRESHOLD_WATTS: f32 = 0.1;
+const MAX_FORECAST_HOURS: f32 = 24.0;
 
 /// Source of data used for forecast calculation
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -50,12 +51,14 @@ impl ForecastData {
 
     /// Calculate forecast from daemon samples
     ///
-    /// Returns true if forecast was successfully calculated
+    /// Returns true if forecast was successfully calculated.
+    /// `max_staleness_secs` controls how old the most recent sample can be.
     pub fn calculate_from_daemon_samples(
         &mut self,
         samples: &[Sample],
         current_battery_percent: f32,
         battery_capacity_wh: f32,
+        max_staleness_secs: i64,
     ) -> bool {
         self.source = ForecastSource::Daemon;
 
@@ -64,22 +67,20 @@ impl ForecastData {
             return false;
         }
 
-        // Check staleness - most recent sample should be within threshold
         let now = chrono::Utc::now().timestamp();
         let most_recent = samples.iter().map(|s| s.timestamp).max().unwrap_or(0);
 
-        if now - most_recent > MAX_STALENESS_SECS {
+        if now - most_recent > max_staleness_secs {
             self.clear_forecast();
-            self.source = ForecastSource::None;
             return false;
         }
 
         self.last_sample_timestamp = Some(most_recent);
 
-        // Filter to only discharging samples (charging_state == 0)
+        // Filter to only discharging samples
         let discharging_samples: Vec<_> = samples
             .iter()
-            .filter(|s| s.charging_state as i32 == 0)
+            .filter(|s| s.charging_state == ChargingState::Discharging)
             .collect();
 
         if discharging_samples.len() < MIN_SAMPLES_FOR_FORECAST {
@@ -118,7 +119,10 @@ impl ForecastData {
 
         // Use all available points (already filtered by time window in caller if needed)
         // Filter to points with positive power draw (discharging)
-        let discharging_points: Vec<_> = points.iter().filter(|p| p.power_watts > 0.1).collect();
+        let discharging_points: Vec<_> = points
+            .iter()
+            .filter(|p| p.power_watts > MIN_POWER_THRESHOLD_WATTS)
+            .collect();
 
         if discharging_points.len() < MIN_SAMPLES_FOR_FORECAST {
             self.clear_forecast();
@@ -148,9 +152,9 @@ impl ForecastData {
         self.sample_count = sample_count;
         self.avg_power_watts = Some(avg_power);
 
-        if avg_power < 0.1 {
+        if avg_power < MIN_POWER_THRESHOLD_WATTS {
             // Power too low to calculate meaningful forecast
-            self.forecast_duration = None;
+            self.clear_forecast();
             return false;
         }
 
@@ -160,13 +164,12 @@ impl ForecastData {
         // Calculate time remaining: hours = Wh / W
         let hours_remaining = remaining_wh / avg_power;
 
-        // Sanity check: cap at 24 hours
-        if hours_remaining > 0.0 && hours_remaining < 24.0 {
+        if hours_remaining > 0.0 && hours_remaining < MAX_FORECAST_HOURS {
             let secs = (hours_remaining * 3600.0) as u64;
             self.forecast_duration = Some(Duration::from_secs(secs));
             true
         } else {
-            self.forecast_duration = None;
+            self.clear_forecast();
             false
         }
     }
@@ -176,6 +179,7 @@ impl ForecastData {
         self.avg_power_watts = None;
         self.sample_count = 0;
         self.last_sample_timestamp = None;
+        self.source = ForecastSource::None;
     }
 
     pub fn formatted(&self) -> Option<String> {
@@ -218,6 +222,114 @@ impl ForecastData {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    const TEST_STALENESS_SECS: i64 = 300;
+
+    fn make_sample(timestamp: i64, power_watts: f32, charging_state: ChargingState) -> Sample {
+        Sample {
+            id: None,
+            timestamp,
+            battery_percent: 50.0,
+            power_watts,
+            cpu_power: power_watts * 0.7,
+            gpu_power: power_watts * 0.3,
+            charging_state,
+        }
+    }
+
+    #[test]
+    fn test_daemon_samples_basic() {
+        let mut forecast = ForecastData::new();
+        let now = chrono::Utc::now().timestamp();
+
+        let samples = vec![
+            make_sample(now - 10, 10.0, ChargingState::Discharging),
+            make_sample(now - 20, 12.0, ChargingState::Discharging),
+            make_sample(now - 30, 11.0, ChargingState::Discharging),
+        ];
+
+        let result =
+            forecast.calculate_from_daemon_samples(&samples, 50.0, 100.0, TEST_STALENESS_SECS);
+
+        assert!(result);
+        assert!(forecast.has_forecast());
+        assert_eq!(forecast.sample_count(), 3);
+        assert_eq!(forecast.source(), ForecastSource::Daemon);
+    }
+
+    #[test]
+    fn test_daemon_samples_stale() {
+        let mut forecast = ForecastData::new();
+        let now = chrono::Utc::now().timestamp();
+        let beyond_staleness_threshold = now - (TEST_STALENESS_SECS + 100);
+
+        let samples = vec![
+            make_sample(
+                beyond_staleness_threshold - 10,
+                10.0,
+                ChargingState::Discharging,
+            ),
+            make_sample(
+                beyond_staleness_threshold - 20,
+                12.0,
+                ChargingState::Discharging,
+            ),
+            make_sample(
+                beyond_staleness_threshold - 30,
+                11.0,
+                ChargingState::Discharging,
+            ),
+        ];
+
+        let result =
+            forecast.calculate_from_daemon_samples(&samples, 50.0, 100.0, TEST_STALENESS_SECS);
+
+        assert!(!result);
+        assert!(!forecast.has_forecast());
+        assert_eq!(forecast.source(), ForecastSource::None);
+    }
+
+    #[test]
+    fn test_daemon_samples_filters_charging() {
+        let mut forecast = ForecastData::new();
+        let now = chrono::Utc::now().timestamp();
+
+        let samples = vec![
+            make_sample(now - 10, 10.0, ChargingState::Discharging),
+            make_sample(now - 20, 12.0, ChargingState::Charging),
+            make_sample(now - 30, 11.0, ChargingState::Discharging),
+            make_sample(now - 40, 13.0, ChargingState::Full),
+            make_sample(now - 50, 9.0, ChargingState::Discharging),
+        ];
+
+        let result =
+            forecast.calculate_from_daemon_samples(&samples, 50.0, 100.0, TEST_STALENESS_SECS);
+        let discharging_count = samples
+            .iter()
+            .filter(|s| s.charging_state == ChargingState::Discharging)
+            .count();
+
+        assert!(result);
+        assert_eq!(forecast.sample_count(), discharging_count);
+    }
+
+    #[test]
+    fn test_daemon_samples_insufficient_discharging() {
+        let mut forecast = ForecastData::new();
+        let now = chrono::Utc::now().timestamp();
+
+        let samples = vec![
+            make_sample(now - 10, 10.0, ChargingState::Discharging),
+            make_sample(now - 20, 12.0, ChargingState::Charging),
+            make_sample(now - 30, 11.0, ChargingState::Charging),
+        ];
+
+        let result =
+            forecast.calculate_from_daemon_samples(&samples, 50.0, 100.0, TEST_STALENESS_SECS);
+
+        assert!(!result);
+        assert!(!forecast.has_forecast());
+    }
 
     #[test]
     fn test_forecast_calculation() {

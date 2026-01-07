@@ -1,6 +1,8 @@
 use color_eyre::eyre::Result;
 
 use crate::config::{GraphMetric, RuntimeConfig, UserConfig};
+
+const FORECAST_REFRESH_TICKS: u32 = 10;
 use crate::daemon::{DaemonClient, DaemonStatus};
 use crate::data::{
     BatteryData, DailyStat, DailyTopProcess, ForecastData, HistoryData, HistoryMetric, HourlyStat,
@@ -183,7 +185,6 @@ pub struct App {
     frozen_processes: Option<Vec<ProcessInfo>>,
     process_to_kill: Option<ProcessInfo>,
     tick_count: u32,
-    forecast_tick_count: u32,
     config_snapshot: Option<(UserConfig, u64, bool)>,
     pub theme_picker_themes: Vec<NamedTheme>,
     pub theme_picker_index: usize,
@@ -243,7 +244,6 @@ impl App {
             frozen_processes: None,
             process_to_kill: None,
             tick_count: 0,
-            forecast_tick_count: 0,
             config_snapshot: None,
             theme_picker_themes: Vec::new(),
             theme_picker_index: 0,
@@ -274,7 +274,6 @@ impl App {
 
     pub fn tick(&mut self) -> Result<()> {
         self.tick_count = self.tick_count.wrapping_add(1);
-        self.forecast_tick_count = self.forecast_tick_count.wrapping_add(1);
 
         self.battery.refresh()?;
         self.power.refresh()?;
@@ -296,7 +295,9 @@ impl App {
             self.power.total_power_watts(),
         );
 
-        self.refresh_forecast();
+        if self.tick_count.is_multiple_of(FORECAST_REFRESH_TICKS) {
+            self.refresh_forecast();
+        }
 
         Ok(())
     }
@@ -312,12 +313,14 @@ impl App {
         let battery_percent = self.battery.charge_percent();
         let battery_capacity_wh = self.battery.max_capacity_wh();
 
+        let forecast_window = self.config.user_config.forecast_window_secs;
         if let Ok(mut client) = DaemonClient::connect() {
-            if let Ok(samples) = client.get_recent_samples(300) {
+            if let Ok(samples) = client.get_recent_samples(forecast_window) {
                 if self.forecast.calculate_from_daemon_samples(
                     &samples,
                     battery_percent,
                     battery_capacity_wh,
+                    forecast_window as i64,
                 ) {
                     return;
                 }
