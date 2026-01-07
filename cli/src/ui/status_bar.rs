@@ -101,7 +101,7 @@ pub fn render_status_bar(frame: &mut Frame, area: Rect, app: &App, theme: &Theme
     right_spans.extend(vec![
         Span::styled(keys::HISTORY, Style::default().fg(theme.accent)),
         Span::styled(" history ", Style::default().fg(theme.muted)),
-        Span::styled(keys::DAEMON, Style::default().fg(theme.accent)),
+        Span::styled(keys::SETTINGS, Style::default().fg(theme.accent)),
         Span::styled(" settings ", Style::default().fg(theme.muted)),
     ]);
 

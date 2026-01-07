@@ -36,7 +36,7 @@ pub enum Action {
     Quit,
     ToggleHelp,
     ToggleAbout,
-    ToggleConfig,
+    ToggleSettings,
     SelectNext,
     SelectPrevious,
     ToggleExpand,
@@ -59,11 +59,6 @@ pub enum Action {
     ToggleSortDirection,
     IncreaseRefreshRate,
     DecreaseRefreshRate,
-    ConfigToggleValue,
-    ConfigIncrement,
-    ConfigDecrement,
-    ConfigRevert,
-    ConfigDefaults,
     OpenThemeImporter,
     CloseThemeImporter,
     ImporterToggleSelect,
@@ -77,13 +72,9 @@ pub enum Action {
     ToggleHistory,
     HistoryPrevPeriod,
     HistoryNextPeriod,
-    ToggleDaemonInfo,
-    DaemonStart,
-    DaemonStop,
-    ToggleHistoryConfig,
-    HistoryConfigToggleValue,
-    HistoryConfigIncrement,
-    HistoryConfigDecrement,
+    SettingsToggleValue,
+    SettingsIncrement,
+    SettingsDecrement,
     None,
 }
 
@@ -157,12 +148,10 @@ pub enum AppView {
     Help,
     About,
     KillConfirm,
-    Config,
     ThemePicker,
     ThemeImporter,
     History,
-    DaemonInfo,
-    HistoryConfig,
+    Settings,
 }
 
 pub struct App {
@@ -182,11 +171,9 @@ pub struct App {
     pub sort_ascending: bool,
     pub merge_mode: bool,
     pub refresh_ms: u64,
-    pub config_selected_item: usize,
     frozen_processes: Option<Vec<ProcessInfo>>,
     process_to_kill: Option<ProcessInfo>,
     tick_count: u32,
-    config_snapshot: Option<(UserConfig, u64, bool)>,
     pub theme_picker_themes: Vec<NamedTheme>,
     pub theme_picker_index: usize,
     preview_theme_id: Option<String>,
@@ -206,7 +193,7 @@ pub struct App {
     pub history_loading: bool,
     pub daemon_status: Option<DaemonStatus>,
     pub daemon_connected: bool,
-    pub history_config_selected_item: usize,
+    pub settings_selected_item: usize,
     daemon_subscription: Option<DaemonClient>,
     last_snapshot: Option<DataSnapshot>,
     pub using_daemon_data: bool,
@@ -251,11 +238,9 @@ impl App {
             sort_ascending: false,
             merge_mode,
             refresh_ms,
-            config_selected_item: 0,
             frozen_processes: None,
             process_to_kill: None,
             tick_count: 0,
-            config_snapshot: None,
             theme_picker_themes: Vec::new(),
             theme_picker_index: 0,
             preview_theme_id: None,
@@ -275,7 +260,7 @@ impl App {
             history_loading: false,
             daemon_status: None,
             daemon_connected: false,
-            history_config_selected_item: 0,
+            settings_selected_item: 0,
             daemon_subscription: None,
             last_snapshot: None,
             using_daemon_data: false,
@@ -530,28 +515,8 @@ impl App {
                     _ => AppView::About,
                 };
             }
-            Action::ToggleConfig => {
-                self.view = match self.view {
-                    AppView::Config => {
-                        self.config_snapshot = None;
-                        AppView::Main
-                    }
-                    _ => {
-                        self.config_snapshot = Some((
-                            self.config.user_config.clone(),
-                            self.refresh_ms,
-                            self.merge_mode,
-                        ));
-                        AppView::Config
-                    }
-                };
-            }
             Action::SelectPrevious => {
-                if self.view == AppView::Config {
-                    if self.config_selected_item > 0 {
-                        self.config_selected_item -= 1;
-                    }
-                } else if self.view == AppView::ThemePicker {
+                if self.view == AppView::ThemePicker {
                     if self.theme_picker_index > 0 {
                         self.theme_picker_index -= 1;
                         self.set_theme_preview();
@@ -560,10 +525,8 @@ impl App {
                     if self.importer_index > 0 {
                         self.importer_index -= 1;
                     }
-                } else if self.view == AppView::HistoryConfig {
-                    if self.history_config_selected_item > 0 {
-                        self.history_config_selected_item -= 1;
-                    }
+                } else if self.view == AppView::Settings {
+                    self.move_settings_selection_up();
                 } else {
                     self.enter_selection_mode();
                     if self.selected_process_index > 0 {
@@ -573,11 +536,7 @@ impl App {
                 }
             }
             Action::SelectNext => {
-                if self.view == AppView::Config {
-                    if self.config_selected_item < self.config_item_count() - 1 {
-                        self.config_selected_item += 1;
-                    }
-                } else if self.view == AppView::ThemePicker {
+                if self.view == AppView::ThemePicker {
                     if self.theme_picker_index < self.theme_picker_themes.len().saturating_sub(1) {
                         self.theme_picker_index += 1;
                         self.set_theme_preview();
@@ -587,10 +546,8 @@ impl App {
                     if filtered_count > 0 && self.importer_index < filtered_count - 1 {
                         self.importer_index += 1;
                     }
-                } else if self.view == AppView::HistoryConfig {
-                    if self.history_config_selected_item < Self::HISTORY_CONFIG_ITEMS.len() - 1 {
-                        self.history_config_selected_item += 1;
-                    }
+                } else if self.view == AppView::Settings {
+                    self.move_settings_selection_down();
                 } else {
                     self.enter_selection_mode();
                     let visible_count = self.visible_process_count();
@@ -651,12 +608,12 @@ impl App {
                 self.view = AppView::ThemePicker;
             }
             Action::CloseThemePicker => {
-                let return_to_config = self.theme_picker_from_config;
+                let return_to_settings = self.theme_picker_from_config;
                 self.preview_theme_id = None;
                 self.preview_appearance = None;
                 self.theme_picker_from_config = false;
-                self.view = if return_to_config {
-                    AppView::Config
+                self.view = if return_to_settings {
+                    AppView::Settings
                 } else {
                     AppView::Main
                 };
@@ -665,12 +622,12 @@ impl App {
                 if let Some(theme) = self.theme_picker_themes.get(self.theme_picker_index) {
                     self.config.set_theme(&theme.id);
                 }
-                let return_to_config = self.theme_picker_from_config;
+                let return_to_settings = self.theme_picker_from_config;
                 self.preview_theme_id = None;
                 self.preview_appearance = None;
                 self.theme_picker_from_config = false;
-                self.view = if return_to_config {
-                    AppView::Config
+                self.view = if return_to_settings {
+                    AppView::Settings
                 } else {
                     AppView::Main
                 };
@@ -756,36 +713,6 @@ impl App {
                     let _ = self.config.user_config.save();
                 }
             }
-            Action::ConfigToggleValue => {
-                if self.toggle_config_value() {
-                    self.open_theme_picker_from_config();
-                }
-            }
-            Action::ConfigIncrement => {
-                if self.increment_config_value() {
-                    self.open_theme_picker_from_config();
-                }
-            }
-            Action::ConfigDecrement => {
-                if self.decrement_config_value() {
-                    self.open_theme_picker_from_config();
-                }
-            }
-            Action::ConfigRevert => {
-                if let Some((snapshot, refresh, merge)) = self.config_snapshot.take() {
-                    self.config.user_config = snapshot.clone();
-                    self.refresh_ms = refresh;
-                    self.merge_mode = merge;
-                    let _ = self.config.user_config.save();
-                    self.config_snapshot = Some((snapshot, refresh, merge));
-                }
-            }
-            Action::ConfigDefaults => {
-                self.config.user_config = UserConfig::default();
-                self.refresh_ms = self.config.user_config.refresh_ms;
-                self.merge_mode = self.config.user_config.merge_mode;
-                let _ = self.config.user_config.save();
-            }
             Action::OpenThemeImporter => {
                 self.open_theme_importer();
             }
@@ -848,38 +775,30 @@ impl App {
                 self.history_period = self.history_period.prev();
                 self.load_history_data();
             }
-            Action::ToggleDaemonInfo => {
+            Action::ToggleSettings => {
                 self.view = match self.view {
-                    AppView::DaemonInfo => AppView::Main,
+                    AppView::Settings => AppView::Main,
                     _ => {
                         self.refresh_daemon_status();
-                        AppView::DaemonInfo
+                        self.settings_selected_item = 1;
+                        AppView::Settings
                     }
                 };
             }
-            Action::DaemonStart => {
-                self.start_daemon();
+            Action::SettingsToggleValue => {
+                if self.toggle_settings_value() {
+                    self.open_theme_picker_from_config();
+                }
             }
-            Action::DaemonStop => {
-                self.stop_daemon();
+            Action::SettingsIncrement => {
+                if self.increment_settings_value() {
+                    self.open_theme_picker_from_config();
+                }
             }
-            Action::ToggleHistoryConfig => {
-                self.view = match self.view {
-                    AppView::HistoryConfig => AppView::Main,
-                    _ => {
-                        self.history_config_selected_item = 0;
-                        AppView::HistoryConfig
-                    }
-                };
-            }
-            Action::HistoryConfigToggleValue => {
-                self.toggle_history_config_value();
-            }
-            Action::HistoryConfigIncrement => {
-                self.increment_history_config_value();
-            }
-            Action::HistoryConfigDecrement => {
-                self.decrement_history_config_value();
+            Action::SettingsDecrement => {
+                if self.decrement_settings_value() {
+                    self.open_theme_picker_from_config();
+                }
             }
             Action::None => {}
         }
@@ -1055,60 +974,128 @@ impl App {
         }
     }
 
-    pub const CONFIG_ITEMS: &'static [&'static str] = &[
-        "Theme",
-        "Appearance",
-        "Refresh Rate (ms)",
-        "Low Power Mode",
-        "Show Graph",
-        "Merge Mode",
-        "Process Count",
-        "Energy Threshold",
+    pub const SETTINGS_ITEMS: &'static [(&'static str, bool)] = &[
+        ("General", true),
+        ("Theme", false),
+        ("Appearance", false),
+        ("Refresh Rate (ms)", false),
+        ("Low Power Mode", false),
+        ("Display", true),
+        ("Show Graph", false),
+        ("Merge Mode", false),
+        ("Process Count", false),
+        ("Energy Threshold", false),
+        ("Recording", true),
+        ("Background Recording", false),
+        ("Sample Interval (s)", false),
+        ("Raw Retention (days)", false),
+        ("Hourly Retention (days)", false),
+        ("Daily Retention (days)", false),
+        ("Max Database (MB)", false),
     ];
 
-    pub fn config_item_count(&self) -> usize {
-        Self::CONFIG_ITEMS.len()
+    pub fn settings_is_section_header(&self, index: usize) -> bool {
+        Self::SETTINGS_ITEMS
+            .get(index)
+            .map(|(_, is_header)| *is_header)
+            .unwrap_or(false)
     }
 
-    pub fn config_item_value(&self, index: usize) -> String {
-        match index {
-            0 => format!("{} →", self.config.theme_name()),
-            1 => self.config.appearance_label().to_string(),
-            2 => self.refresh_ms.to_string(),
-            3 => if self.config.user_config.low_power_mode {
+    pub fn settings_item_value(&self, index: usize) -> String {
+        let (name, is_header) = match Self::SETTINGS_ITEMS.get(index) {
+            Some(item) => item,
+            None => return String::new(),
+        };
+
+        if *is_header {
+            return String::new();
+        }
+
+        match *name {
+            "Theme" => format!("{} \u{2192}", self.config.theme_name()),
+            "Appearance" => self.config.appearance_label().to_string(),
+            "Refresh Rate (ms)" => self.refresh_ms.to_string(),
+            "Low Power Mode" => if self.config.user_config.low_power_mode {
                 "On"
             } else {
                 "Off"
             }
             .to_string(),
-            4 => if self.config.user_config.show_graph {
+            "Show Graph" => if self.config.user_config.show_graph {
                 "On"
             } else {
                 "Off"
             }
             .to_string(),
-            5 => if self.merge_mode { "On" } else { "Off" }.to_string(),
-            6 => self.config.user_config.process_count.to_string(),
-            7 => format!("{:.1}", self.config.user_config.energy_threshold),
+            "Merge Mode" => if self.merge_mode { "On" } else { "Off" }.to_string(),
+            "Process Count" => self.config.user_config.process_count.to_string(),
+            "Energy Threshold" => format!("{:.1}", self.config.user_config.energy_threshold),
+            "Background Recording" => if self.config.user_config.history.background_recording {
+                "On"
+            } else {
+                "Off"
+            }
+            .to_string(),
+            "Sample Interval (s)" => self
+                .config
+                .user_config
+                .history
+                .sample_interval_secs
+                .to_string(),
+            "Raw Retention (days)" => self
+                .config
+                .user_config
+                .history
+                .retention_raw_days
+                .to_string(),
+            "Hourly Retention (days)" => self
+                .config
+                .user_config
+                .history
+                .retention_hourly_days
+                .to_string(),
+            "Daily Retention (days)" => {
+                let days = self.config.user_config.history.retention_daily_days;
+                if days == 0 {
+                    "Forever".to_string()
+                } else {
+                    days.to_string()
+                }
+            }
+            "Max Database (MB)" => self.config.user_config.history.max_database_mb.to_string(),
             _ => String::new(),
         }
     }
 
-    fn toggle_config_value(&mut self) -> bool {
-        match self.config_selected_item {
-            0 => return true,
-            1 => self.config.cycle_appearance(),
-            3 => {
+    pub fn toggle_settings_value(&mut self) -> bool {
+        let (name, is_header) = match Self::SETTINGS_ITEMS.get(self.settings_selected_item) {
+            Some(item) => item,
+            None => return false,
+        };
+
+        if *is_header {
+            return false;
+        }
+
+        match *name {
+            "Theme" => return true,
+            "Appearance" => self.config.cycle_appearance(),
+            "Low Power Mode" => {
                 self.config.user_config.low_power_mode = !self.config.user_config.low_power_mode;
                 let _ = self.config.user_config.save();
             }
-            4 => {
+            "Show Graph" => {
                 self.config.user_config.show_graph = !self.config.user_config.show_graph;
                 let _ = self.config.user_config.save();
             }
-            5 => {
+            "Merge Mode" => {
                 self.merge_mode = !self.merge_mode;
                 self.config.user_config.merge_mode = self.merge_mode;
+                let _ = self.config.user_config.save();
+            }
+            "Background Recording" => {
+                self.config.user_config.history.background_recording =
+                    !self.config.user_config.history.background_recording;
                 let _ = self.config.user_config.save();
             }
             _ => {}
@@ -1116,25 +1103,59 @@ impl App {
         false
     }
 
-    fn increment_config_value(&mut self) -> bool {
-        match self.config_selected_item {
-            0 => return true,
-            1 => self.config.cycle_appearance(),
-            2 => {
+    pub fn increment_settings_value(&mut self) -> bool {
+        let (name, is_header) = match Self::SETTINGS_ITEMS.get(self.settings_selected_item) {
+            Some(item) => item,
+            None => return false,
+        };
+
+        if *is_header {
+            return false;
+        }
+
+        match *name {
+            "Theme" => return true,
+            "Appearance" => self.config.cycle_appearance(),
+            "Refresh Rate (ms)" => {
                 self.refresh_ms = (self.refresh_ms + REFRESH_STEP_MS).min(MAX_REFRESH_MS);
                 if !self.config.refresh_from_cli {
                     self.config.user_config.refresh_ms = self.refresh_ms;
                     let _ = self.config.user_config.save();
                 }
             }
-            6 => {
+            "Process Count" => {
                 self.config.user_config.process_count =
                     (self.config.user_config.process_count + 10).min(200);
                 let _ = self.config.user_config.save();
             }
-            7 => {
+            "Energy Threshold" => {
                 self.config.user_config.energy_threshold =
                     (self.config.user_config.energy_threshold + 0.5).min(10.0);
+                let _ = self.config.user_config.save();
+            }
+            "Sample Interval (s)" => {
+                self.config.user_config.history.sample_interval_secs =
+                    (self.config.user_config.history.sample_interval_secs + 10).min(600);
+                let _ = self.config.user_config.save();
+            }
+            "Raw Retention (days)" => {
+                self.config.user_config.history.retention_raw_days =
+                    (self.config.user_config.history.retention_raw_days + 5).min(365);
+                let _ = self.config.user_config.save();
+            }
+            "Hourly Retention (days)" => {
+                self.config.user_config.history.retention_hourly_days =
+                    (self.config.user_config.history.retention_hourly_days + 30).min(730);
+                let _ = self.config.user_config.save();
+            }
+            "Daily Retention (days)" => {
+                self.config.user_config.history.retention_daily_days =
+                    (self.config.user_config.history.retention_daily_days + 30).min(3650);
+                let _ = self.config.user_config.save();
+            }
+            "Max Database (MB)" => {
+                self.config.user_config.history.max_database_mb =
+                    (self.config.user_config.history.max_database_mb + 100).min(10000);
                 let _ = self.config.user_config.save();
             }
             _ => {}
@@ -1142,11 +1163,20 @@ impl App {
         false
     }
 
-    fn decrement_config_value(&mut self) -> bool {
-        match self.config_selected_item {
-            0 => return true,
-            1 => self.config.cycle_appearance(),
-            2 => {
+    pub fn decrement_settings_value(&mut self) -> bool {
+        let (name, is_header) = match Self::SETTINGS_ITEMS.get(self.settings_selected_item) {
+            Some(item) => item,
+            None => return false,
+        };
+
+        if *is_header {
+            return false;
+        }
+
+        match *name {
+            "Theme" => return true,
+            "Appearance" => self.config.cycle_appearance(),
+            "Refresh Rate (ms)" => {
                 self.refresh_ms = self
                     .refresh_ms
                     .saturating_sub(REFRESH_STEP_MS)
@@ -1156,7 +1186,7 @@ impl App {
                     let _ = self.config.user_config.save();
                 }
             }
-            6 => {
+            "Process Count" => {
                 self.config.user_config.process_count = self
                     .config
                     .user_config
@@ -1165,9 +1195,57 @@ impl App {
                     .max(10);
                 let _ = self.config.user_config.save();
             }
-            7 => {
+            "Energy Threshold" => {
                 self.config.user_config.energy_threshold =
                     (self.config.user_config.energy_threshold - 0.5).max(0.0);
+                let _ = self.config.user_config.save();
+            }
+            "Sample Interval (s)" => {
+                self.config.user_config.history.sample_interval_secs = self
+                    .config
+                    .user_config
+                    .history
+                    .sample_interval_secs
+                    .saturating_sub(10)
+                    .max(10);
+                let _ = self.config.user_config.save();
+            }
+            "Raw Retention (days)" => {
+                self.config.user_config.history.retention_raw_days = self
+                    .config
+                    .user_config
+                    .history
+                    .retention_raw_days
+                    .saturating_sub(5)
+                    .max(1);
+                let _ = self.config.user_config.save();
+            }
+            "Hourly Retention (days)" => {
+                self.config.user_config.history.retention_hourly_days = self
+                    .config
+                    .user_config
+                    .history
+                    .retention_hourly_days
+                    .saturating_sub(30);
+                let _ = self.config.user_config.save();
+            }
+            "Daily Retention (days)" => {
+                self.config.user_config.history.retention_daily_days = self
+                    .config
+                    .user_config
+                    .history
+                    .retention_daily_days
+                    .saturating_sub(30);
+                let _ = self.config.user_config.save();
+            }
+            "Max Database (MB)" => {
+                self.config.user_config.history.max_database_mb = self
+                    .config
+                    .user_config
+                    .history
+                    .max_database_mb
+                    .saturating_sub(100)
+                    .max(50);
                 let _ = self.config.user_config.save();
             }
             _ => {}
@@ -1175,92 +1253,31 @@ impl App {
         false
     }
 
-    pub const HISTORY_CONFIG_ITEMS: &'static [&'static str] = &[
-        "Background Recording",
-        "Sample Interval (s)",
-        "Raw Retention (days)",
-        "Hourly Retention (days)",
-        "Daily Retention (days)",
-        "Max Database (MB)",
-    ];
-
-    pub fn history_config_item_value(&self, index: usize) -> String {
-        let history = &self.config.user_config.history;
-        match index {
-            0 => if history.background_recording {
-                "On"
-            } else {
-                "Off"
-            }
-            .to_string(),
-            1 => history.sample_interval_secs.to_string(),
-            2 => history.retention_raw_days.to_string(),
-            3 => history.retention_hourly_days.to_string(),
-            4 => {
-                if history.retention_daily_days == 0 {
-                    "Forever".to_string()
-                } else {
-                    history.retention_daily_days.to_string()
-                }
-            }
-            5 => history.max_database_mb.to_string(),
-            _ => String::new(),
+    pub fn move_settings_selection_up(&mut self) {
+        if self.settings_selected_item == 0 {
+            return;
+        }
+        let mut new_index = self.settings_selected_item - 1;
+        while new_index > 0 && self.settings_is_section_header(new_index) {
+            new_index -= 1;
+        }
+        if !self.settings_is_section_header(new_index) {
+            self.settings_selected_item = new_index;
         }
     }
 
-    fn toggle_history_config_value(&mut self) {
-        if self.history_config_selected_item == 0 {
-            self.config.user_config.history.background_recording =
-                !self.config.user_config.history.background_recording;
-            let _ = self.config.user_config.save();
+    pub fn move_settings_selection_down(&mut self) {
+        let max_index = Self::SETTINGS_ITEMS.len().saturating_sub(1);
+        if self.settings_selected_item >= max_index {
+            return;
         }
-    }
-
-    fn increment_history_config_value(&mut self) {
-        let history = &mut self.config.user_config.history;
-        match self.history_config_selected_item {
-            1 => {
-                history.sample_interval_secs = (history.sample_interval_secs + 10).min(600);
-            }
-            2 => {
-                history.retention_raw_days = (history.retention_raw_days + 5).min(365);
-            }
-            3 => {
-                history.retention_hourly_days = (history.retention_hourly_days + 30).min(730);
-            }
-            4 => {
-                history.retention_daily_days = (history.retention_daily_days + 30).min(3650);
-            }
-            5 => {
-                history.max_database_mb = (history.max_database_mb + 100).min(10000);
-            }
-            _ => return,
+        let mut new_index = self.settings_selected_item + 1;
+        while new_index < max_index && self.settings_is_section_header(new_index) {
+            new_index += 1;
         }
-        let _ = self.config.user_config.save();
-    }
-
-    fn decrement_history_config_value(&mut self) {
-        let history = &mut self.config.user_config.history;
-        match self.history_config_selected_item {
-            1 => {
-                history.sample_interval_secs =
-                    history.sample_interval_secs.saturating_sub(10).max(10);
-            }
-            2 => {
-                history.retention_raw_days = history.retention_raw_days.saturating_sub(5).max(1);
-            }
-            3 => {
-                history.retention_hourly_days = history.retention_hourly_days.saturating_sub(30);
-            }
-            4 => {
-                history.retention_daily_days = history.retention_daily_days.saturating_sub(30);
-            }
-            5 => {
-                history.max_database_mb = history.max_database_mb.saturating_sub(100).max(50);
-            }
-            _ => return,
+        if !self.settings_is_section_header(new_index) {
+            self.settings_selected_item = new_index;
         }
-        let _ = self.config.user_config.save();
     }
 
     fn set_theme_preview(&mut self) {
@@ -1496,48 +1513,6 @@ impl App {
             self.daemon_connected = false;
             self.daemon_status = None;
         }
-    }
-
-    fn start_daemon(&mut self) {
-        if crate::daemon::is_daemon_running() {
-            return;
-        }
-
-        // Spawn a separate process to start the daemon
-        // We can't call run_daemon directly because daemonize causes the parent to exit
-        if let Ok(exe) = std::env::current_exe() {
-            match std::process::Command::new(exe)
-                .args(["daemon", "start"])
-                .stdout(std::process::Stdio::null())
-                .stderr(std::process::Stdio::null())
-                .spawn()
-            {
-                Ok(_child) => {
-                    std::thread::sleep(std::time::Duration::from_millis(500));
-                    for _ in 0..3 {
-                        self.refresh_daemon_status();
-                        if self.daemon_connected {
-                            break;
-                        }
-                        std::thread::sleep(std::time::Duration::from_millis(200));
-                    }
-                }
-                Err(_) => {
-                    self.refresh_daemon_status();
-                }
-            }
-        } else {
-            self.refresh_daemon_status();
-        }
-    }
-
-    fn stop_daemon(&mut self) {
-        if let Ok(mut client) = DaemonClient::connect() {
-            let _ = client.shutdown();
-            std::thread::sleep(std::time::Duration::from_millis(200));
-        }
-        self.daemon_connected = false;
-        self.daemon_status = None;
     }
 
     fn kill_process_impl(&self, pid: u32) {

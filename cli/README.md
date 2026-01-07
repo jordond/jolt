@@ -81,10 +81,16 @@ jolt --help
 | `Enter` / `Space` | Expand/collapse process group       |
 | `K`               | Kill selected process               |
 | `g`               | Toggle graph metric (battery/power) |
-| `t`               | Cycle theme (Auto/Dark/Light)       |
+| `m`               | Toggle merge mode (group similar)   |
+| `t`               | Open theme picker                   |
+| `a`               | Cycle appearance (Auto/Dark/Light)  |
+| `o`               | Cycle sort column                   |
+| `O`               | Toggle sort direction               |
+| `s`               | Open settings                       |
+| `h`               | View history                        |
 | `PgUp` / `PgDn`   | Page up/down                        |
 | `Home` / `End`    | Jump to start/end                   |
-| `h` / `?`         | Show help dialog                    |
+| `?`               | Show help dialog                    |
 | `q` / `Esc`       | Quit                                |
 
 ## Building from Source

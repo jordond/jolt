@@ -5,21 +5,19 @@ use crate::app::{Action, App, AppView};
 pub mod keys {
     pub const HELP: &str = "?";
     pub const HISTORY: &str = "h";
-    pub const DAEMON: &str = "d";
     pub const QUIT: &str = "q";
     pub const THEME: &str = "t";
     pub const APPEARANCE: &str = "a";
-    pub const CONFIG: &str = "C";
     pub const ABOUT: &str = "A";
     pub const GRAPH: &str = "g";
     pub const MERGE: &str = "m";
-    pub const SORT: &str = "s";
-    pub const SORT_DIR: &str = "S";
+    pub const SORT: &str = "o";
+    pub const SORT_DIR: &str = "O";
     pub const KILL: &str = "K";
-    pub const PERIOD_PREV: &str = "←";
-    pub const PERIOD_NEXT: &str = "→";
+    pub const PERIOD_PREV: &str = "\u{2190}";
+    pub const PERIOD_NEXT: &str = "\u{2192}";
     pub const ESC: &str = "Esc";
-    pub const HISTORY_CONFIG: &str = "c";
+    pub const SETTINGS: &str = "s";
 }
 
 pub fn handle_key(app: &App, key: KeyEvent) -> Action {
@@ -28,7 +26,6 @@ pub fn handle_key(app: &App, key: KeyEvent) -> Action {
         AppView::Help => handle_help_keys(key),
         AppView::About => handle_about_keys(key),
         AppView::KillConfirm => handle_kill_confirm_keys(key),
-        AppView::Config => handle_config_keys(key),
         AppView::ThemePicker => handle_theme_picker_keys(key),
         AppView::ThemeImporter => {
             if app.importer_search_focused {
@@ -38,8 +35,7 @@ pub fn handle_key(app: &App, key: KeyEvent) -> Action {
             }
         }
         AppView::History => handle_history_keys(key),
-        AppView::DaemonInfo => handle_daemon_info_keys(key),
-        AppView::HistoryConfig => handle_history_config_keys(key),
+        AppView::Settings => handle_settings_keys(key),
     }
 }
 
@@ -67,14 +63,13 @@ fn handle_main_keys(key: KeyEvent, selection_mode: bool) -> Action {
         KeyCode::PageDown => Action::PageDown,
         KeyCode::Home => Action::Home,
         KeyCode::End => Action::End,
-        KeyCode::Char('s') => Action::CycleSortColumn,
-        KeyCode::Char('S') => Action::ToggleSortDirection,
+        KeyCode::Char('s') => Action::ToggleSettings,
+        KeyCode::Char('o') => Action::CycleSortColumn,
+        KeyCode::Char('O') => Action::ToggleSortDirection,
         KeyCode::Char('=') | KeyCode::Char('+') => Action::IncreaseRefreshRate,
         KeyCode::Char('-') => Action::DecreaseRefreshRate,
         KeyCode::Char('c') if key.modifiers.contains(KeyModifiers::CONTROL) => Action::Quit,
-        KeyCode::Char('C') => Action::ToggleConfig,
         KeyCode::Char('h') => Action::ToggleHistory,
-        KeyCode::Char('d') => Action::ToggleDaemonInfo,
         _ => Action::None,
     }
 }
@@ -120,21 +115,6 @@ fn handle_theme_importer_keys_normal(key: KeyEvent) -> Action {
     }
 }
 
-fn handle_config_keys(key: KeyEvent) -> Action {
-    match key.code {
-        KeyCode::Esc | KeyCode::Char('C') | KeyCode::Char('q') => Action::ToggleConfig,
-        KeyCode::Up | KeyCode::Char('k') => Action::SelectPrevious,
-        KeyCode::Down | KeyCode::Char('j') => Action::SelectNext,
-        KeyCode::Enter | KeyCode::Char(' ') => Action::ConfigToggleValue,
-        KeyCode::Right | KeyCode::Char('l') | KeyCode::Char('=') => Action::ConfigIncrement,
-        KeyCode::Left | KeyCode::Char('h') | KeyCode::Char('-') => Action::ConfigDecrement,
-        KeyCode::Char('r') => Action::ConfigRevert,
-        KeyCode::Char('D') => Action::ConfigDefaults,
-        KeyCode::Char('H') => Action::ToggleHistoryConfig,
-        _ => Action::None,
-    }
-}
-
 fn handle_help_keys(key: KeyEvent) -> Action {
     match key.code {
         KeyCode::Esc | KeyCode::Char('?') | KeyCode::Char('/') | KeyCode::Char('q') => {
@@ -165,30 +145,19 @@ fn handle_history_keys(key: KeyEvent) -> Action {
         KeyCode::Left | KeyCode::Char('[') => Action::HistoryPrevPeriod,
         KeyCode::Right | KeyCode::Char(']') => Action::HistoryNextPeriod,
         KeyCode::Tab => Action::HistoryNextPeriod,
-        KeyCode::Char('d') => Action::ToggleDaemonInfo,
+        KeyCode::Char('s') => Action::ToggleSettings,
         _ => Action::None,
     }
 }
 
-fn handle_daemon_info_keys(key: KeyEvent) -> Action {
+fn handle_settings_keys(key: KeyEvent) -> Action {
     match key.code {
-        KeyCode::Esc | KeyCode::Char('d') | KeyCode::Char('q') => Action::ToggleDaemonInfo,
-        KeyCode::Char('h') => Action::ToggleHistory,
-        KeyCode::Char('s') => Action::DaemonStart,
-        KeyCode::Char('x') => Action::DaemonStop,
-        KeyCode::Char('c') => Action::ToggleHistoryConfig,
-        _ => Action::None,
-    }
-}
-
-fn handle_history_config_keys(key: KeyEvent) -> Action {
-    match key.code {
-        KeyCode::Esc | KeyCode::Char('c') | KeyCode::Char('q') => Action::ToggleHistoryConfig,
+        KeyCode::Esc | KeyCode::Char('s') | KeyCode::Char('q') => Action::ToggleSettings,
         KeyCode::Up | KeyCode::Char('k') => Action::SelectPrevious,
         KeyCode::Down | KeyCode::Char('j') => Action::SelectNext,
-        KeyCode::Enter | KeyCode::Char(' ') => Action::HistoryConfigToggleValue,
-        KeyCode::Right | KeyCode::Char('l') | KeyCode::Char('=') => Action::HistoryConfigIncrement,
-        KeyCode::Left | KeyCode::Char('h') | KeyCode::Char('-') => Action::HistoryConfigDecrement,
+        KeyCode::Enter | KeyCode::Char(' ') => Action::SettingsToggleValue,
+        KeyCode::Right | KeyCode::Char('l') | KeyCode::Char('=') => Action::SettingsIncrement,
+        KeyCode::Left | KeyCode::Char('-') => Action::SettingsDecrement,
         _ => Action::None,
     }
 }
@@ -256,8 +225,8 @@ pub const KEY_BINDINGS: &[KeyBinding] = &[
         description: "Decrease/increase refresh rate",
     },
     KeyBinding {
-        key: keys::CONFIG,
-        description: "Open config editor",
+        key: keys::SETTINGS,
+        description: "Open settings",
     },
     KeyBinding {
         key: keys::HELP,
@@ -269,11 +238,7 @@ pub const KEY_BINDINGS: &[KeyBinding] = &[
     },
     KeyBinding {
         key: keys::HISTORY,
-        description: "View history (requires daemon)",
-    },
-    KeyBinding {
-        key: keys::DAEMON,
-        description: "Daemon status",
+        description: "View history",
     },
     KeyBinding {
         key: keys::QUIT,
