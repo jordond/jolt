@@ -232,39 +232,56 @@ impl DaemonClient {
     }
 
     pub fn read_update(&mut self) -> Result<Option<DataSnapshot>> {
-        match self.read_line_nonblocking()? {
-            None => Ok(None),
-            Some(line) => {
-                tracing::debug!(line_len = line.len(), "read_update: got line");
-                let response = match DaemonResponse::from_json(&line) {
-                    Ok(r) => r,
-                    Err(e) => {
-                        let start: String = line.chars().take(50).collect();
-                        let end: String = line
-                            .chars()
-                            .rev()
-                            .take(50)
-                            .collect::<String>()
-                            .chars()
-                            .rev()
-                            .collect();
-                        tracing::error!(
-                            error = %e,
-                            line_len = line.len(),
-                            start = %start,
-                            end = %end,
-                            "JSON parse failed"
-                        );
-                        return Err(ClientError::Protocol(e.to_string()));
+        let mut latest_snapshot: Option<DataSnapshot> = None;
+        let mut messages_read = 0;
+
+        loop {
+            match self.read_line_nonblocking()? {
+                None => break,
+                Some(line) => {
+                    messages_read += 1;
+                    let response = match DaemonResponse::from_json(&line) {
+                        Ok(r) => r,
+                        Err(e) => {
+                            let start: String = line.chars().take(50).collect();
+                            let end: String = line
+                                .chars()
+                                .rev()
+                                .take(50)
+                                .collect::<String>()
+                                .chars()
+                                .rev()
+                                .collect();
+                            tracing::error!(
+                                error = %e,
+                                line_len = line.len(),
+                                start = %start,
+                                end = %end,
+                                "JSON parse failed"
+                            );
+                            return Err(ClientError::Protocol(e.to_string()));
+                        }
+                    };
+                    match response {
+                        DaemonResponse::DataUpdate(snapshot) => {
+                            latest_snapshot = Some(snapshot);
+                        }
+                        DaemonResponse::Error(e) => return Err(ClientError::Daemon(e)),
+                        _ => {}
                     }
-                };
-                match response {
-                    DaemonResponse::DataUpdate(snapshot) => Ok(Some(snapshot)),
-                    DaemonResponse::Error(e) => Err(ClientError::Daemon(e)),
-                    _ => Ok(None),
                 }
             }
         }
+
+        if messages_read > 0 {
+            tracing::debug!(
+                messages_read,
+                has_snapshot = latest_snapshot.is_some(),
+                "read_update: drained buffer"
+            );
+        }
+
+        Ok(latest_snapshot)
     }
 
     pub fn set_nonblocking(&mut self, nonblocking: bool) -> Result<()> {

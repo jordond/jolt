@@ -14,7 +14,6 @@ pub enum SettingId {
     RefreshMs,
     // Display
     ShowGraph,
-    ShowBrightness,
     MergeMode,
     ProcessCount,
     EnergyThreshold,
@@ -93,10 +92,6 @@ pub const SETTINGS_LAYOUT: &[SettingsRow] = &[
         label: "Show Graph",
     },
     SettingsRow::Item {
-        id: SettingId::ShowBrightness,
-        label: "Show Brightness",
-    },
-    SettingsRow::Item {
         id: SettingId::MergeMode,
         label: "Merge Mode",
     },
@@ -147,7 +142,6 @@ pub fn setting_value(app: &App, id: SettingId) -> String {
         SettingId::Appearance => app.config.appearance_label().to_string(),
         SettingId::RefreshMs => app.refresh_ms.to_string(),
         SettingId::ShowGraph => bool_label(app.config.user_config.show_graph),
-        SettingId::ShowBrightness => bool_label(app.config.user_config.show_brightness),
         SettingId::MergeMode => bool_label(app.merge_mode),
         SettingId::ProcessCount => app.config.user_config.process_count.to_string(),
         SettingId::EnergyThreshold => format!("{:.1}", app.config.user_config.energy_threshold),
@@ -220,12 +214,6 @@ pub fn setting_apply(app: &mut App, id: SettingId, input: SettingInput) -> Setti
             input,
             |a| a.config.user_config.show_graph,
             |a, v| a.config.user_config.show_graph = v,
-        ),
-        SettingId::ShowBrightness => apply_bool(
-            app,
-            input,
-            |a| a.config.user_config.show_brightness,
-            |a, v| a.config.user_config.show_brightness = v,
         ),
         SettingId::MergeMode => apply_bool(
             app,

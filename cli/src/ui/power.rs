@@ -10,20 +10,6 @@ use crate::app::App;
 use crate::data::power::PowerMode;
 use crate::theme::ThemeColors;
 
-const GAUGE_WIDTH: usize = 8;
-const GAUGE_FILLED: &str = "█";
-const GAUGE_EMPTY: &str = "░";
-
-fn render_mini_gauge(percent: f32, width: usize) -> String {
-    let filled = ((percent / 100.0) * width as f32).round() as usize;
-    let empty = width.saturating_sub(filled);
-    format!(
-        "{}{}",
-        GAUGE_FILLED.repeat(filled),
-        GAUGE_EMPTY.repeat(empty)
-    )
-}
-
 pub fn render(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) {
     let block = Block::default()
         .title(" Power ")
@@ -34,30 +20,15 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) {
     let inner = block.inner(area);
     frame.render_widget(block, area);
 
-    let show_display = app.config.user_config.show_brightness;
-
-    let chunks = if show_display {
-        Layout::default()
-            .direction(Direction::Horizontal)
-            .constraints([
-                Constraint::Percentage(20),
-                Constraint::Percentage(20),
-                Constraint::Percentage(20),
-                Constraint::Percentage(20),
-                Constraint::Percentage(20),
-            ])
-            .split(inner)
-    } else {
-        Layout::default()
-            .direction(Direction::Horizontal)
-            .constraints([
-                Constraint::Percentage(25),
-                Constraint::Percentage(25),
-                Constraint::Percentage(25),
-                Constraint::Percentage(25),
-            ])
-            .split(inner)
-    };
+    let chunks = Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints([
+            Constraint::Percentage(25),
+            Constraint::Percentage(25),
+            Constraint::Percentage(25),
+            Constraint::Percentage(25),
+        ])
+        .split(inner);
 
     let (total_power, cpu_power, gpu_power) = if app.power.is_warmed_up() {
         (
@@ -130,32 +101,5 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) {
     frame.render_widget(total, v_center(chunks[0]));
     frame.render_widget(cpu, v_center(chunks[1]));
     frame.render_widget(gpu, v_center(chunks[2]));
-
-    if show_display {
-        let brightness = app.display.brightness_percent();
-        let gauge = render_mini_gauge(brightness, GAUGE_WIDTH);
-
-        let brightness_color = if brightness > 80.0 {
-            theme.warning
-        } else if brightness > 50.0 {
-            theme.fg
-        } else {
-            theme.success
-        };
-
-        let display = Paragraph::new(Line::from(vec![
-            Span::styled("☀ ", Style::default().fg(theme.muted)),
-            Span::styled(gauge, Style::default().fg(brightness_color)),
-            Span::styled(
-                format!(" {:.0}%", brightness),
-                Style::default().fg(brightness_color),
-            ),
-        ]))
-        .centered();
-
-        frame.render_widget(display, v_center(chunks[3]));
-        frame.render_widget(mode, v_center(chunks[4]));
-    } else {
-        frame.render_widget(mode, v_center(chunks[3]));
-    }
+    frame.render_widget(mode, v_center(chunks[3]));
 }

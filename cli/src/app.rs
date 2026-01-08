@@ -10,8 +10,8 @@ const THEME_CHECK_INTERVAL: Duration = Duration::from_secs(2);
 use crate::daemon::CycleSummary;
 use crate::daemon::{DaemonClient, DaemonStatus, DataSnapshot, KillSignal};
 use crate::data::{
-    BatteryData, ChargeSession, DailyCycle, DailyStat, DailyTopProcess, DisplayData, ForecastData,
-    HistoryData, HistoryMetric, HourlyStat, PowerData, ProcessData, ProcessInfo, SystemInfo,
+    BatteryData, ChargeSession, DailyCycle, DailyStat, DailyTopProcess, ForecastData, HistoryData,
+    HistoryMetric, HourlyStat, PowerData, ProcessData, ProcessInfo, SystemInfo,
 };
 use crate::theme::cache::ThemeGroup;
 use crate::theme::{get_all_themes, NamedTheme, ThemeColors};
@@ -176,7 +176,6 @@ pub struct App {
     pub system_info: SystemInfo,
     pub battery: BatteryData,
     pub power: PowerData,
-    pub display: DisplayData,
     pub processes: ProcessData,
     pub history: HistoryData,
     pub forecast: ForecastData,
@@ -251,7 +250,7 @@ impl App {
             system_info: SystemInfo::new(),
             battery: BatteryData::new()?,
             power: PowerData::new()?,
-            display: DisplayData::new()?,
+
             processes: ProcessData::with_exclusions(excluded)?,
             history: HistoryData::with_metric(graph_metric),
             forecast: ForecastData::new(),
@@ -381,7 +380,15 @@ impl App {
             let was_dark = self.config.is_dark_mode();
             self.config.refresh_system_theme();
             self.last_theme_check = std::time::Instant::now();
-            was_dark != self.config.is_dark_mode()
+            let changed = was_dark != self.config.is_dark_mode();
+            if changed {
+                debug!(
+                    was_dark,
+                    now_dark = self.config.is_dark_mode(),
+                    "Theme mode changed"
+                );
+            }
+            changed
         } else {
             false
         };
@@ -407,23 +414,52 @@ impl App {
             }
         }
 
+        debug!(
+            data_updated,
+            theme_changed,
+            using_daemon = self.using_daemon_data,
+            tick_count = self.tick_count,
+            "App::tick result"
+        );
+
         Ok(data_updated || theme_changed)
     }
 
     fn tick_from_daemon(&mut self) -> Result<bool> {
         let mut received_data = false;
+        let read_start = std::time::Instant::now();
 
         if let Some(ref mut client) = self.daemon_subscription {
             match client.read_update() {
                 Ok(Some(snapshot)) => {
-                    debug!("Received daemon snapshot");
+                    let read_duration = read_start.elapsed();
+                    debug!(
+                        read_duration_ms = read_duration.as_millis() as u64,
+                        battery_percent = snapshot.battery.charge_percent,
+                        battery_state = %snapshot.battery.state_label,
+                        external_connected = snapshot.battery.external_connected,
+                        power_watts = snapshot.power.total_power_watts,
+                        process_count = snapshot.processes.len(),
+                        "Received daemon snapshot"
+                    );
                     self.apply_snapshot(&snapshot);
                     self.last_snapshot = Some(snapshot);
                     self.last_daemon_update = Some(std::time::Instant::now());
                     self.reconnect_attempts = 0;
                     received_data = true;
                 }
-                Ok(None) => {}
+                Ok(None) => {
+                    let since_last = self
+                        .last_daemon_update
+                        .map(|t| t.elapsed().as_millis() as u64)
+                        .unwrap_or(0);
+                    if since_last > 1000 {
+                        debug!(
+                            since_last_update_ms = since_last,
+                            "No daemon data received (waiting)"
+                        );
+                    }
+                }
                 Err(e) => {
                     debug!(error = %e, "Daemon connection lost");
                     self.daemon_subscription = None;
@@ -435,8 +471,12 @@ impl App {
 
         if !received_data {
             if let Some(last_update) = self.last_daemon_update {
-                if last_update.elapsed() > std::time::Duration::from_secs(5) {
-                    debug!("No daemon data for 5s, attempting reconnect");
+                let elapsed = last_update.elapsed();
+                if elapsed > std::time::Duration::from_secs(5) {
+                    debug!(
+                        elapsed_secs = elapsed.as_secs(),
+                        "No daemon data for 5s, attempting reconnect"
+                    );
                     self.daemon_subscription = None;
                     self.attempt_reconnect();
                 }
@@ -444,6 +484,7 @@ impl App {
         }
 
         if !self.using_daemon_data {
+            debug!("Falling back to local data collection");
             self.tick_from_local()?;
             return Ok(true);
         }
@@ -484,25 +525,56 @@ impl App {
     }
 
     fn tick_from_local(&mut self) -> Result<()> {
-        self.battery.refresh()?;
-        self.power.refresh()?;
-        self.display.refresh()?;
+        let start = std::time::Instant::now();
 
-        // Skip process refresh during selection to prevent list from jumping
+        self.battery.refresh()?;
+        let battery_time = start.elapsed();
+
+        self.power.refresh()?;
+        let power_time = start.elapsed() - battery_time;
+
         if !self.selection_mode {
             self.processes.refresh()?;
         }
+        let process_time = start.elapsed() - battery_time - power_time;
+
+        debug!(
+            battery_ms = battery_time.as_millis() as u64,
+            power_ms = power_time.as_millis() as u64,
+            process_ms = process_time.as_millis() as u64,
+            total_ms = start.elapsed().as_millis() as u64,
+            battery_percent = self.battery.charge_percent(),
+            battery_state = self.battery.state_label(),
+            external_connected = self.battery.external_connected(),
+            "Local data refresh completed"
+        );
 
         Ok(())
     }
 
     fn apply_snapshot(&mut self, snapshot: &DataSnapshot) {
+        let prev_battery_state = self.battery.state_label();
+        let prev_external = self.battery.external_connected();
+
         self.battery.update_from_snapshot(&snapshot.battery);
         self.power.update_from_snapshot(&snapshot.power);
 
         if !self.selection_mode {
             self.processes
                 .update_from_snapshots(snapshot.processes.clone());
+        }
+
+        let new_battery_state = self.battery.state_label();
+        let new_external = self.battery.external_connected();
+
+        if prev_battery_state != new_battery_state || prev_external != new_external {
+            info!(
+                prev_state = prev_battery_state,
+                new_state = new_battery_state,
+                prev_external,
+                new_external,
+                "Battery state changed"
+            );
         }
     }
 

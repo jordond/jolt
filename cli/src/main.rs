@@ -340,18 +340,42 @@ fn run_tui_loop(
     terminal: &mut Terminal<CrosstermBackend<io::Stdout>>,
     user_config: UserConfig,
 ) -> Result<()> {
+    use tracing::{debug, trace};
+
     let mut app = App::new(user_config)?;
     let mut needs_redraw = true;
     let mut last_tick = std::time::Instant::now();
+    let mut tick_count: u64 = 0;
 
     loop {
         let tick_rate = Duration::from_millis(app.refresh_ms);
         let elapsed = last_tick.elapsed();
 
         let data_changed = if elapsed >= tick_rate {
+            tick_count += 1;
+            let tick_start = std::time::Instant::now();
             last_tick = std::time::Instant::now();
-            app.tick()?
+            let result = app.tick()?;
+            let tick_duration = tick_start.elapsed();
+            debug!(
+                tick_count,
+                elapsed_ms = elapsed.as_millis() as u64,
+                tick_rate_ms = app.refresh_ms,
+                data_changed = result,
+                tick_duration_ms = tick_duration.as_millis() as u64,
+                using_daemon = app.using_daemon_data,
+                "TUI tick completed"
+            );
+            result
         } else {
+            // Only log occasionally to avoid spam
+            if elapsed.as_millis() % 500 < 10 {
+                trace!(
+                    elapsed_ms = elapsed.as_millis() as u64,
+                    tick_rate_ms = app.refresh_ms,
+                    "TUI waiting for next tick"
+                );
+            }
             false
         };
         needs_redraw = needs_redraw || data_changed;
