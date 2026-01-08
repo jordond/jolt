@@ -5,7 +5,7 @@ use jolt_platform::BatteryProvider;
 
 use crate::daemon::{BatterySnapshot, BatteryState as ProtocolBatteryState};
 
-pub use jolt_platform::ChargeState;
+pub use jolt_platform::{BatteryTechnology, ChargeState};
 
 #[cfg(target_os = "macos")]
 type PlatformBattery = jolt_platform::macos::MacOSBattery;
@@ -156,6 +156,30 @@ impl BatteryData {
 
     pub fn discharge_watts(&self) -> Option<f32> {
         self.provider.info().discharge_watts()
+    }
+
+    pub fn vendor(&self) -> Option<&str> {
+        self.provider.info().vendor.as_deref()
+    }
+
+    pub fn model(&self) -> Option<&str> {
+        self.provider.info().model.as_deref()
+    }
+
+    pub fn serial_number(&self) -> Option<&str> {
+        self.provider.info().serial_number.as_deref()
+    }
+
+    pub fn technology(&self) -> BatteryTechnology {
+        self.provider.info().technology
+    }
+
+    pub fn energy_wh(&self) -> f32 {
+        self.provider.info().energy_wh
+    }
+
+    pub fn energy_rate_watts(&self) -> f32 {
+        self.provider.info().energy_rate_watts
     }
 
     pub fn update_from_snapshot(&mut self, snapshot: &BatterySnapshot) {

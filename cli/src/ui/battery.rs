@@ -318,7 +318,7 @@ fn render_battery_info_card(frame: &mut Frame, area: Rect, app: &App, theme: &Th
 
         let row1 = Line::from(row1_spans);
 
-        let row2 = Line::from(vec![
+        let mut row2_spans = vec![
             Span::styled("Health: ", Style::default().fg(theme.muted)),
             Span::styled(
                 format!("{:.0}%", app.battery.health_percent()),
@@ -335,7 +335,31 @@ fn render_battery_info_card(frame: &mut Frame, area: Rect, app: &App, theme: &Th
             Span::styled("  │  ", Style::default().fg(theme.border)),
             Span::styled("Cycles: ", Style::default().fg(theme.muted)),
             Span::styled(&cycles_text, Style::default().fg(theme.fg)),
-        ]);
+        ];
+
+        if let Some(temp) = app.battery.temperature_c() {
+            row2_spans.push(Span::styled("  │  ", Style::default().fg(theme.border)));
+            row2_spans.push(Span::styled(
+                format!("{:.1}°C", temp),
+                Style::default().fg(theme.warning),
+            ));
+        }
+
+        row2_spans.push(Span::styled("  │  ", Style::default().fg(theme.border)));
+        row2_spans.push(Span::styled(
+            format!("{:.1}Wh", app.battery.energy_wh()),
+            Style::default().fg(theme.fg),
+        ));
+
+        if let (Some(min), Some(max)) = (app.battery.daily_min_soc(), app.battery.daily_max_soc()) {
+            row2_spans.push(Span::styled("  │  ", Style::default().fg(theme.border)));
+            row2_spans.push(Span::styled(
+                format!("{:.0}-{:.0}%", min, max),
+                Style::default().fg(theme.muted),
+            ));
+        }
+
+        let row2 = Line::from(row2_spans);
 
         frame.render_widget(Paragraph::new(row1).centered(), rows[0]);
         frame.render_widget(Paragraph::new(row2).centered(), rows[2]);

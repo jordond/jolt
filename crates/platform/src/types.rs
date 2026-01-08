@@ -97,6 +97,72 @@ impl fmt::Display for PowerMode {
     }
 }
 
+/// Battery technology/chemistry type.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum BatteryTechnology {
+    /// Lithium-ion
+    LithiumIon,
+    /// Lithium-polymer
+    LithiumPolymer,
+    /// Nickel-metal hydride
+    NickelMetalHydride,
+    /// Nickel-cadmium
+    NickelCadmium,
+    /// Lead-acid
+    LeadAcid,
+    /// Unknown or unsupported technology
+    #[default]
+    Unknown,
+}
+
+impl BatteryTechnology {
+    /// Returns a human-readable label for the battery technology.
+    pub fn label(&self) -> &'static str {
+        match self {
+            BatteryTechnology::LithiumIon => "Li-ion",
+            BatteryTechnology::LithiumPolymer => "Li-poly",
+            BatteryTechnology::NickelMetalHydride => "NiMH",
+            BatteryTechnology::NickelCadmium => "NiCd",
+            BatteryTechnology::LeadAcid => "Lead-acid",
+            BatteryTechnology::Unknown => "Unknown",
+        }
+    }
+
+    /// Returns a longer description of the battery technology.
+    pub fn description(&self) -> &'static str {
+        match self {
+            BatteryTechnology::LithiumIon => "Lithium-ion",
+            BatteryTechnology::LithiumPolymer => "Lithium-polymer",
+            BatteryTechnology::NickelMetalHydride => "Nickel-metal hydride",
+            BatteryTechnology::NickelCadmium => "Nickel-cadmium",
+            BatteryTechnology::LeadAcid => "Lead-acid",
+            BatteryTechnology::Unknown => "Unknown",
+        }
+    }
+}
+
+impl fmt::Display for BatteryTechnology {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.label())
+    }
+}
+
+/// Convert from battery crate Technology to our BatteryTechnology.
+impl From<battery::Technology> for BatteryTechnology {
+    fn from(tech: battery::Technology) -> Self {
+        match tech {
+            battery::Technology::LithiumIon => BatteryTechnology::LithiumIon,
+            battery::Technology::LithiumPolymer => BatteryTechnology::LithiumPolymer,
+            battery::Technology::NickelMetalHydride => BatteryTechnology::NickelMetalHydride,
+            battery::Technology::NickelCadmium => BatteryTechnology::NickelCadmium,
+            battery::Technology::LeadAcid => BatteryTechnology::LeadAcid,
+            battery::Technology::Unknown => BatteryTechnology::Unknown,
+            // Handle any future variants
+            _ => BatteryTechnology::Unknown,
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

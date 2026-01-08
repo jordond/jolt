@@ -14,6 +14,7 @@ pub enum HistoryMetric {
 pub struct DataPoint {
     pub battery_percent: f32,
     pub power_watts: f32,
+    pub temperature_c: Option<f32>,
 }
 
 #[derive(Debug, Clone)]
@@ -39,10 +40,11 @@ impl HistoryData {
         }
     }
 
-    pub fn record(&mut self, battery_percent: f32, power_watts: f32) {
+    pub fn record(&mut self, battery_percent: f32, power_watts: f32, temperature_c: Option<f32>) {
         let point = DataPoint {
             battery_percent,
             power_watts,
+            temperature_c,
         };
 
         if self.points.len() >= MAX_HISTORY_POINTS {
@@ -141,5 +143,35 @@ impl HistoryData {
             .map(|p| p.power_watts)
             .fold(20.0_f32, f32::max);
         (0.0, (max * 1.2) as f64)
+    }
+
+    pub fn temperature_values(&self) -> Vec<(f64, f64)> {
+        self.points
+            .iter()
+            .enumerate()
+            .filter_map(|(i, p)| p.temperature_c.map(|t| (i as f64, t as f64)))
+            .collect()
+    }
+
+    pub fn temperature_range(&self) -> (f64, f64) {
+        let temps: Vec<f32> = self.points.iter().filter_map(|p| p.temperature_c).collect();
+
+        if temps.is_empty() {
+            return (20.0, 50.0);
+        }
+
+        let min = temps.iter().copied().fold(f32::INFINITY, f32::min);
+        let max = temps.iter().copied().fold(f32::NEG_INFINITY, f32::max);
+
+        let padding = (max - min).max(5.0) * 0.1;
+        ((min - padding).max(0.0) as f64, (max + padding) as f64)
+    }
+
+    pub fn has_temperature_data(&self) -> bool {
+        self.points.iter().any(|p| p.temperature_c.is_some())
+    }
+
+    pub fn latest_temperature(&self) -> Option<f32> {
+        self.points.back().and_then(|p| p.temperature_c)
     }
 }

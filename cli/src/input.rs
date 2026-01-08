@@ -18,6 +18,7 @@ pub mod keys {
     pub const PERIOD_NEXT: &str = "\u{2192}";
     pub const ESC: &str = "Esc";
     pub const SETTINGS: &str = "s";
+    pub const BATTERY_DETAILS: &str = "b";
 }
 
 pub fn handle_key(app: &App, key: KeyEvent) -> Action {
@@ -36,6 +37,7 @@ pub fn handle_key(app: &App, key: KeyEvent) -> Action {
         }
         AppView::History => handle_history_keys(key),
         AppView::Settings => handle_settings_keys(key),
+        AppView::BatteryDetails => handle_battery_details_keys(key),
     }
 }
 
@@ -70,6 +72,7 @@ fn handle_main_keys(key: KeyEvent, selection_mode: bool) -> Action {
         KeyCode::Char('-') => Action::DecreaseRefreshRate,
         KeyCode::Char('c') if key.modifiers.contains(KeyModifiers::CONTROL) => Action::Quit,
         KeyCode::Char('h') => Action::ToggleHistory,
+        KeyCode::Char('b') => Action::ToggleBatteryDetails,
         _ => Action::None,
     }
 }
@@ -163,6 +166,13 @@ fn handle_settings_keys(key: KeyEvent) -> Action {
     }
 }
 
+fn handle_battery_details_keys(key: KeyEvent) -> Action {
+    match key.code {
+        KeyCode::Esc | KeyCode::Char('b') | KeyCode::Char('q') => Action::ToggleBatteryDetails,
+        _ => Action::None,
+    }
+}
+
 pub struct KeyBinding {
     pub key: &'static str,
     pub description: &'static str,
@@ -240,6 +250,10 @@ pub const KEY_BINDINGS: &[KeyBinding] = &[
     KeyBinding {
         key: keys::HISTORY,
         description: "View history",
+    },
+    KeyBinding {
+        key: keys::BATTERY_DETAILS,
+        description: "Battery details",
     },
     KeyBinding {
         key: keys::QUIT,
