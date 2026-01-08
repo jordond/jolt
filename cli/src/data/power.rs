@@ -29,6 +29,7 @@ struct PowerSample {
 pub struct PowerData {
     provider: PlatformPower,
     samples: VecDeque<PowerSample>,
+    cached_snapshot: Option<PowerSnapshot>,
 }
 
 impl PowerData {
@@ -44,12 +45,17 @@ impl PowerData {
         };
         samples.push_back(sample);
 
-        Ok(Self { provider, samples })
+        Ok(Self {
+            provider,
+            samples,
+            cached_snapshot: None,
+        })
     }
 
     pub fn refresh(&mut self) -> Result<()> {
         self.provider.refresh()?;
         self.record_sample();
+        self.cached_snapshot = None;
         Ok(())
     }
 
@@ -95,11 +101,19 @@ impl PowerData {
     }
 
     pub fn power_mode(&self) -> PowerMode {
+        if let Some(ref snapshot) = self.cached_snapshot {
+            return match snapshot.power_mode {
+                crate::daemon::PowerMode::LowPower => PowerMode::LowPower,
+                crate::daemon::PowerMode::Automatic => PowerMode::Automatic,
+                crate::daemon::PowerMode::HighPerformance => PowerMode::HighPerformance,
+                crate::daemon::PowerMode::Unknown => PowerMode::Unknown,
+            };
+        }
         self.provider.info().power_mode
     }
 
     pub fn power_mode_label(&self) -> &'static str {
-        self.provider.info().power_mode.label()
+        self.power_mode().label()
     }
 
     pub fn update_from_snapshot(&mut self, snapshot: &PowerSnapshot) {
@@ -119,5 +133,7 @@ impl PowerData {
             }
             self.samples.push_back(sample);
         }
+
+        self.cached_snapshot = Some(snapshot.clone());
     }
 }

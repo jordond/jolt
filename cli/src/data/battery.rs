@@ -20,6 +20,7 @@ pub struct BatteryData {
     provider: PlatformBattery,
     time_to_full: Option<Duration>,
     time_to_empty: Option<Duration>,
+    cached_snapshot: Option<BatterySnapshot>,
 }
 
 impl BatteryData {
@@ -30,6 +31,7 @@ impl BatteryData {
             time_to_full: info.time_to_full,
             time_to_empty: info.time_to_empty,
             provider,
+            cached_snapshot: None,
         })
     }
 
@@ -38,27 +40,46 @@ impl BatteryData {
         let info = self.provider.info();
         self.time_to_full = info.time_to_full;
         self.time_to_empty = info.time_to_empty;
+        self.cached_snapshot = None;
         Ok(())
     }
 
     pub fn charge_percent(&self) -> f32 {
+        if let Some(ref snapshot) = self.cached_snapshot {
+            return snapshot.charge_percent;
+        }
         self.provider.info().charge_percent
     }
 
     pub fn max_capacity_wh(&self) -> f32 {
+        if let Some(ref snapshot) = self.cached_snapshot {
+            return snapshot.max_capacity_wh;
+        }
         self.provider.info().max_capacity_wh
     }
 
     pub fn design_capacity_wh(&self) -> f32 {
+        if let Some(ref snapshot) = self.cached_snapshot {
+            return snapshot.design_capacity_wh;
+        }
         self.provider.info().design_capacity_wh
     }
 
     pub fn state(&self) -> ChargeState {
+        if let Some(ref snapshot) = self.cached_snapshot {
+            return match snapshot.state {
+                ProtocolBatteryState::Charging => ChargeState::Charging,
+                ProtocolBatteryState::Discharging => ChargeState::Discharging,
+                ProtocolBatteryState::Full => ChargeState::Full,
+                ProtocolBatteryState::NotCharging => ChargeState::NotCharging,
+                ProtocolBatteryState::Unknown => ChargeState::Unknown,
+            };
+        }
         self.provider.info().state
     }
 
     pub fn state_label(&self) -> &'static str {
-        self.provider.info().state.label()
+        self.state().label()
     }
 
     pub fn time_remaining(&self) -> Option<Duration> {
@@ -111,50 +132,83 @@ impl BatteryData {
     }
 
     pub fn cycle_count(&self) -> Option<u32> {
+        if let Some(ref snapshot) = self.cached_snapshot {
+            return snapshot.cycle_count;
+        }
         self.provider.info().cycle_count
     }
 
     pub fn health_percent(&self) -> f32 {
+        if let Some(ref snapshot) = self.cached_snapshot {
+            return snapshot.health_percent;
+        }
         self.provider.info().health_percent
     }
 
     pub fn is_charging(&self) -> bool {
-        self.provider.info().state.is_charging()
+        self.state().is_charging()
     }
 
     pub fn charging_watts(&self) -> Option<f32> {
+        if let Some(ref snapshot) = self.cached_snapshot {
+            return snapshot.charging_watts;
+        }
         self.provider.info().charging_watts()
     }
 
     pub fn charger_watts(&self) -> Option<u32> {
+        if let Some(ref snapshot) = self.cached_snapshot {
+            return snapshot.charger_watts;
+        }
         self.provider.info().charger_watts
     }
 
     pub fn voltage_mv(&self) -> u32 {
+        if let Some(ref snapshot) = self.cached_snapshot {
+            return snapshot.voltage_mv;
+        }
         self.provider.info().voltage_mv
     }
 
     pub fn amperage_ma(&self) -> i32 {
+        if let Some(ref snapshot) = self.cached_snapshot {
+            return snapshot.amperage_ma;
+        }
         self.provider.info().amperage_ma
     }
 
     pub fn external_connected(&self) -> bool {
+        if let Some(ref snapshot) = self.cached_snapshot {
+            return snapshot.external_connected;
+        }
         self.provider.info().external_connected
     }
 
     pub fn temperature_c(&self) -> Option<f32> {
+        if let Some(ref snapshot) = self.cached_snapshot {
+            return snapshot.temperature_c;
+        }
         self.provider.info().temperature_c
     }
 
     pub fn daily_min_soc(&self) -> Option<f32> {
+        if let Some(ref snapshot) = self.cached_snapshot {
+            return snapshot.daily_min_soc;
+        }
         self.provider.info().daily_min_soc
     }
 
     pub fn daily_max_soc(&self) -> Option<f32> {
+        if let Some(ref snapshot) = self.cached_snapshot {
+            return snapshot.daily_max_soc;
+        }
         self.provider.info().daily_max_soc
     }
 
     pub fn discharge_watts(&self) -> Option<f32> {
+        if let Some(ref snapshot) = self.cached_snapshot {
+            return snapshot.discharge_watts;
+        }
         self.provider.info().discharge_watts()
     }
 
@@ -198,5 +252,7 @@ impl BatteryData {
         } else {
             None
         };
+
+        self.cached_snapshot = Some(snapshot.clone());
     }
 }

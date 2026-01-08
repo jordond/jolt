@@ -91,7 +91,7 @@ impl RefreshWorker {
     fn worker_loop(
         request_rx: std_mpsc::Receiver<RefreshRequest>,
         response_tx: std_mpsc::Sender<DataSnapshot>,
-        _config: HistoryConfig,
+        config: HistoryConfig,
         excluded: Vec<String>,
     ) {
         let mut battery = match BatteryData::new() {
@@ -108,11 +108,19 @@ impl RefreshWorker {
                 return;
             }
         };
-        let mut processes = match ProcessData::with_exclusions(excluded) {
+        let mut processes = match ProcessData::with_exclusions(excluded.clone()) {
             Ok(p) => p,
             Err(e) => {
                 error!(error = %e, "Failed to initialize process data in worker");
                 return;
+            }
+        };
+
+        let mut recorder = match Recorder::new(config, excluded) {
+            Ok(r) => Some(r),
+            Err(e) => {
+                warn!(error = %e, "Failed to initialize recorder, history disabled");
+                None
             }
         };
 
@@ -126,6 +134,12 @@ impl RefreshWorker {
                     let _ = power.refresh();
                     let _ = processes.refresh();
                     last_process_refresh = Instant::now();
+
+                    if let Some(ref mut rec) = recorder {
+                        if let Err(e) = rec.record_all(&battery, &power, &processes) {
+                            warn!(error = %e, "Failed to record data");
+                        }
+                    }
                 }
                 RefreshRequest::MetricsOnly => {
                     let _ = battery.refresh();
@@ -215,7 +229,7 @@ fn create_snapshot(
     let process_snapshots: Vec<ProcessSnapshot> = processes
         .processes
         .iter()
-        .map(|p| process_to_snapshot(p))
+        .map(process_to_snapshot)
         .collect();
 
     DataSnapshot {

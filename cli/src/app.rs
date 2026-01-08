@@ -499,6 +499,7 @@ impl App {
     fn apply_snapshot(&mut self, snapshot: &DataSnapshot) {
         self.battery.update_from_snapshot(&snapshot.battery);
         self.power.update_from_snapshot(&snapshot.power);
+        let _ = self.display.refresh();
 
         if !self.selection_mode {
             self.processes
