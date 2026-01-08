@@ -50,7 +50,6 @@ impl fmt::Display for ChargeState {
     }
 }
 
-/// Convert from battery crate State to our ChargeState.
 impl From<battery::State> for ChargeState {
     fn from(state: battery::State) -> Self {
         match state {
@@ -59,8 +58,6 @@ impl From<battery::State> for ChargeState {
             battery::State::Empty => ChargeState::Discharging,
             battery::State::Full => ChargeState::Full,
             battery::State::Unknown => ChargeState::Unknown,
-            // Handle any future variants
-            _ => ChargeState::Unknown,
         }
     }
 }

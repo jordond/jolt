@@ -17,7 +17,7 @@ linux = []
 
 [dependencies]
 # Cross-platform
-battery = "0.7.8"
+battery = { package = "starship-battery", version = "0.10" }
 color-eyre = { workspace = true }
 sysinfo = { workspace = true }
 

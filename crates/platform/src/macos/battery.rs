@@ -65,7 +65,6 @@ impl MacOSBattery {
             .map(|t| Duration::from_secs(t.get::<second>() as u64));
 
         self.info.state = ChargeState::from(battery.state());
-
         self.info.vendor = battery.vendor().map(|s| s.to_string());
         self.info.model = battery.model().map(|s| s.to_string());
         self.info.serial_number = battery.serial_number().map(|s| s.to_string());
@@ -92,7 +91,7 @@ impl MacOSBattery {
         for line in output.lines() {
             let line = line.trim();
 
-            if line.contains("\"Amperage\"") || line.contains("\"InstantAmperage\"") {
+            if line.contains("\"Amperage\"") && !line.contains("InstantAmperage") {
                 if let Some(val) = extract_number(line) {
                     self.info.amperage_ma = val as i32;
                 }
@@ -101,22 +100,7 @@ impl MacOSBattery {
             } else if line.contains("\"IsCharging\"") {
                 is_charging = line.contains("Yes");
             } else if line.contains("\"BatteryData\"") {
-                if let Some(pos) = line.find("\"DailyMinSoc\"=") {
-                    let after = &line[pos + 14..];
-                    if let Some(end) = after.find(|c: char| !c.is_ascii_digit() && c != '.') {
-                        if let Ok(val) = after[..end].parse::<f32>() {
-                            self.info.daily_min_soc = Some(val);
-                        }
-                    }
-                }
-                if let Some(pos) = line.find("\"DailyMaxSoc\"=") {
-                    let after = &line[pos + 14..];
-                    if let Some(end) = after.find(|c: char| !c.is_ascii_digit() && c != '.') {
-                        if let Ok(val) = after[..end].parse::<f32>() {
-                            self.info.daily_max_soc = Some(val);
-                        }
-                    }
-                }
+                self.parse_battery_data_blob(line);
             }
         }
 
@@ -133,6 +117,25 @@ impl MacOSBattery {
         } else {
             self.info.state = ChargeState::Discharging;
             self.info.charger_watts = None;
+        }
+    }
+
+    fn parse_battery_data_blob(&mut self, line: &str) {
+        if let Some(pos) = line.find("\"DailyMinSoc\"=") {
+            let after = &line[pos + 14..];
+            if let Some(end) = after.find(|c: char| !c.is_ascii_digit() && c != '.') {
+                if let Ok(val) = after[..end].parse::<f32>() {
+                    self.info.daily_min_soc = Some(val);
+                }
+            }
+        }
+        if let Some(pos) = line.find("\"DailyMaxSoc\"=") {
+            let after = &line[pos + 14..];
+            if let Some(end) = after.find(|c: char| !c.is_ascii_digit() && c != '.') {
+                if let Ok(val) = after[..end].parse::<f32>() {
+                    self.info.daily_max_soc = Some(val);
+                }
+            }
         }
     }
 }

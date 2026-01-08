@@ -1,5 +1,7 @@
 use std::collections::HashMap;
 use std::fs;
+use std::sync::mpsc as std_mpsc;
+use std::thread;
 use std::time::{Duration, Instant};
 
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
@@ -47,14 +49,220 @@ struct ClientHandle {
     is_subscriber: bool,
 }
 
+const PROCESS_REFRESH_INTERVAL: Duration = Duration::from_secs(3);
+
+enum RefreshRequest {
+    Full,
+    MetricsOnly,
+    Shutdown,
+}
+
+struct RefreshWorker {
+    request_tx: std_mpsc::Sender<RefreshRequest>,
+    response_rx: std_mpsc::Receiver<DataSnapshot>,
+    _handle: thread::JoinHandle<()>,
+}
+
+impl RefreshWorker {
+    fn new(user_config: &UserConfig) -> Result<Self> {
+        let (request_tx, request_rx) = std_mpsc::channel::<RefreshRequest>();
+        let (response_tx, response_rx) = std_mpsc::channel::<DataSnapshot>();
+
+        let excluded: Vec<String> = user_config
+            .effective_excluded_processes()
+            .into_iter()
+            .map(|s| s.to_string())
+            .collect();
+
+        let config = user_config.history.clone();
+        let excluded_clone = excluded.clone();
+
+        let handle = thread::spawn(move || {
+            Self::worker_loop(request_rx, response_tx, config, excluded_clone);
+        });
+
+        Ok(Self {
+            request_tx,
+            response_rx,
+            _handle: handle,
+        })
+    }
+
+    fn worker_loop(
+        request_rx: std_mpsc::Receiver<RefreshRequest>,
+        response_tx: std_mpsc::Sender<DataSnapshot>,
+        _config: HistoryConfig,
+        excluded: Vec<String>,
+    ) {
+        let mut battery = match BatteryData::new() {
+            Ok(b) => b,
+            Err(e) => {
+                error!(error = %e, "Failed to initialize battery data in worker");
+                return;
+            }
+        };
+        let mut power = match PowerData::new() {
+            Ok(p) => p,
+            Err(e) => {
+                error!(error = %e, "Failed to initialize power data in worker");
+                return;
+            }
+        };
+        let mut processes = match ProcessData::with_exclusions(excluded) {
+            Ok(p) => p,
+            Err(e) => {
+                error!(error = %e, "Failed to initialize process data in worker");
+                return;
+            }
+        };
+
+        let mut last_process_refresh = Instant::now();
+
+        while let Ok(request) = request_rx.recv() {
+            match request {
+                RefreshRequest::Shutdown => break,
+                RefreshRequest::Full => {
+                    let _ = battery.refresh();
+                    let _ = power.refresh();
+                    let _ = processes.refresh();
+                    last_process_refresh = Instant::now();
+                }
+                RefreshRequest::MetricsOnly => {
+                    let _ = battery.refresh();
+                    let _ = power.refresh();
+                    if last_process_refresh.elapsed() >= PROCESS_REFRESH_INTERVAL {
+                        let _ = processes.refresh();
+                        last_process_refresh = Instant::now();
+                    }
+                }
+            }
+
+            let snapshot = create_snapshot(&battery, &power, &processes);
+            if response_tx.send(snapshot).is_err() {
+                break;
+            }
+        }
+    }
+
+    fn request_refresh(&self, full: bool) {
+        let req = if full {
+            RefreshRequest::Full
+        } else {
+            RefreshRequest::MetricsOnly
+        };
+        let _ = self.request_tx.send(req);
+    }
+
+    fn try_recv_snapshot(&self) -> Option<DataSnapshot> {
+        self.response_rx.try_recv().ok()
+    }
+
+    fn shutdown(&self) {
+        let _ = self.request_tx.send(RefreshRequest::Shutdown);
+    }
+}
+
+fn create_snapshot(
+    battery: &BatteryData,
+    power: &PowerData,
+    processes: &ProcessData,
+) -> DataSnapshot {
+    let battery_state = match battery.state_label() {
+        "Charging" => BatteryState::Charging,
+        "On Battery" => BatteryState::Discharging,
+        "Full" => BatteryState::Full,
+        "Not Charging" => BatteryState::NotCharging,
+        _ => BatteryState::Unknown,
+    };
+
+    let power_mode = match power.power_mode() {
+        crate::data::power::PowerMode::LowPower => PowerMode::LowPower,
+        crate::data::power::PowerMode::Automatic => PowerMode::Automatic,
+        crate::data::power::PowerMode::HighPerformance => PowerMode::HighPerformance,
+        crate::data::power::PowerMode::Unknown => PowerMode::Unknown,
+    };
+
+    let battery_snapshot = BatterySnapshot {
+        charge_percent: battery.charge_percent(),
+        state: battery_state,
+        state_label: battery.state_label().to_string(),
+        health_percent: battery.health_percent(),
+        max_capacity_wh: battery.max_capacity_wh(),
+        design_capacity_wh: battery.design_capacity_wh(),
+        cycle_count: battery.cycle_count(),
+        time_remaining_mins: battery.time_remaining_minutes(),
+        time_remaining_formatted: battery.time_remaining_formatted(),
+        charging_watts: battery.charging_watts(),
+        charger_watts: battery.charger_watts(),
+        discharge_watts: battery.discharge_watts(),
+        voltage_mv: battery.voltage_mv(),
+        amperage_ma: battery.amperage_ma(),
+        external_connected: battery.external_connected(),
+        temperature_c: battery.temperature_c(),
+        daily_min_soc: battery.daily_min_soc(),
+        daily_max_soc: battery.daily_max_soc(),
+    };
+
+    let power_snapshot = PowerSnapshot {
+        cpu_power_watts: power.cpu_power_watts(),
+        gpu_power_watts: power.gpu_power_watts(),
+        total_power_watts: power.total_power_watts(),
+        power_mode,
+        power_mode_label: power.power_mode_label().to_string(),
+        is_warmed_up: power.is_warmed_up(),
+    };
+
+    let process_snapshots: Vec<ProcessSnapshot> = processes
+        .processes
+        .iter()
+        .map(|p| process_to_snapshot(p))
+        .collect();
+
+    DataSnapshot {
+        timestamp: chrono::Utc::now().timestamp(),
+        battery: battery_snapshot,
+        power: power_snapshot,
+        processes: process_snapshots,
+    }
+}
+
+fn process_to_snapshot(p: &crate::data::ProcessInfo) -> ProcessSnapshot {
+    let status = match p.status {
+        crate::data::ProcessState::Running => ProcessState::Running,
+        crate::data::ProcessState::Sleeping => ProcessState::Sleeping,
+        crate::data::ProcessState::Idle => ProcessState::Idle,
+        crate::data::ProcessState::Stopped => ProcessState::Stopped,
+        crate::data::ProcessState::Zombie => ProcessState::Zombie,
+        crate::data::ProcessState::Unknown => ProcessState::Unknown,
+    };
+
+    ProcessSnapshot {
+        pid: p.pid,
+        name: p.name.clone(),
+        command: p.command.clone(),
+        cpu_usage: p.cpu_usage,
+        memory_mb: p.memory_mb,
+        energy_impact: p.energy_impact,
+        parent_pid: p.parent_pid,
+        children: p
+            .children
+            .as_ref()
+            .map(|children| children.iter().map(process_to_snapshot).collect()),
+        is_killable: p.is_killable,
+        disk_read_bytes: p.disk_read_bytes,
+        disk_write_bytes: p.disk_write_bytes,
+        status,
+        run_time_secs: p.run_time_secs,
+        total_cpu_time_secs: p.total_cpu_time_secs,
+    }
+}
+
 struct DaemonState {
-    battery: BatteryData,
-    power: PowerData,
-    processes: ProcessData,
+    worker: RefreshWorker,
     recorder: Recorder,
     start_time: Instant,
     config: HistoryConfig,
-    last_refresh: Instant,
+    last_snapshot: Option<DataSnapshot>,
 }
 
 impl DaemonState {
@@ -65,39 +273,36 @@ impl DaemonState {
             .map(|s| s.to_string())
             .collect();
 
+        let worker = RefreshWorker::new(user_config)?;
+
         Ok(Self {
-            battery: BatteryData::new()
-                .map_err(|e| DaemonError::Io(std::io::Error::other(e.to_string())))?,
-            power: PowerData::new()
-                .map_err(|e| DaemonError::Io(std::io::Error::other(e.to_string())))?,
-            processes: ProcessData::with_exclusions(excluded.clone())
-                .map_err(|e| DaemonError::Io(std::io::Error::other(e.to_string())))?,
+            worker,
             recorder: Recorder::new(user_config.history.clone(), excluded)?,
             start_time: Instant::now(),
             config: user_config.history.clone(),
-            last_refresh: Instant::now(),
+            last_snapshot: None,
         })
     }
 
-    fn refresh(&mut self) -> Result<()> {
-        let _ = self.battery.refresh();
-        let _ = self.power.refresh();
-        let _ = self.processes.refresh();
-
-        self.recorder
-            .record_all(&self.battery, &self.power, &self.processes)?;
-
-        self.last_refresh = Instant::now();
-        Ok(())
+    fn request_refresh(&self, full: bool) {
+        self.worker.request_refresh(full);
     }
 
-    fn refresh_if_stale(&mut self, max_age: Duration) -> Result<bool> {
-        if self.last_refresh.elapsed() >= max_age {
-            self.refresh()?;
-            Ok(true)
+    fn poll_snapshot(&mut self) -> Option<DataSnapshot> {
+        if let Some(snapshot) = self.worker.try_recv_snapshot() {
+            self.last_snapshot = Some(snapshot.clone());
+            Some(snapshot)
         } else {
-            Ok(false)
+            None
         }
+    }
+
+    fn current_snapshot(&self) -> Option<&DataSnapshot> {
+        self.last_snapshot.as_ref()
+    }
+
+    fn shutdown_worker(&self) {
+        self.worker.shutdown();
     }
 
     fn run_aggregation(&mut self) {
@@ -167,105 +372,6 @@ impl DaemonState {
         }
     }
 
-    fn create_snapshot(&self) -> DataSnapshot {
-        DataSnapshot {
-            timestamp: chrono::Utc::now().timestamp(),
-            battery: self.create_battery_snapshot(),
-            power: self.create_power_snapshot(),
-            processes: self.create_process_snapshots(),
-        }
-    }
-
-    fn create_battery_snapshot(&self) -> BatterySnapshot {
-        let state = match self.battery.state_label() {
-            "Charging" => BatteryState::Charging,
-            "On Battery" => BatteryState::Discharging,
-            "Full" => BatteryState::Full,
-            "Not Charging" => BatteryState::NotCharging,
-            _ => BatteryState::Unknown,
-        };
-
-        BatterySnapshot {
-            charge_percent: self.battery.charge_percent(),
-            state,
-            state_label: self.battery.state_label().to_string(),
-            health_percent: self.battery.health_percent(),
-            max_capacity_wh: self.battery.max_capacity_wh(),
-            design_capacity_wh: self.battery.design_capacity_wh(),
-            cycle_count: self.battery.cycle_count(),
-            time_remaining_mins: self.battery.time_remaining_minutes(),
-            time_remaining_formatted: self.battery.time_remaining_formatted(),
-            charging_watts: self.battery.charging_watts(),
-            charger_watts: self.battery.charger_watts(),
-            discharge_watts: self.battery.discharge_watts(),
-            voltage_mv: self.battery.voltage_mv(),
-            amperage_ma: self.battery.amperage_ma(),
-            external_connected: self.battery.external_connected(),
-            temperature_c: self.battery.temperature_c(),
-            daily_min_soc: self.battery.daily_min_soc(),
-            daily_max_soc: self.battery.daily_max_soc(),
-        }
-    }
-
-    fn create_power_snapshot(&self) -> PowerSnapshot {
-        let mode = match self.power.power_mode() {
-            crate::data::power::PowerMode::LowPower => PowerMode::LowPower,
-            crate::data::power::PowerMode::Automatic => PowerMode::Automatic,
-            crate::data::power::PowerMode::HighPerformance => PowerMode::HighPerformance,
-            crate::data::power::PowerMode::Unknown => PowerMode::Unknown,
-        };
-
-        PowerSnapshot {
-            cpu_power_watts: self.power.cpu_power_watts(),
-            gpu_power_watts: self.power.gpu_power_watts(),
-            total_power_watts: self.power.total_power_watts(),
-            power_mode: mode,
-            power_mode_label: self.power.power_mode_label().to_string(),
-            is_warmed_up: self.power.is_warmed_up(),
-        }
-    }
-
-    fn create_process_snapshots(&self) -> Vec<ProcessSnapshot> {
-        self.processes
-            .processes
-            .iter()
-            .map(|p| self.process_info_to_snapshot(p))
-            .collect()
-    }
-
-    fn process_info_to_snapshot(&self, p: &crate::data::ProcessInfo) -> ProcessSnapshot {
-        let status = match p.status {
-            crate::data::ProcessState::Running => ProcessState::Running,
-            crate::data::ProcessState::Sleeping => ProcessState::Sleeping,
-            crate::data::ProcessState::Idle => ProcessState::Idle,
-            crate::data::ProcessState::Stopped => ProcessState::Stopped,
-            crate::data::ProcessState::Zombie => ProcessState::Zombie,
-            crate::data::ProcessState::Unknown => ProcessState::Unknown,
-        };
-
-        ProcessSnapshot {
-            pid: p.pid,
-            name: p.name.clone(),
-            command: p.command.clone(),
-            cpu_usage: p.cpu_usage,
-            memory_mb: p.memory_mb,
-            energy_impact: p.energy_impact,
-            parent_pid: p.parent_pid,
-            children: p.children.as_ref().map(|children| {
-                children
-                    .iter()
-                    .map(|c| self.process_info_to_snapshot(c))
-                    .collect()
-            }),
-            is_killable: p.is_killable,
-            disk_read_bytes: p.disk_read_bytes,
-            disk_write_bytes: p.disk_write_bytes,
-            status,
-            run_time_secs: p.run_time_secs,
-            total_cpu_time_secs: p.total_cpu_time_secs,
-        }
-    }
-
     fn handle_request(&self, request: &DaemonRequest, subscriber_count: usize) -> DaemonResponse {
         match request {
             DaemonRequest::GetStatus => DaemonResponse::Status(self.get_status(subscriber_count)),
@@ -312,7 +418,10 @@ impl DaemonState {
                     Err(e) => DaemonResponse::Error(e.to_string()),
                 }
             }
-            DaemonRequest::GetCurrentData => DaemonResponse::CurrentData(self.create_snapshot()),
+            DaemonRequest::GetCurrentData => match self.current_snapshot() {
+                Some(snapshot) => DaemonResponse::CurrentData(snapshot.clone()),
+                None => DaemonResponse::Error("No data available yet".to_string()),
+            },
             DaemonRequest::KillProcess { pid, signal } => {
                 match std::process::Command::new("kill")
                     .args([signal.as_arg(), &pid.to_string()])
@@ -425,7 +534,10 @@ impl DaemonState {
             0.0
         };
 
-        let macos_cycle_count = self.battery.cycle_count().unwrap_or(0);
+        let macos_cycle_count = self
+            .current_snapshot()
+            .and_then(|s| s.battery.cycle_count)
+            .unwrap_or(0);
 
         let estimated_remaining = if macos_cycle_count > 0 && macos_cycle_count < 1000 {
             Some(1000 - macos_cycle_count)
@@ -574,24 +686,27 @@ async fn run_daemon_async(socket: std::path::PathBuf) -> Result<()> {
     let mut sample_tick = tokio::time::interval(sample_interval);
     let mut aggregation_tick = tokio::time::interval(aggregation_interval);
     let mut prune_tick = tokio::time::interval(prune_interval);
-    let broadcast_sleep = tokio::time::sleep(Duration::from_millis(broadcast_interval_ms));
-    tokio::pin!(broadcast_sleep);
+    let mut broadcast_tick = tokio::time::interval(Duration::from_millis(broadcast_interval_ms));
+    let mut poll_tick = tokio::time::interval(Duration::from_millis(50));
 
     sample_tick.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
     aggregation_tick.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
     prune_tick.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
+    broadcast_tick.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
+    poll_tick.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
 
     let (msg_tx, mut msg_rx) = mpsc::channel::<(ClientId, ClientMessage)>(256);
     let mut clients: HashMap<ClientId, ClientHandle> = HashMap::new();
     let mut next_client_id: ClientId = 1;
     let mut shutdown_requested = false;
+    let mut pending_broadcast = false;
+
+    state.request_refresh(true);
 
     loop {
         tokio::select! {
             _ = sample_tick.tick() => {
-                if let Err(e) = state.refresh() {
-                    error!(error = %e, "Error refreshing data");
-                }
+                state.request_refresh(true);
             }
             _ = aggregation_tick.tick() => {
                 state.run_aggregation();
@@ -599,36 +714,38 @@ async fn run_daemon_async(socket: std::path::PathBuf) -> Result<()> {
             _ = prune_tick.tick() => {
                 state.run_prune();
             }
-            () = &mut broadcast_sleep => {
-                broadcast_sleep.as_mut().reset(tokio::time::Instant::now() + Duration::from_millis(broadcast_interval_ms));
-
+            _ = broadcast_tick.tick() => {
                 let subscriber_count: usize = clients.values().filter(|c| c.is_subscriber).count();
                 if subscriber_count > 0 {
-                    if let Err(e) = state.refresh_if_stale(sample_interval / 2) {
-                        error!(error = %e, "Error refreshing data for broadcast");
-                    }
-                    let snapshot = state.create_snapshot();
-                    let update = DaemonResponse::DataUpdate(snapshot);
+                    state.request_refresh(false);
+                    pending_broadcast = true;
+                }
+            }
+            _ = poll_tick.tick() => {
+                if let Some(snapshot) = state.poll_snapshot() {
+                    if pending_broadcast {
+                        pending_broadcast = false;
+                        let update = DaemonResponse::DataUpdate(snapshot);
 
-                    let mut sent_count = 0;
-                    let mut disconnected = Vec::new();
-                    for (id, client) in &clients {
-                        if client.is_subscriber {
-                            if client.response_tx.send(update.clone()).await.is_err() {
-                                disconnected.push(*id);
-                            } else {
-                                sent_count += 1;
+                        let mut sent_count = 0;
+                        let mut disconnected = Vec::new();
+                        for (id, client) in &clients {
+                            if client.is_subscriber {
+                                if client.response_tx.send(update.clone()).await.is_err() {
+                                    disconnected.push(*id);
+                                } else {
+                                    sent_count += 1;
+                                }
                             }
                         }
+                        if sent_count > 0 {
+                            trace!(sent_count, "Broadcast DataUpdate to subscribers");
+                        }
+                        for id in disconnected {
+                            clients.remove(&id);
+                            debug!(client_id = id, "Removed disconnected subscriber");
+                        }
                     }
-                    if sent_count > 0 {
-                        trace!(sent_count, "Broadcast DataUpdate to subscribers");
-                    }
-                    for id in disconnected {
-                        clients.remove(&id);
-                        debug!(client_id = id, "Removed disconnected subscriber");
-                    }
-                    tokio::task::yield_now().await;
                 }
             }
             result = listener.accept() => {
@@ -703,7 +820,8 @@ async fn run_daemon_async(socket: std::path::PathBuf) -> Result<()> {
                                 let new_interval = (*interval_ms).max(100);
                                 if new_interval != broadcast_interval_ms {
                                     broadcast_interval_ms = new_interval;
-                                    broadcast_sleep.as_mut().reset(tokio::time::Instant::now() + Duration::from_millis(broadcast_interval_ms));
+                                    broadcast_tick = tokio::time::interval(Duration::from_millis(broadcast_interval_ms));
+                                    broadcast_tick.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
                                     info!(broadcast_interval_ms, "Broadcast interval updated");
                                 }
                                 DaemonResponse::Ok
@@ -728,6 +846,7 @@ async fn run_daemon_async(socket: std::path::PathBuf) -> Result<()> {
     }
 
     info!("Daemon shutting down");
+    state.shutdown_worker();
     fs::remove_file(&socket).ok();
 
     Ok(())
