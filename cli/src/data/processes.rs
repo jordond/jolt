@@ -5,7 +5,7 @@ use std::path::Path;
 use sysinfo::{ProcessStatus, ProcessesToUpdate, System};
 
 use crate::config::cache_dir;
-use crate::daemon::{ProcessSnapshot, ProcessState as ProtocolProcessState};
+use crate::daemon::{KillSignal, ProcessSnapshot, ProcessState as ProtocolProcessState};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum ProcessState {
@@ -251,11 +251,16 @@ impl ProcessData {
         Ok(())
     }
 
-    pub fn kill_process(&self, pid: u32) -> Result<()> {
+    pub fn kill_process(&self, pid: u32, signal: KillSignal) -> Result<()> {
         use std::process::Command;
 
+        let signal_arg = match signal {
+            KillSignal::Graceful => "-15",
+            KillSignal::Force => "-9",
+        };
+
         Command::new("kill")
-            .args(["-9", &pid.to_string()])
+            .args([signal_arg, &pid.to_string()])
             .output()?;
 
         Ok(())

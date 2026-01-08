@@ -135,6 +135,7 @@ fn handle_kill_confirm_keys(key: KeyEvent) -> Action {
     match key.code {
         KeyCode::Char('y') | KeyCode::Char('Y') | KeyCode::Enter => Action::ConfirmKill,
         KeyCode::Char('n') | KeyCode::Char('N') | KeyCode::Esc => Action::CancelKill,
+        KeyCode::Tab | KeyCode::Left | KeyCode::Right => Action::ToggleKillSignal,
         _ => Action::None,
     }
 }

@@ -7,7 +7,7 @@ use crate::config::{GraphMetric, RuntimeConfig, UserConfig};
 
 const FORECAST_REFRESH_TICKS: u32 = 10;
 const THEME_CHECK_INTERVAL: Duration = Duration::from_secs(2);
-use crate::daemon::{DaemonClient, DaemonStatus, DataSnapshot};
+use crate::daemon::{DaemonClient, DaemonStatus, DataSnapshot, KillSignal};
 use crate::data::{
     BatteryData, DailyStat, DailyTopProcess, ForecastData, HistoryData, HistoryMetric, HourlyStat,
     PowerData, ProcessData, ProcessInfo, SystemInfo,
@@ -46,6 +46,7 @@ pub enum Action {
     KillProcess,
     ConfirmKill,
     CancelKill,
+    ToggleKillSignal,
     CycleAppearance,
     OpenThemePicker,
     CloseThemePicker,
@@ -176,6 +177,7 @@ pub struct App {
     pub refresh_ms: u64,
     frozen_processes: Option<Vec<ProcessInfo>>,
     process_to_kill: Option<ProcessInfo>,
+    pub kill_signal: KillSignal,
     tick_count: u32,
     pub theme_picker_themes: Vec<NamedTheme>,
     pub theme_picker_index: usize,
@@ -246,6 +248,7 @@ impl App {
             refresh_ms,
             frozen_processes: None,
             process_to_kill: None,
+            kill_signal: KillSignal::default(),
             tick_count: 0,
             theme_picker_themes: Vec::new(),
             theme_picker_index: 0,
@@ -593,14 +596,19 @@ impl App {
                 if let Some(process) = self.get_selected_process() {
                     if process.is_killable {
                         self.process_to_kill = Some(process.clone());
+                        self.kill_signal = KillSignal::default();
                         self.view = AppView::KillConfirm;
                     }
                 }
             }
             Action::ConfirmKill => {
                 if let Some(ref process) = self.process_to_kill {
-                    info!(pid = process.pid, name = %process.name, "Killing process");
-                    self.kill_process_impl(process.pid);
+                    let signal_label = match self.kill_signal {
+                        KillSignal::Graceful => "gracefully",
+                        KillSignal::Force => "forcefully",
+                    };
+                    info!(pid = process.pid, name = %process.name, signal = signal_label, "Killing process");
+                    self.kill_process_impl(process.pid, self.kill_signal);
                 }
                 self.process_to_kill = None;
                 self.view = AppView::Main;
@@ -608,6 +616,12 @@ impl App {
             Action::CancelKill => {
                 self.process_to_kill = None;
                 self.view = AppView::Main;
+            }
+            Action::ToggleKillSignal => {
+                self.kill_signal = match self.kill_signal {
+                    KillSignal::Graceful => KillSignal::Force,
+                    KillSignal::Force => KillSignal::Graceful,
+                };
             }
             Action::CycleAppearance => {
                 self.config.cycle_appearance();
@@ -1524,14 +1538,14 @@ impl App {
         }
     }
 
-    fn kill_process_impl(&self, pid: u32) {
+    fn kill_process_impl(&self, pid: u32, signal: KillSignal) {
         if self.using_daemon_data {
             if let Ok(mut client) = DaemonClient::connect() {
-                let _ = client.kill_process(pid);
+                let _ = client.kill_process(pid, signal);
                 return;
             }
         }
-        let _ = self.processes.kill_process(pid);
+        let _ = self.processes.kill_process(pid, signal);
     }
 
     pub fn cleanup(&mut self) {
