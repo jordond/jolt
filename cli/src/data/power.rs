@@ -13,6 +13,8 @@ type PlatformPower = jolt_platform::macos::MacOSPower;
 #[cfg(target_os = "linux")]
 type PlatformPower = jolt_platform::linux::LinuxPower;
 
+#[cfg(not(any(target_os = "macos", target_os = "linux")))]
+compile_error!("PlatformPower is only defined for macOS and Linux targets.");
 const SMOOTHING_SAMPLE_COUNT: usize = 5;
 const MIN_WARMUP_SAMPLES: usize = 3;
 
