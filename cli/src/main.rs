@@ -340,10 +340,16 @@ fn run_tui_loop(
     user_config: UserConfig,
 ) -> Result<()> {
     let mut app = App::new(user_config)?;
+    let mut needs_redraw = true;
 
     loop {
-        app.tick()?;
-        terminal.draw(|frame| ui::render(frame, &mut app))?;
+        let data_changed = app.tick()?;
+        needs_redraw = needs_redraw || data_changed;
+
+        if needs_redraw {
+            terminal.draw(|frame| ui::render(frame, &mut app))?;
+            needs_redraw = false;
+        }
 
         let poll_timeout = if app.using_daemon_data {
             Duration::from_millis(10)
@@ -358,8 +364,11 @@ fn run_tui_loop(
                     if !app.handle_action(action) {
                         break;
                     }
+                    needs_redraw = true;
                 }
-                Event::Resize(_, _) => {}
+                Event::Resize(_, _) => {
+                    needs_redraw = true;
+                }
                 _ => {}
             }
         }

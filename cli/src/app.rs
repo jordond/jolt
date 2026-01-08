@@ -353,11 +353,15 @@ impl App {
         self.using_daemon_data && self.daemon_subscription.is_none() && self.reconnect_attempts > 0
     }
 
-    pub fn tick(&mut self) -> Result<()> {
-        if self.last_theme_check.elapsed() >= THEME_CHECK_INTERVAL {
+    pub fn tick(&mut self) -> Result<bool> {
+        let theme_changed = if self.last_theme_check.elapsed() >= THEME_CHECK_INTERVAL {
+            let was_dark = self.config.is_dark_mode();
             self.config.refresh_system_theme();
             self.last_theme_check = std::time::Instant::now();
-        }
+            was_dark != self.config.is_dark_mode()
+        } else {
+            false
+        };
 
         let data_updated = if self.using_daemon_data {
             self.tick_from_daemon()?
@@ -379,7 +383,7 @@ impl App {
             }
         }
 
-        Ok(())
+        Ok(data_updated || theme_changed)
     }
 
     fn tick_from_daemon(&mut self) -> Result<bool> {
