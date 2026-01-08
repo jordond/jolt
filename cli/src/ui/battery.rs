@@ -64,14 +64,6 @@ fn render_battery_gauge(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeC
     let gauge_color = percent_to_color(percent, 50.0, 20.0, theme);
     let unfilled_color = darken_color(theme.border, 0.6);
 
-    let label = Span::styled(
-        format!("{:.0}%", percent),
-        Style::default()
-            .fg(theme.fg)
-            .bg(theme.bg)
-            .add_modifier(Modifier::BOLD),
-    );
-
     let gauge = Gauge::default()
         .block(
             Block::default()
@@ -81,7 +73,7 @@ fn render_battery_gauge(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeC
         )
         .gauge_style(Style::default().fg(gauge_color).bg(unfilled_color))
         .ratio((percent / 100.0).clamp(0.0, 1.0) as f64)
-        .label(label)
+        .label(format!("{:.0}%", percent))
         .use_unicode(true);
 
     frame.render_widget(gauge, area);
