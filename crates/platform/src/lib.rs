@@ -27,7 +27,7 @@ mod types;
 
 pub use battery::{BatteryInfo, BatteryProvider};
 pub use power::{PowerInfo, PowerProvider};
-pub use types::{ChargeState, PowerMode};
+pub use types::{BatteryTechnology, ChargeState, PowerMode};
 
 #[cfg(target_os = "macos")]
 #[cfg(feature = "macos")]

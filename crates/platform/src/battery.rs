@@ -4,7 +4,7 @@ use std::time::Duration;
 
 use color_eyre::eyre::Result;
 
-use crate::types::ChargeState;
+use crate::types::{BatteryTechnology, ChargeState};
 
 /// Battery information snapshot.
 ///
@@ -48,6 +48,24 @@ pub struct BatteryInfo {
 
     /// Whether external power is connected.
     pub external_connected: bool,
+
+    /// Battery vendor/manufacturer name (e.g., "Apple", "Samsung SDI").
+    pub vendor: Option<String>,
+
+    /// Battery model identifier (e.g., "bq20z451").
+    pub model: Option<String>,
+
+    /// Battery serial number.
+    pub serial_number: Option<String>,
+
+    /// Battery technology/chemistry type.
+    pub technology: BatteryTechnology,
+
+    /// Current energy remaining in watt-hours.
+    pub energy_wh: f32,
+
+    /// Instantaneous power rate in watts (positive = charging, negative = discharging).
+    pub energy_rate_watts: f32,
 
     // === macOS-specific fields (None on other platforms) ===
     /// Charger wattage rating (e.g., 96W), macOS only.

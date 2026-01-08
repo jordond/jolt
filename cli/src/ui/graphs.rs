@@ -1,6 +1,6 @@
 use ratatui::{
     layout::{Constraint, Direction, Layout, Rect},
-    style::{Modifier, Style},
+    style::{Color, Modifier, Style},
     symbols::Marker,
     text::{Line, Span},
     widgets::{Axis, Block, Borders, Chart, Dataset, GraphType, Paragraph},
@@ -11,12 +11,147 @@ use crate::app::App;
 use crate::data::history::HistoryMetric;
 use crate::theme::ThemeColors;
 
+const MIN_WIDTH_FOR_SIDE_BY_SIDE: u16 = 80;
+const BATTERY_WARNING_THRESHOLD: f64 = 20.0;
+
+fn horizontal_line_points(y_value: f64, max_x: f64) -> Vec<(f64, f64)> {
+    vec![(0.0, y_value), (max_x, y_value)]
+}
+
+fn x_axis_time_labels(data_len: usize, theme: &ThemeColors) -> Vec<Span<'static>> {
+    let max_x = data_len.max(60);
+    vec![
+        Span::styled("now", Style::default().fg(theme.muted)),
+        Span::styled(format!("-{}s", max_x / 2), Style::default().fg(theme.muted)),
+        Span::styled(format!("-{}s", max_x), Style::default().fg(theme.muted)),
+    ]
+}
+
 pub fn render(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) {
-    match app.history.current_metric {
-        HistoryMetric::Split => render_split(frame, area, app, theme),
-        HistoryMetric::Merged => render_merged(frame, area, app, theme),
-        _ => render_single(frame, area, app, theme),
+    let has_temp_data = app.history.has_temperature_data();
+
+    if has_temp_data {
+        if area.width >= MIN_WIDTH_FOR_SIDE_BY_SIDE {
+            render_with_temp_side_by_side(frame, area, app, theme);
+        } else {
+            render_with_temp_stacked(frame, area, app, theme);
+        }
+    } else {
+        match app.history.current_metric {
+            HistoryMetric::Split => render_split(frame, area, app, theme),
+            HistoryMetric::Merged => render_merged(frame, area, app, theme),
+            _ => render_single(frame, area, app, theme),
+        }
     }
+}
+
+fn render_with_temp_side_by_side(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) {
+    let chunks = Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints([Constraint::Percentage(60), Constraint::Percentage(40)])
+        .split(area);
+
+    match app.history.current_metric {
+        HistoryMetric::Split => render_split(frame, chunks[0], app, theme),
+        HistoryMetric::Merged => render_merged(frame, chunks[0], app, theme),
+        _ => render_single(frame, chunks[0], app, theme),
+    }
+
+    render_temperature_chart(frame, chunks[1], app, theme);
+}
+
+fn render_with_temp_stacked(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) {
+    let chunks = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([Constraint::Percentage(60), Constraint::Percentage(40)])
+        .split(area);
+
+    match app.history.current_metric {
+        HistoryMetric::Split => render_split(frame, chunks[0], app, theme),
+        HistoryMetric::Merged => render_merged(frame, chunks[0], app, theme),
+        _ => render_single(frame, chunks[0], app, theme),
+    }
+
+    render_temperature_chart(frame, chunks[1], app, theme);
+}
+
+fn render_temperature_chart(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) {
+    let temp_data = app.history.temperature_values();
+    let current_temp = app.history.latest_temperature();
+
+    let title_line = Line::from(vec![
+        Span::styled(
+            " Temp ",
+            Style::default()
+                .fg(theme.warning)
+                .add_modifier(Modifier::BOLD),
+        ),
+        Span::styled(
+            current_temp.map_or("--".to_string(), |t| format!("{:.1}°C", t)),
+            Style::default().fg(theme.fg),
+        ),
+    ]);
+
+    let block = Block::default()
+        .title(title_line)
+        .borders(Borders::ALL)
+        .border_style(Style::default().fg(theme.border))
+        .style(Style::default().bg(theme.bg));
+
+    if temp_data.is_empty() {
+        frame.render_widget(block, area);
+        return;
+    }
+
+    let (min_y, max_y) = app.history.temperature_range();
+    let max_x = temp_data.len().max(60) as f64;
+
+    let mut datasets = Vec::new();
+
+    let grid_color = Color::Rgb(60, 60, 60);
+    let mid_y = (min_y + max_y) / 2.0;
+    let grid_data: Vec<(f64, f64)> = horizontal_line_points(mid_y, max_x);
+    datasets.push(
+        Dataset::default()
+            .marker(Marker::Dot)
+            .graph_type(GraphType::Scatter)
+            .style(Style::default().fg(grid_color))
+            .data(Box::leak(grid_data.into_boxed_slice())),
+    );
+
+    datasets.push(
+        Dataset::default()
+            .marker(Marker::Braille)
+            .graph_type(GraphType::Line)
+            .style(Style::default().fg(theme.warning))
+            .data(&temp_data),
+    );
+
+    let x_labels = x_axis_time_labels(temp_data.len(), theme);
+
+    let y_labels = vec![
+        Span::styled(format!("{:.0}°", min_y), Style::default().fg(theme.muted)),
+        Span::styled(format!("{:.0}°", mid_y), Style::default().fg(theme.muted)),
+        Span::styled(format!("{:.0}°", max_y), Style::default().fg(theme.muted)),
+    ];
+
+    let x_axis = Axis::default()
+        .style(Style::default().fg(theme.muted))
+        .bounds([0.0, max_x])
+        .labels(x_labels);
+
+    let y_axis = Axis::default()
+        .style(Style::default().fg(theme.muted))
+        .bounds([min_y, max_y])
+        .labels(y_labels);
+
+    let chart = Chart::new(datasets)
+        .block(block)
+        .x_axis(x_axis)
+        .y_axis(y_axis)
+        .style(Style::default().bg(theme.bg));
+
+    frame.render_widget(chart, area);
 }
 
 fn render_single(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) {
@@ -91,21 +226,44 @@ fn render_single(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) 
     let (min_y, max_y) = app.history.value_range();
     let max_x = data.len().max(60) as f64;
 
-    let dataset = Dataset::default()
-        .marker(Marker::Braille)
-        .graph_type(GraphType::Line)
-        .style(Style::default().fg(theme.graph_line))
-        .data(&data);
-
-    let x_labels = vec![
-        Span::styled("now", Style::default().fg(theme.muted)),
-        Span::styled(
-            format!("-{}s", max_x as i32),
-            Style::default().fg(theme.muted),
-        ),
-    ];
+    let mut datasets = Vec::new();
 
     let quarter = (max_y - min_y) / 4.0;
+    let grid_color = Color::Rgb(60, 60, 60);
+    for i in 1..4 {
+        let grid_y = min_y + quarter * i as f64;
+        let grid_data: Vec<(f64, f64)> = horizontal_line_points(grid_y, max_x);
+        datasets.push(
+            Dataset::default()
+                .marker(Marker::Dot)
+                .graph_type(GraphType::Scatter)
+                .style(Style::default().fg(grid_color))
+                .data(Box::leak(grid_data.into_boxed_slice())),
+        );
+    }
+
+    if is_battery && min_y < BATTERY_WARNING_THRESHOLD && max_y > BATTERY_WARNING_THRESHOLD {
+        let threshold_data: Vec<(f64, f64)> =
+            horizontal_line_points(BATTERY_WARNING_THRESHOLD, max_x);
+        datasets.push(
+            Dataset::default()
+                .marker(Marker::Braille)
+                .graph_type(GraphType::Line)
+                .style(Style::default().fg(theme.danger))
+                .data(Box::leak(threshold_data.into_boxed_slice())),
+        );
+    }
+
+    datasets.push(
+        Dataset::default()
+            .marker(Marker::Braille)
+            .graph_type(GraphType::Line)
+            .style(Style::default().fg(theme.graph_line))
+            .data(&data),
+    );
+
+    let x_labels = x_axis_time_labels(data.len(), theme);
+
     let y_labels = vec![
         Span::styled(format!("{:.0}", min_y), Style::default().fg(theme.muted)),
         Span::styled(
@@ -133,7 +291,7 @@ fn render_single(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) 
         .bounds([min_y, max_y])
         .labels(y_labels);
 
-    let chart = Chart::new(vec![dataset])
+    let chart = Chart::new(datasets)
         .block(block)
         .x_axis(x_axis)
         .y_axis(y_axis)
@@ -233,29 +391,42 @@ fn render_merged(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) 
     let (min_y, max_y) = app.history.power_range();
     let max_x = power_data.len().max(60) as f64;
 
-    let power_dataset = Dataset::default()
-        .name("Power")
-        .marker(Marker::Braille)
-        .graph_type(GraphType::Line)
-        .style(Style::default().fg(theme.graph_line))
-        .data(&power_data);
-
-    let battery_dataset = Dataset::default()
-        .name("Battery")
-        .marker(Marker::Braille)
-        .graph_type(GraphType::Line)
-        .style(Style::default().fg(theme.accent_secondary))
-        .data(&battery_data);
-
-    let x_labels = vec![
-        Span::styled("now", Style::default().fg(theme.muted)),
-        Span::styled(
-            format!("-{}s", max_x as i32),
-            Style::default().fg(theme.muted),
-        ),
-    ];
+    let mut datasets = Vec::new();
 
     let quarter = (max_y - min_y) / 4.0;
+    let grid_color = Color::Rgb(60, 60, 60);
+    for i in 1..3 {
+        let grid_y = min_y + quarter * (i * 2) as f64;
+        let grid_data: Vec<(f64, f64)> = horizontal_line_points(grid_y, max_x);
+        datasets.push(
+            Dataset::default()
+                .marker(Marker::Dot)
+                .graph_type(GraphType::Scatter)
+                .style(Style::default().fg(grid_color))
+                .data(Box::leak(grid_data.into_boxed_slice())),
+        );
+    }
+
+    datasets.push(
+        Dataset::default()
+            .name("Power")
+            .marker(Marker::Braille)
+            .graph_type(GraphType::Line)
+            .style(Style::default().fg(theme.graph_line))
+            .data(&power_data),
+    );
+
+    datasets.push(
+        Dataset::default()
+            .name("Battery")
+            .marker(Marker::Braille)
+            .graph_type(GraphType::Line)
+            .style(Style::default().fg(theme.accent_secondary))
+            .data(&battery_data),
+    );
+
+    let x_labels = x_axis_time_labels(power_data.len(), theme);
+
     let y_labels = vec![
         Span::styled(format!("{:.0}W", min_y), Style::default().fg(theme.muted)),
         Span::styled(
@@ -275,7 +446,7 @@ fn render_merged(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) 
         .bounds([min_y, max_y])
         .labels(y_labels);
 
-    let chart = Chart::new(vec![power_dataset, battery_dataset])
+    let chart = Chart::new(datasets)
         .block(block)
         .x_axis(x_axis)
         .y_axis(y_axis)
@@ -318,7 +489,7 @@ fn render_mini_chart(
     data: &[(f64, f64)],
     (min_y, max_y): (f64, f64),
     theme: &ThemeColors,
-    line_color: ratatui::style::Color,
+    line_color: Color,
 ) {
     let block = Block::default()
         .title(title)
@@ -333,15 +504,31 @@ fn render_mini_chart(
 
     let max_x = data.len().max(60) as f64;
 
-    let dataset = Dataset::default()
-        .marker(Marker::Braille)
-        .graph_type(GraphType::Line)
-        .style(Style::default().fg(line_color))
-        .data(data);
+    let mut datasets = Vec::new();
+
+    let mid_y = (min_y + max_y) / 2.0;
+    let grid_color = Color::Rgb(60, 60, 60);
+    let grid_data: Vec<(f64, f64)> = horizontal_line_points(mid_y, max_x);
+    datasets.push(
+        Dataset::default()
+            .marker(Marker::Dot)
+            .graph_type(GraphType::Scatter)
+            .style(Style::default().fg(grid_color))
+            .data(Box::leak(grid_data.into_boxed_slice())),
+    );
+
+    datasets.push(
+        Dataset::default()
+            .marker(Marker::Braille)
+            .graph_type(GraphType::Line)
+            .style(Style::default().fg(line_color))
+            .data(data),
+    );
 
     let y_labels = vec![
-        ratatui::text::Span::styled(format!("{:.0}", min_y), Style::default().fg(theme.muted)),
-        ratatui::text::Span::styled(format!("{:.0}", max_y), Style::default().fg(theme.muted)),
+        Span::styled(format!("{:.0}", min_y), Style::default().fg(theme.muted)),
+        Span::styled(format!("{:.0}", mid_y), Style::default().fg(theme.muted)),
+        Span::styled(format!("{:.0}", max_y), Style::default().fg(theme.muted)),
     ];
 
     let x_axis = Axis::default()
@@ -353,7 +540,7 @@ fn render_mini_chart(
         .bounds([min_y, max_y])
         .labels(y_labels);
 
-    let chart = Chart::new(vec![dataset])
+    let chart = Chart::new(datasets)
         .block(block)
         .x_axis(x_axis)
         .y_axis(y_axis)

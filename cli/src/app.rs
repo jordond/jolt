@@ -80,6 +80,7 @@ pub enum Action {
     SettingsToggleValue,
     SettingsIncrement,
     SettingsDecrement,
+    ToggleBatteryDetails,
     None,
 }
 
@@ -166,6 +167,7 @@ pub enum AppView {
     ThemeImporter,
     History,
     Settings,
+    BatteryDetails,
 }
 
 pub struct App {
@@ -397,6 +399,7 @@ impl App {
             self.history.record(
                 self.battery.charge_percent(),
                 self.power.total_power_watts(),
+                self.battery.temperature_c(),
             );
 
             if self.tick_count.is_multiple_of(FORECAST_REFRESH_TICKS) {
@@ -870,6 +873,12 @@ impl App {
                         self.open_theme_picker_from_config();
                     }
                 }
+            }
+            Action::ToggleBatteryDetails => {
+                self.view = match self.view {
+                    AppView::BatteryDetails => AppView::Main,
+                    _ => AppView::BatteryDetails,
+                };
             }
             Action::None => {}
         }

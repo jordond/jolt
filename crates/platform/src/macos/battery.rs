@@ -3,6 +3,7 @@ use std::time::Duration;
 
 use battery::units::electric_potential::millivolt;
 use battery::units::energy::watt_hour;
+use battery::units::power::watt;
 use battery::units::ratio::percent;
 use battery::units::thermodynamic_temperature::degree_celsius;
 use battery::units::time::second;
@@ -10,7 +11,7 @@ use battery::Manager;
 use color_eyre::eyre::{eyre, Result};
 
 use crate::battery::{BatteryInfo, BatteryProvider};
-use crate::types::ChargeState;
+use crate::types::{BatteryTechnology, ChargeState};
 
 pub struct MacOSBattery {
     info: BatteryInfo,
@@ -64,6 +65,13 @@ impl MacOSBattery {
             .map(|t| Duration::from_secs(t.get::<second>() as u64));
 
         self.info.state = ChargeState::from(battery.state());
+
+        self.info.vendor = battery.vendor().map(|s| s.to_string());
+        self.info.model = battery.model().map(|s| s.to_string());
+        self.info.serial_number = battery.serial_number().map(|s| s.to_string());
+        self.info.technology = BatteryTechnology::from(battery.technology());
+        self.info.energy_wh = battery.energy().get::<watt_hour>();
+        self.info.energy_rate_watts = battery.energy_rate().get::<watt>();
 
         Ok(())
     }

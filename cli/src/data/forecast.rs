@@ -340,14 +340,17 @@ mod tests {
             DataPoint {
                 battery_percent: 80.0,
                 power_watts: 10.0,
+                temperature_c: None,
             },
             DataPoint {
                 battery_percent: 79.0,
                 power_watts: 12.0,
+                temperature_c: None,
             },
             DataPoint {
                 battery_percent: 78.0,
                 power_watts: 11.0,
+                temperature_c: None,
             },
         ];
 
@@ -372,6 +375,7 @@ mod tests {
         let points = vec![DataPoint {
             battery_percent: 80.0,
             power_watts: 10.0,
+            temperature_c: None,
         }];
 
         let result = forecast.calculate_from_session_data(&points, 50.0, 100.0);

@@ -1,4 +1,5 @@
 mod battery;
+mod battery_details;
 mod cycles;
 mod graphs;
 mod help;
@@ -142,6 +143,7 @@ pub fn render(frame: &mut Frame, app: &mut App) {
         AppView::ThemeImporter => theme_importer::render(frame, app, &theme),
         AppView::History => history::render(frame, app, &theme),
         AppView::Settings => settings::render(frame, app, &theme),
+        AppView::BatteryDetails => battery_details::render(frame, app, &theme),
         AppView::Main => {}
     }
 }
