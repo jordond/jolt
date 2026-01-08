@@ -11,7 +11,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::config::data_dir;
 
-const CURRENT_SCHEMA_VERSION: i32 = 2;
+const CURRENT_SCHEMA_VERSION: i32 = 3;
 const DATABASE_NAME: &str = "history.db";
 
 /// Charging state for a sample
@@ -96,6 +96,130 @@ pub struct BatteryHealthSnapshot {
     pub cycle_count: Option<i32>,
     pub max_capacity_wh: f32,
     pub design_capacity_wh: f32,
+}
+
+/// Session type for charge/discharge tracking
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[repr(i32)]
+pub enum SessionType {
+    Charge = 0,
+    Discharge = 1,
+}
+
+impl From<i32> for SessionType {
+    fn from(value: i32) -> Self {
+        match value {
+            0 => SessionType::Charge,
+            _ => SessionType::Discharge,
+        }
+    }
+}
+
+/// Individual charge or discharge session
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ChargeSession {
+    pub id: Option<i64>,
+    pub start_time: i64,
+    pub end_time: Option<i64>,
+    pub start_percent: f32,
+    pub end_percent: Option<f32>,
+    pub energy_wh: Option<f32>,
+    pub charger_watts: Option<u32>,
+    pub avg_power_watts: Option<f32>,
+    pub session_type: SessionType,
+    pub is_complete: bool,
+}
+
+impl ChargeSession {
+    /// Create a new charge session starting now
+    pub fn new_charge(start_time: i64, start_percent: f32, charger_watts: Option<u32>) -> Self {
+        Self {
+            id: None,
+            start_time,
+            end_time: None,
+            start_percent,
+            end_percent: None,
+            energy_wh: None,
+            charger_watts,
+            avg_power_watts: None,
+            session_type: SessionType::Charge,
+            is_complete: false,
+        }
+    }
+
+    /// Create a new discharge session starting now
+    pub fn new_discharge(start_time: i64, start_percent: f32) -> Self {
+        Self {
+            id: None,
+            start_time,
+            end_time: None,
+            start_percent,
+            end_percent: None,
+            energy_wh: None,
+            charger_watts: None,
+            avg_power_watts: None,
+            session_type: SessionType::Discharge,
+            is_complete: false,
+        }
+    }
+
+    /// Duration of the session in seconds (if complete)
+    pub fn duration_secs(&self) -> Option<i64> {
+        self.end_time.map(|end| end - self.start_time)
+    }
+
+    /// Percentage change during session (positive for charge, negative for discharge)
+    pub fn percent_delta(&self) -> Option<f32> {
+        self.end_percent.map(|end| end - self.start_percent)
+    }
+}
+
+/// Daily cycle summary (aggregated from sessions)
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DailyCycle {
+    pub id: Option<i64>,
+    pub date: String,
+    pub charge_sessions: i32,
+    pub discharge_sessions: i32,
+    pub total_charging_mins: i32,
+    pub total_discharge_mins: i32,
+    pub deepest_discharge_percent: Option<f32>,
+    pub energy_charged_wh: f32,
+    pub energy_discharged_wh: f32,
+    pub partial_cycles: f32,
+    pub macos_cycle_count: Option<i32>,
+    pub avg_temperature_c: Option<f32>,
+    pub time_at_high_soc_mins: i32,
+}
+
+impl Default for DailyCycle {
+    fn default() -> Self {
+        Self {
+            id: None,
+            date: String::new(),
+            charge_sessions: 0,
+            discharge_sessions: 0,
+            total_charging_mins: 0,
+            total_discharge_mins: 0,
+            deepest_discharge_percent: None,
+            energy_charged_wh: 0.0,
+            energy_discharged_wh: 0.0,
+            partial_cycles: 0.0,
+            macos_cycle_count: None,
+            avg_temperature_c: None,
+            time_at_high_soc_mins: 0,
+        }
+    }
+}
+
+/// Long-term cycle tracking snapshot (stored daily)
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CycleSnapshot {
+    pub id: Option<i64>,
+    pub date: String,
+    pub macos_cycle_count: i32,
+    pub calculated_partial_cycles: f32,
+    pub battery_health_percent: f32,
 }
 
 /// Errors that can occur during history storage operations
@@ -252,12 +376,56 @@ impl HistoryStore {
                 design_capacity_wh REAL NOT NULL
             );
 
+            -- Charge/discharge session tracking
+            CREATE TABLE charge_sessions (
+                id INTEGER PRIMARY KEY,
+                start_time INTEGER NOT NULL,
+                end_time INTEGER,
+                start_percent REAL NOT NULL,
+                end_percent REAL,
+                energy_wh REAL,
+                charger_watts INTEGER,
+                avg_power_watts REAL,
+                session_type INTEGER NOT NULL,
+                is_complete INTEGER NOT NULL DEFAULT 0
+            );
+
+            -- Daily cycle summary (aggregated from sessions)
+            CREATE TABLE daily_cycles (
+                id INTEGER PRIMARY KEY,
+                date TEXT NOT NULL UNIQUE,
+                charge_sessions INTEGER NOT NULL DEFAULT 0,
+                discharge_sessions INTEGER NOT NULL DEFAULT 0,
+                total_charging_mins INTEGER NOT NULL DEFAULT 0,
+                total_discharge_mins INTEGER NOT NULL DEFAULT 0,
+                deepest_discharge_percent REAL,
+                energy_charged_wh REAL NOT NULL DEFAULT 0,
+                energy_discharged_wh REAL NOT NULL DEFAULT 0,
+                partial_cycles REAL NOT NULL DEFAULT 0,
+                macos_cycle_count INTEGER,
+                avg_temperature_c REAL,
+                time_at_high_soc_mins INTEGER NOT NULL DEFAULT 0
+            );
+
+            -- Long-term cycle tracking snapshots
+            CREATE TABLE cycle_snapshots (
+                id INTEGER PRIMARY KEY,
+                date TEXT NOT NULL UNIQUE,
+                macos_cycle_count INTEGER NOT NULL,
+                calculated_partial_cycles REAL NOT NULL,
+                battery_health_percent REAL NOT NULL
+            );
+
             -- Indexes for efficient queries
             CREATE INDEX idx_samples_timestamp ON samples(timestamp);
             CREATE INDEX idx_hourly_hour ON hourly_stats(hour_start);
             CREATE INDEX idx_daily_date ON daily_stats(date);
             CREATE INDEX idx_daily_processes_date ON daily_top_processes(date);
             CREATE INDEX idx_battery_health_date ON battery_health(date);
+            CREATE INDEX idx_charge_sessions_start ON charge_sessions(start_time);
+            CREATE INDEX idx_charge_sessions_type ON charge_sessions(session_type);
+            CREATE INDEX idx_daily_cycles_date ON daily_cycles(date);
+            CREATE INDEX idx_cycle_snapshots_date ON cycle_snapshots(date);
             "#,
         )?;
 
@@ -278,6 +446,58 @@ impl HistoryStore {
                 r#"
                 ALTER TABLE daily_top_processes ADD COLUMN avg_power REAL NOT NULL DEFAULT 0.0;
                 ALTER TABLE daily_top_processes ADD COLUMN total_energy_wh REAL NOT NULL DEFAULT 0.0;
+                "#,
+            )?;
+        }
+
+        if from_version < 3 {
+            tx.execute_batch(
+                r#"
+                -- Charge/discharge session tracking
+                CREATE TABLE charge_sessions (
+                    id INTEGER PRIMARY KEY,
+                    start_time INTEGER NOT NULL,
+                    end_time INTEGER,
+                    start_percent REAL NOT NULL,
+                    end_percent REAL,
+                    energy_wh REAL,
+                    charger_watts INTEGER,
+                    avg_power_watts REAL,
+                    session_type INTEGER NOT NULL,
+                    is_complete INTEGER NOT NULL DEFAULT 0
+                );
+
+                -- Daily cycle summary
+                CREATE TABLE daily_cycles (
+                    id INTEGER PRIMARY KEY,
+                    date TEXT NOT NULL UNIQUE,
+                    charge_sessions INTEGER NOT NULL DEFAULT 0,
+                    discharge_sessions INTEGER NOT NULL DEFAULT 0,
+                    total_charging_mins INTEGER NOT NULL DEFAULT 0,
+                    total_discharge_mins INTEGER NOT NULL DEFAULT 0,
+                    deepest_discharge_percent REAL,
+                    energy_charged_wh REAL NOT NULL DEFAULT 0,
+                    energy_discharged_wh REAL NOT NULL DEFAULT 0,
+                    partial_cycles REAL NOT NULL DEFAULT 0,
+                    macos_cycle_count INTEGER,
+                    avg_temperature_c REAL,
+                    time_at_high_soc_mins INTEGER NOT NULL DEFAULT 0
+                );
+
+                -- Long-term cycle tracking snapshots
+                CREATE TABLE cycle_snapshots (
+                    id INTEGER PRIMARY KEY,
+                    date TEXT NOT NULL UNIQUE,
+                    macos_cycle_count INTEGER NOT NULL,
+                    calculated_partial_cycles REAL NOT NULL,
+                    battery_health_percent REAL NOT NULL
+                );
+
+                -- Indexes for new tables
+                CREATE INDEX idx_charge_sessions_start ON charge_sessions(start_time);
+                CREATE INDEX idx_charge_sessions_type ON charge_sessions(session_type);
+                CREATE INDEX idx_daily_cycles_date ON daily_cycles(date);
+                CREATE INDEX idx_cycle_snapshots_date ON cycle_snapshots(date);
                 "#,
             )?;
         }
@@ -588,6 +808,246 @@ impl HistoryStore {
                 snapshot.cycle_count,
                 snapshot.max_capacity_wh,
                 snapshot.design_capacity_wh,
+            ],
+        )?;
+        Ok(())
+    }
+
+    pub fn insert_charge_session(&self, session: &ChargeSession) -> Result<i64> {
+        self.conn.execute(
+            "INSERT INTO charge_sessions (start_time, end_time, start_percent, end_percent, energy_wh, charger_watts, avg_power_watts, session_type, is_complete)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            params![
+                session.start_time,
+                session.end_time,
+                session.start_percent,
+                session.end_percent,
+                session.energy_wh,
+                session.charger_watts,
+                session.avg_power_watts,
+                session.session_type as i32,
+                session.is_complete as i32,
+            ],
+        )?;
+        Ok(self.conn.last_insert_rowid())
+    }
+
+    pub fn update_charge_session(&self, session: &ChargeSession) -> Result<()> {
+        let id = session.id.ok_or_else(|| {
+            HistoryStoreError::Database(rusqlite::Error::InvalidParameterName(
+                "Session must have an id to update".to_string(),
+            ))
+        })?;
+
+        self.conn.execute(
+            "UPDATE charge_sessions SET
+                end_time = ?,
+                end_percent = ?,
+                energy_wh = ?,
+                avg_power_watts = ?,
+                is_complete = ?
+             WHERE id = ?",
+            params![
+                session.end_time,
+                session.end_percent,
+                session.energy_wh,
+                session.avg_power_watts,
+                session.is_complete as i32,
+                id,
+            ],
+        )?;
+        Ok(())
+    }
+
+    pub fn get_charge_sessions(
+        &self,
+        from: i64,
+        to: i64,
+        session_type: Option<SessionType>,
+    ) -> Result<Vec<ChargeSession>> {
+        let sql = match session_type {
+            Some(_) => {
+                "SELECT id, start_time, end_time, start_percent, end_percent, energy_wh, charger_watts, avg_power_watts, session_type, is_complete
+                 FROM charge_sessions
+                 WHERE start_time >= ? AND start_time <= ? AND session_type = ?
+                 ORDER BY start_time DESC"
+            }
+            None => {
+                "SELECT id, start_time, end_time, start_percent, end_percent, energy_wh, charger_watts, avg_power_watts, session_type, is_complete
+                 FROM charge_sessions
+                 WHERE start_time >= ? AND start_time <= ?
+                 ORDER BY start_time DESC"
+            }
+        };
+
+        let mut stmt = self.conn.prepare(sql)?;
+
+        let sessions: Vec<ChargeSession> = match session_type {
+            Some(st) => stmt
+                .query_map(params![from, to, st as i32], Self::map_charge_session)?
+                .collect::<std::result::Result<Vec<_>, _>>()?,
+            None => stmt
+                .query_map(params![from, to], Self::map_charge_session)?
+                .collect::<std::result::Result<Vec<_>, _>>()?,
+        };
+
+        Ok(sessions)
+    }
+
+    pub fn get_incomplete_session(&self) -> Result<Option<ChargeSession>> {
+        let session = self
+            .conn
+            .query_row(
+                "SELECT id, start_time, end_time, start_percent, end_percent, energy_wh, charger_watts, avg_power_watts, session_type, is_complete
+                 FROM charge_sessions
+                 WHERE is_complete = 0
+                 ORDER BY start_time DESC
+                 LIMIT 1",
+                [],
+                Self::map_charge_session,
+            )
+            .optional()?;
+
+        Ok(session)
+    }
+
+    fn map_charge_session(row: &rusqlite::Row) -> rusqlite::Result<ChargeSession> {
+        Ok(ChargeSession {
+            id: Some(row.get(0)?),
+            start_time: row.get(1)?,
+            end_time: row.get(2)?,
+            start_percent: row.get(3)?,
+            end_percent: row.get(4)?,
+            energy_wh: row.get(5)?,
+            charger_watts: row.get(6)?,
+            avg_power_watts: row.get(7)?,
+            session_type: SessionType::from(row.get::<_, i32>(8)?),
+            is_complete: row.get::<_, i32>(9)? != 0,
+        })
+    }
+
+    pub fn delete_charge_sessions_before(&self, before: i64) -> Result<usize> {
+        let deleted = self
+            .conn
+            .execute("DELETE FROM charge_sessions WHERE start_time < ?", [before])?;
+        Ok(deleted)
+    }
+
+    pub fn upsert_daily_cycle(&self, cycle: &DailyCycle) -> Result<()> {
+        self.conn.execute(
+            "INSERT INTO daily_cycles (date, charge_sessions, discharge_sessions, total_charging_mins, total_discharge_mins, deepest_discharge_percent, energy_charged_wh, energy_discharged_wh, partial_cycles, macos_cycle_count, avg_temperature_c, time_at_high_soc_mins)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+             ON CONFLICT(date) DO UPDATE SET
+                charge_sessions = excluded.charge_sessions,
+                discharge_sessions = excluded.discharge_sessions,
+                total_charging_mins = excluded.total_charging_mins,
+                total_discharge_mins = excluded.total_discharge_mins,
+                deepest_discharge_percent = excluded.deepest_discharge_percent,
+                energy_charged_wh = excluded.energy_charged_wh,
+                energy_discharged_wh = excluded.energy_discharged_wh,
+                partial_cycles = excluded.partial_cycles,
+                macos_cycle_count = excluded.macos_cycle_count,
+                avg_temperature_c = excluded.avg_temperature_c,
+                time_at_high_soc_mins = excluded.time_at_high_soc_mins",
+            params![
+                cycle.date,
+                cycle.charge_sessions,
+                cycle.discharge_sessions,
+                cycle.total_charging_mins,
+                cycle.total_discharge_mins,
+                cycle.deepest_discharge_percent,
+                cycle.energy_charged_wh,
+                cycle.energy_discharged_wh,
+                cycle.partial_cycles,
+                cycle.macos_cycle_count,
+                cycle.avg_temperature_c,
+                cycle.time_at_high_soc_mins,
+            ],
+        )?;
+        Ok(())
+    }
+
+    pub fn get_daily_cycles(&self, from: &str, to: &str) -> Result<Vec<DailyCycle>> {
+        let mut stmt = self.conn.prepare(
+            "SELECT id, date, charge_sessions, discharge_sessions, total_charging_mins, total_discharge_mins, deepest_discharge_percent, energy_charged_wh, energy_discharged_wh, partial_cycles, macos_cycle_count, avg_temperature_c, time_at_high_soc_mins
+             FROM daily_cycles
+             WHERE date >= ? AND date <= ?
+             ORDER BY date DESC",
+        )?;
+
+        let cycles = stmt
+            .query_map(params![from, to], |row| {
+                Ok(DailyCycle {
+                    id: Some(row.get(0)?),
+                    date: row.get(1)?,
+                    charge_sessions: row.get(2)?,
+                    discharge_sessions: row.get(3)?,
+                    total_charging_mins: row.get(4)?,
+                    total_discharge_mins: row.get(5)?,
+                    deepest_discharge_percent: row.get(6)?,
+                    energy_charged_wh: row.get(7)?,
+                    energy_discharged_wh: row.get(8)?,
+                    partial_cycles: row.get(9)?,
+                    macos_cycle_count: row.get(10)?,
+                    avg_temperature_c: row.get(11)?,
+                    time_at_high_soc_mins: row.get(12)?,
+                })
+            })?
+            .collect::<std::result::Result<Vec<_>, _>>()?;
+
+        Ok(cycles)
+    }
+
+    pub fn get_daily_cycle(&self, date: &str) -> Result<Option<DailyCycle>> {
+        let cycle = self
+            .conn
+            .query_row(
+                "SELECT id, date, charge_sessions, discharge_sessions, total_charging_mins, total_discharge_mins, deepest_discharge_percent, energy_charged_wh, energy_discharged_wh, partial_cycles, macos_cycle_count, avg_temperature_c, time_at_high_soc_mins
+                 FROM daily_cycles WHERE date = ?",
+                [date],
+                |row| {
+                    Ok(DailyCycle {
+                        id: Some(row.get(0)?),
+                        date: row.get(1)?,
+                        charge_sessions: row.get(2)?,
+                        discharge_sessions: row.get(3)?,
+                        total_charging_mins: row.get(4)?,
+                        total_discharge_mins: row.get(5)?,
+                        deepest_discharge_percent: row.get(6)?,
+                        energy_charged_wh: row.get(7)?,
+                        energy_discharged_wh: row.get(8)?,
+                        partial_cycles: row.get(9)?,
+                        macos_cycle_count: row.get(10)?,
+                        avg_temperature_c: row.get(11)?,
+                        time_at_high_soc_mins: row.get(12)?,
+                    })
+                },
+            )
+            .optional()?;
+
+        Ok(cycle)
+    }
+
+    pub fn delete_daily_cycles_before(&self, before: &str) -> Result<usize> {
+        let deleted = self
+            .conn
+            .execute("DELETE FROM daily_cycles WHERE date < ?", [before])?;
+        Ok(deleted)
+    }
+
+    pub fn upsert_cycle_snapshot(&self, snapshot: &CycleSnapshot) -> Result<()> {
+        self.conn.execute(
+            "INSERT INTO cycle_snapshots (date, macos_cycle_count, calculated_partial_cycles, battery_health_percent)
+             VALUES (?, ?, ?, ?)
+             ON CONFLICT(date) DO UPDATE SET
+                macos_cycle_count = excluded.macos_cycle_count,
+                calculated_partial_cycles = excluded.calculated_partial_cycles,
+                battery_health_percent = excluded.battery_health_percent",
+            params![
+                snapshot.date,
+                snapshot.macos_cycle_count,
+                snapshot.calculated_partial_cycles,
+                snapshot.battery_health_percent,
             ],
         )?;
         Ok(())

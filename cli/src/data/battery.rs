@@ -26,6 +26,9 @@ pub struct BatteryData {
     health_percent: f32,
     charger_watts: Option<u32>,
     external_connected: bool,
+    temperature_c: Option<f32>,
+    daily_min_soc: Option<f32>,
+    daily_max_soc: Option<f32>,
 }
 
 impl BatteryData {
@@ -43,6 +46,9 @@ impl BatteryData {
             health_percent: 100.0,
             charger_watts: None,
             external_connected: false,
+            temperature_c: None,
+            daily_min_soc: None,
+            daily_max_soc: None,
         };
 
         data.refresh()?;
@@ -154,6 +160,27 @@ impl BatteryData {
                 if let Some(val) = extract_number(line) {
                     if val > 0 && val < 65535 {
                         avg_time_to_empty = Some(val as u64);
+                    }
+                }
+            } else if line.contains("\"Temperature\"") && !line.contains("Virtual") {
+                if let Some(val) = extract_number(line) {
+                    self.temperature_c = Some(val as f32 / 100.0);
+                }
+            } else if line.contains("\"BatteryData\"") {
+                if let Some(pos) = line.find("\"DailyMinSoc\"=") {
+                    let after = &line[pos + 14..];
+                    if let Some(end) = after.find(|c: char| !c.is_ascii_digit() && c != '.') {
+                        if let Ok(val) = after[..end].parse::<f32>() {
+                            self.daily_min_soc = Some(val);
+                        }
+                    }
+                }
+                if let Some(pos) = line.find("\"DailyMaxSoc\"=") {
+                    let after = &line[pos + 14..];
+                    if let Some(end) = after.find(|c: char| !c.is_ascii_digit() && c != '.') {
+                        if let Ok(val) = after[..end].parse::<f32>() {
+                            self.daily_max_soc = Some(val);
+                        }
                     }
                 }
             }
@@ -305,6 +332,18 @@ impl BatteryData {
         self.external_connected
     }
 
+    pub fn temperature_c(&self) -> Option<f32> {
+        self.temperature_c
+    }
+
+    pub fn daily_min_soc(&self) -> Option<f32> {
+        self.daily_min_soc
+    }
+
+    pub fn daily_max_soc(&self) -> Option<f32> {
+        self.daily_max_soc
+    }
+
     pub fn discharge_watts(&self) -> Option<f32> {
         if self.state == ChargeState::Discharging && self.amperage_ma < 0 {
             let watts =
@@ -351,6 +390,10 @@ impl BatteryData {
         } else {
             None
         };
+
+        self.temperature_c = snapshot.temperature_c;
+        self.daily_min_soc = snapshot.daily_min_soc;
+        self.daily_max_soc = snapshot.daily_max_soc;
     }
 }
 

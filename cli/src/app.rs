@@ -7,10 +7,11 @@ use crate::config::{GraphMetric, RuntimeConfig, UserConfig};
 
 const FORECAST_REFRESH_TICKS: u32 = 10;
 const THEME_CHECK_INTERVAL: Duration = Duration::from_secs(2);
-use crate::daemon::{DaemonClient, DaemonStatus, DataSnapshot};
+use crate::daemon::CycleSummary;
+use crate::daemon::{DaemonClient, DaemonStatus, DataSnapshot, KillSignal};
 use crate::data::{
-    BatteryData, DailyStat, DailyTopProcess, DisplayData, ForecastData, HistoryData, HistoryMetric,
-    HourlyStat, PowerData, ProcessData, ProcessInfo, SystemInfo,
+    BatteryData, ChargeSession, DailyCycle, DailyStat, DailyTopProcess, DisplayData, ForecastData,
+    HistoryData, HistoryMetric, HourlyStat, PowerData, ProcessData, ProcessInfo, SystemInfo,
 };
 use crate::theme::cache::ThemeGroup;
 use crate::theme::{get_all_themes, NamedTheme, ThemeColors};
@@ -46,6 +47,7 @@ pub enum Action {
     KillProcess,
     ConfirmKill,
     CancelKill,
+    ToggleKillSignal,
     CycleAppearance,
     OpenThemePicker,
     CloseThemePicker,
@@ -121,6 +123,15 @@ impl HistoryPeriod {
             HistoryPeriod::All => "All",
         }
     }
+
+    pub fn days(self) -> u32 {
+        match self {
+            HistoryPeriod::Today => 1,
+            HistoryPeriod::Week => 7,
+            HistoryPeriod::Month => 30,
+            HistoryPeriod::All => 365,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -177,6 +188,7 @@ pub struct App {
     pub refresh_ms: u64,
     frozen_processes: Option<Vec<ProcessInfo>>,
     process_to_kill: Option<ProcessInfo>,
+    pub kill_signal: KillSignal,
     tick_count: u32,
     pub theme_picker_themes: Vec<NamedTheme>,
     pub theme_picker_index: usize,
@@ -195,6 +207,9 @@ pub struct App {
     pub history_hourly_stats: Vec<HourlyStat>,
     pub history_top_processes: Vec<DailyTopProcess>,
     pub history_loading: bool,
+    pub cycle_summary: Option<CycleSummary>,
+    pub recent_charge_sessions: Vec<ChargeSession>,
+    pub daily_cycles: Vec<DailyCycle>,
     pub daemon_status: Option<DaemonStatus>,
     pub daemon_connected: bool,
     pub settings_selected_item: usize,
@@ -248,6 +263,7 @@ impl App {
             refresh_ms,
             frozen_processes: None,
             process_to_kill: None,
+            kill_signal: KillSignal::default(),
             tick_count: 0,
             theme_picker_themes: Vec::new(),
             theme_picker_index: 0,
@@ -266,6 +282,9 @@ impl App {
             history_hourly_stats: Vec::new(),
             history_top_processes: Vec::new(),
             history_loading: false,
+            cycle_summary: None,
+            recent_charge_sessions: Vec::new(),
+            daily_cycles: Vec::new(),
             daemon_status: None,
             daemon_connected: false,
             settings_selected_item: Self::first_selectable_settings_index(),
@@ -596,14 +615,19 @@ impl App {
                 if let Some(process) = self.get_selected_process() {
                     if process.is_killable {
                         self.process_to_kill = Some(process.clone());
+                        self.kill_signal = KillSignal::default();
                         self.view = AppView::KillConfirm;
                     }
                 }
             }
             Action::ConfirmKill => {
                 if let Some(ref process) = self.process_to_kill {
-                    info!(pid = process.pid, name = %process.name, "Killing process");
-                    self.kill_process_impl(process.pid);
+                    let signal_label = match self.kill_signal {
+                        KillSignal::Graceful => "gracefully",
+                        KillSignal::Force => "forcefully",
+                    };
+                    info!(pid = process.pid, name = %process.name, signal = signal_label, "Killing process");
+                    self.kill_process_impl(process.pid, self.kill_signal);
                 }
                 self.process_to_kill = None;
                 self.view = AppView::Main;
@@ -611,6 +635,12 @@ impl App {
             Action::CancelKill => {
                 self.process_to_kill = None;
                 self.view = AppView::Main;
+            }
+            Action::ToggleKillSignal => {
+                self.kill_signal = match self.kill_signal {
+                    KillSignal::Graceful => KillSignal::Force,
+                    KillSignal::Force => KillSignal::Graceful,
+                };
             }
             Action::CycleAppearance => {
                 self.config.cycle_appearance();
@@ -1009,6 +1039,7 @@ impl App {
         ("Raw Retention (days)", false),
         ("Hourly Retention (days)", false),
         ("Daily Retention (days)", false),
+        ("Session Retention (days)", false),
         ("Max Database (MB)", false),
     ];
 
@@ -1087,6 +1118,12 @@ impl App {
                     days.to_string()
                 }
             }
+            "Session Retention (days)" => self
+                .config
+                .user_config
+                .history
+                .retention_sessions_days
+                .to_string(),
             "Max Database (MB)" => self.config.user_config.history.max_database_mb.to_string(),
             _ => String::new(),
         }
@@ -1177,6 +1214,11 @@ impl App {
                     (self.config.user_config.history.retention_daily_days + 30).min(3650);
                 let _ = self.config.user_config.save();
             }
+            "Session Retention (days)" => {
+                self.config.user_config.history.retention_sessions_days =
+                    (self.config.user_config.history.retention_sessions_days + 30).min(365);
+                let _ = self.config.user_config.save();
+            }
             "Max Database (MB)" => {
                 self.config.user_config.history.max_database_mb =
                     (self.config.user_config.history.max_database_mb + 100).min(10000);
@@ -1259,6 +1301,16 @@ impl App {
                     .history
                     .retention_daily_days
                     .saturating_sub(30);
+                let _ = self.config.user_config.save();
+            }
+            "Session Retention (days)" => {
+                self.config.user_config.history.retention_sessions_days = self
+                    .config
+                    .user_config
+                    .history
+                    .retention_sessions_days
+                    .saturating_sub(30)
+                    .max(7);
                 let _ = self.config.user_config.save();
             }
             "Max Database (MB)" => {
@@ -1486,8 +1538,23 @@ impl App {
                 self.history_top_processes = top;
             }
 
+            let cycle_days = self.history_period.days();
+            if let Ok(summary) = client.get_cycle_summary(cycle_days) {
+                self.cycle_summary = Some(summary);
+            }
+
+            if let Ok(cycles) = client.get_daily_cycles(&from_date, &to_date) {
+                self.daily_cycles = cycles;
+            }
+
+            let now = chrono::Utc::now();
+            let session_window_days = self.history_period.days() as i64;
+            let session_from = (now - chrono::Duration::days(session_window_days)).timestamp();
+            if let Ok(sessions) = client.get_charge_sessions(session_from, now.timestamp()) {
+                self.recent_charge_sessions = sessions;
+            }
+
             if self.history_period == HistoryPeriod::Today {
-                let now = chrono::Utc::now();
                 let start_of_day = now
                     .date_naive()
                     .and_hms_opt(0, 0, 0)
@@ -1504,6 +1571,9 @@ impl App {
             self.history_daily_stats.clear();
             self.history_hourly_stats.clear();
             self.history_top_processes.clear();
+            self.cycle_summary = None;
+            self.recent_charge_sessions.clear();
+            self.daily_cycles.clear();
         }
 
         self.history_loading = false;
@@ -1538,14 +1608,14 @@ impl App {
         }
     }
 
-    fn kill_process_impl(&self, pid: u32) {
+    fn kill_process_impl(&self, pid: u32, signal: KillSignal) {
         if self.using_daemon_data {
             if let Ok(mut client) = DaemonClient::connect() {
-                let _ = client.kill_process(pid);
+                let _ = client.kill_process(pid, signal);
                 return;
             }
         }
-        let _ = self.processes.kill_process(pid);
+        let _ = self.processes.kill_process(pid, signal);
     }
 
     pub fn cleanup(&mut self) {

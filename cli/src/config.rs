@@ -94,6 +94,7 @@ pub struct HistoryConfig {
     pub retention_raw_days: u32,
     pub retention_hourly_days: u32,
     pub retention_daily_days: u32,
+    pub retention_sessions_days: u32,
     pub max_database_mb: u32,
 }
 
@@ -105,6 +106,7 @@ impl Default for HistoryConfig {
             retention_raw_days: 30,
             retention_hourly_days: 180,
             retention_daily_days: 0,
+            retention_sessions_days: 90,
             max_database_mb: 500,
         }
     }

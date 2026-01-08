@@ -7,8 +7,9 @@ pub use client::async_client::{AsyncClientError, AsyncDaemonClient};
 pub use client::DaemonClient;
 #[allow(unused_imports)]
 pub use protocol::{
-    BatterySnapshot, BatteryState, DaemonRequest, DaemonResponse, DaemonStatus, DataSnapshot,
-    KillProcessResult, PowerMode, PowerSnapshot, ProcessSnapshot, ProcessState, MAX_SUBSCRIBERS,
+    BatterySnapshot, BatteryState, CycleSummary, DaemonRequest, DaemonResponse, DaemonStatus,
+    DataSnapshot, KillProcessResult, KillSignal, PowerMode, PowerSnapshot, ProcessSnapshot,
+    ProcessState, MAX_SUBSCRIBERS,
 };
 pub use server::run_daemon;
 #[allow(unused_imports)]
