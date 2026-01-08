@@ -1,9 +1,12 @@
+use chrono::{DateTime, Local, TimeZone, Timelike};
 use ratatui::{
     layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
     symbols::Marker,
     text::{Line, Span},
-    widgets::{Axis, Block, Borders, Chart, Dataset, GraphType, Paragraph},
+    widgets::{
+        Axis, Bar, BarChart, BarGroup, Block, Borders, Chart, Dataset, GraphType, Paragraph,
+    },
     Frame,
 };
 
@@ -43,6 +46,11 @@ fn find_min_max_indices(data: &[(f64, f64)]) -> Option<(usize, usize)> {
 }
 
 pub fn render(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) {
+    if app.history.current_metric == HistoryMetric::HourlyBars {
+        render_hourly_bars(frame, area, app, theme);
+        return;
+    }
+
     let has_temp_data = app.history.has_temperature_data();
 
     if has_temp_data {
@@ -167,6 +175,72 @@ fn render_temperature_chart(frame: &mut Frame, area: Rect, app: &App, theme: &Th
         .style(Style::default().bg(theme.bg));
 
     frame.render_widget(chart, area);
+}
+
+fn render_hourly_bars(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) {
+    let stats = &app.history_hourly_stats;
+
+    let title_line = Line::from(vec![
+        Span::styled(
+            " Hourly Power ",
+            Style::default()
+                .fg(theme.accent)
+                .add_modifier(Modifier::BOLD),
+        ),
+        Span::styled("(g: toggle) ", Style::default().fg(theme.muted)),
+    ]);
+
+    let block = Block::default()
+        .title(title_line)
+        .borders(Borders::ALL)
+        .border_style(Style::default().fg(theme.border))
+        .style(Style::default().bg(theme.bg));
+
+    if stats.is_empty() {
+        let inner = block.inner(area);
+        frame.render_widget(block, area);
+        let msg = Paragraph::new("No hourly data available. Run daemon to collect stats.")
+            .style(Style::default().fg(theme.muted));
+        frame.render_widget(msg, inner);
+        return;
+    }
+
+    let max_power = stats
+        .iter()
+        .map(|s| s.avg_power)
+        .fold(0.0_f32, f32::max)
+        .max(1.0);
+
+    let bars: Vec<Bar> = stats
+        .iter()
+        .map(|stat| {
+            let hour = DateTime::from_timestamp(stat.hour_start, 0)
+                .map(|dt| Local.from_utc_datetime(&dt.naive_utc()))
+                .map(|local: DateTime<Local>| local.hour())
+                .unwrap_or(0);
+
+            let label = format!("{:02}", hour);
+            let value = stat.avg_power as u64;
+
+            Bar::default()
+                .value(value)
+                .label(Line::from(label))
+                .style(Style::default().fg(theme.graph_line))
+                .value_style(Style::default().fg(theme.fg).bg(theme.graph_line))
+        })
+        .collect();
+
+    let bar_chart = BarChart::default()
+        .block(block)
+        .data(BarGroup::default().bars(&bars))
+        .bar_width(3)
+        .bar_gap(1)
+        .max(max_power as u64)
+        .direction(Direction::Vertical)
+        .bar_style(Style::default().fg(theme.graph_line))
+        .value_style(Style::default().fg(theme.fg));
+
+    frame.render_widget(bar_chart, area);
 }
 
 fn render_single(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) {

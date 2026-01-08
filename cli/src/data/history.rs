@@ -8,6 +8,7 @@ pub enum HistoryMetric {
     Battery,
     Split,
     Merged,
+    HourlyBars,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -78,7 +79,8 @@ impl HistoryData {
             HistoryMetric::Power => HistoryMetric::Battery,
             HistoryMetric::Battery => HistoryMetric::Merged,
             HistoryMetric::Merged => HistoryMetric::Split,
-            HistoryMetric::Split => HistoryMetric::Power,
+            HistoryMetric::Split => HistoryMetric::HourlyBars,
+            HistoryMetric::HourlyBars => HistoryMetric::Power,
         };
     }
 
@@ -88,15 +90,17 @@ impl HistoryData {
             HistoryMetric::Power => "Power (W)",
             HistoryMetric::Split => "Split View",
             HistoryMetric::Merged => "Combined",
+            HistoryMetric::HourlyBars => "Hourly Power",
         }
     }
 
     pub fn current_values(&self) -> Vec<(f64, f64)> {
         let values: Vec<f32> = match self.current_metric {
             HistoryMetric::Battery => self.points.iter().map(|p| p.battery_percent).collect(),
-            HistoryMetric::Power | HistoryMetric::Split | HistoryMetric::Merged => {
-                self.points.iter().map(|p| p.power_watts).collect()
-            }
+            HistoryMetric::Power
+            | HistoryMetric::Split
+            | HistoryMetric::Merged
+            | HistoryMetric::HourlyBars => self.points.iter().map(|p| p.power_watts).collect(),
         };
 
         values
@@ -125,7 +129,10 @@ impl HistoryData {
     pub fn value_range(&self) -> (f64, f64) {
         match self.current_metric {
             HistoryMetric::Battery => (0.0, 100.0),
-            HistoryMetric::Power | HistoryMetric::Split | HistoryMetric::Merged => {
+            HistoryMetric::Power
+            | HistoryMetric::Split
+            | HistoryMetric::Merged
+            | HistoryMetric::HourlyBars => {
                 let max = self
                     .points
                     .iter()
