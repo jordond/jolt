@@ -39,7 +39,7 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) {
         return;
     }
 
-    let info_card_height = if inner.height >= 4 { 3 } else { 0 };
+    let info_card_height = if inner.height >= 4 { 4 } else { 0 };
     let gauge_height = inner.height.saturating_sub(info_card_height);
 
     if gauge_height > 0 {
@@ -65,12 +65,6 @@ fn render_battery_gauge(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeC
     let unfilled_color = darken_color(theme.border, 0.6);
 
     let gauge = Gauge::default()
-        .block(
-            Block::default()
-                .borders(Borders::ALL)
-                .border_style(Style::default().fg(theme.border))
-                .style(Style::default().bg(theme.bg)),
-        )
         .gauge_style(Style::default().fg(gauge_color).bg(unfilled_color))
         .ratio((percent / 100.0).clamp(0.0, 1.0) as f64)
         .label(format!("{:.0}%", percent))
