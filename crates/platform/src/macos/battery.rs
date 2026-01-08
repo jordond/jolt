@@ -1,14 +1,14 @@
 use std::process::Command;
 use std::time::Duration;
 
-use battery::units::electric_potential::millivolt;
-use battery::units::energy::watt_hour;
-use battery::units::power::watt;
-use battery::units::ratio::percent;
-use battery::units::thermodynamic_temperature::degree_celsius;
-use battery::units::time::second;
-use battery::Manager;
 use color_eyre::eyre::{eyre, Result};
+use starship_battery::units::electric_potential::millivolt;
+use starship_battery::units::energy::watt_hour;
+use starship_battery::units::power::watt;
+use starship_battery::units::ratio::percent;
+use starship_battery::units::thermodynamic_temperature::degree_celsius;
+use starship_battery::units::time::second;
+use starship_battery::Manager;
 
 use crate::battery::{BatteryInfo, BatteryProvider};
 use crate::types::{BatteryTechnology, ChargeState};
@@ -88,9 +88,6 @@ impl MacOSBattery {
 
     fn parse_ioreg_output(&mut self, output: &str) {
         let mut is_charging = false;
-        let mut raw_max_capacity: Option<f32> = None;
-        let mut design_capacity: Option<f32> = None;
-        let mut voltage_mv: Option<f32> = None;
 
         for line in output.lines() {
             let line = line.trim();
@@ -103,21 +100,6 @@ impl MacOSBattery {
                 self.info.external_connected = line.contains("Yes");
             } else if line.contains("\"IsCharging\"") {
                 is_charging = line.contains("Yes");
-            } else if line.contains("\"AppleRawMaxCapacity\"") {
-                // This is the actual max capacity in mAh (not the percentage)
-                if let Some(val) = extract_number(line) {
-                    raw_max_capacity = Some(val as f32);
-                }
-            } else if line.starts_with("\"DesignCapacity\"") {
-                // Design capacity in mAh
-                if let Some(val) = extract_number(line) {
-                    design_capacity = Some(val as f32);
-                }
-            } else if line.starts_with("\"Voltage\"") {
-                // Voltage in mV for Wh calculation
-                if let Some(val) = extract_number(line) {
-                    voltage_mv = Some(val as f32);
-                }
             } else if line.contains("\"BatteryData\"") {
                 if let Some(pos) = line.find("\"DailyMinSoc\"=") {
                     let after = &line[pos + 14..];
@@ -136,19 +118,6 @@ impl MacOSBattery {
                     }
                 }
             }
-        }
-
-        // Fix capacity/health values using ioreg data
-        // The battery crate returns wrong values on newer macOS because MaxCapacity
-        // now returns a percentage (100) instead of mAh
-        if let (Some(raw_max), Some(design), Some(voltage)) =
-            (raw_max_capacity, design_capacity, voltage_mv)
-        {
-            // Convert mAh to Wh: Wh = mAh * V / 1000
-            let voltage_v = voltage / 1000.0;
-            self.info.max_capacity_wh = (raw_max * voltage_v) / 1000.0;
-            self.info.design_capacity_wh = (design * voltage_v) / 1000.0;
-            self.info.health_percent = (raw_max / design) * 100.0;
         }
 
         if self.info.external_connected {

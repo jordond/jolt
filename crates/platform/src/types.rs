@@ -50,17 +50,14 @@ impl fmt::Display for ChargeState {
     }
 }
 
-/// Convert from battery crate State to our ChargeState.
-impl From<battery::State> for ChargeState {
-    fn from(state: battery::State) -> Self {
+impl From<starship_battery::State> for ChargeState {
+    fn from(state: starship_battery::State) -> Self {
         match state {
-            battery::State::Charging => ChargeState::Charging,
-            battery::State::Discharging => ChargeState::Discharging,
-            battery::State::Empty => ChargeState::Discharging,
-            battery::State::Full => ChargeState::Full,
-            battery::State::Unknown => ChargeState::Unknown,
-            // Handle any future variants
-            _ => ChargeState::Unknown,
+            starship_battery::State::Charging => ChargeState::Charging,
+            starship_battery::State::Discharging => ChargeState::Discharging,
+            starship_battery::State::Empty => ChargeState::Discharging,
+            starship_battery::State::Full => ChargeState::Full,
+            starship_battery::State::Unknown => ChargeState::Unknown,
         }
     }
 }
@@ -147,17 +144,17 @@ impl fmt::Display for BatteryTechnology {
     }
 }
 
-/// Convert from battery crate Technology to our BatteryTechnology.
-impl From<battery::Technology> for BatteryTechnology {
-    fn from(tech: battery::Technology) -> Self {
+impl From<starship_battery::Technology> for BatteryTechnology {
+    fn from(tech: starship_battery::Technology) -> Self {
         match tech {
-            battery::Technology::LithiumIon => BatteryTechnology::LithiumIon,
-            battery::Technology::LithiumPolymer => BatteryTechnology::LithiumPolymer,
-            battery::Technology::NickelMetalHydride => BatteryTechnology::NickelMetalHydride,
-            battery::Technology::NickelCadmium => BatteryTechnology::NickelCadmium,
-            battery::Technology::LeadAcid => BatteryTechnology::LeadAcid,
-            battery::Technology::Unknown => BatteryTechnology::Unknown,
-            // Handle any future variants
+            starship_battery::Technology::LithiumIon => BatteryTechnology::LithiumIon,
+            starship_battery::Technology::LithiumPolymer => BatteryTechnology::LithiumPolymer,
+            starship_battery::Technology::NickelMetalHydride => {
+                BatteryTechnology::NickelMetalHydride
+            }
+            starship_battery::Technology::NickelCadmium => BatteryTechnology::NickelCadmium,
+            starship_battery::Technology::LeadAcid => BatteryTechnology::LeadAcid,
+            starship_battery::Technology::Unknown => BatteryTechnology::Unknown,
             _ => BatteryTechnology::Unknown,
         }
     }
@@ -188,20 +185,23 @@ mod tests {
     #[test]
     fn test_battery_state_conversion() {
         assert_eq!(
-            ChargeState::from(battery::State::Charging),
+            ChargeState::from(starship_battery::State::Charging),
             ChargeState::Charging
         );
         assert_eq!(
-            ChargeState::from(battery::State::Discharging),
-            ChargeState::Discharging
-        );
-        assert_eq!(ChargeState::from(battery::State::Full), ChargeState::Full);
-        assert_eq!(
-            ChargeState::from(battery::State::Empty),
+            ChargeState::from(starship_battery::State::Discharging),
             ChargeState::Discharging
         );
         assert_eq!(
-            ChargeState::from(battery::State::Unknown),
+            ChargeState::from(starship_battery::State::Full),
+            ChargeState::Full
+        );
+        assert_eq!(
+            ChargeState::from(starship_battery::State::Empty),
+            ChargeState::Discharging
+        );
+        assert_eq!(
+            ChargeState::from(starship_battery::State::Unknown),
             ChargeState::Unknown
         );
     }

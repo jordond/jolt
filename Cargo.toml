@@ -57,8 +57,8 @@ protocol = { path = "crates/protocol" }
 jolt-theme = { path = "crates/theme" }
 jolt-platform = { path = "crates/platform" }
 
-# Battery
-battery = "0.7.8"
+# Battery (starship-battery fixes macOS issues: https://github.com/svartalf/rust-battery/issues/102)
+starship-battery = "0.10"
 
 [profile.release]
 lto = true

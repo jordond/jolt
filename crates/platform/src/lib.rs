@@ -37,12 +37,11 @@ pub mod macos;
 #[cfg(feature = "linux")]
 pub mod linux;
 
-/// Re-export battery crate units for convenience
 pub mod units {
-    pub use ::battery::units::electric_potential::millivolt;
-    pub use ::battery::units::energy::watt_hour;
-    pub use ::battery::units::power::watt;
-    pub use ::battery::units::ratio::percent;
-    pub use ::battery::units::thermodynamic_temperature::degree_celsius;
-    pub use ::battery::units::time::second;
+    pub use ::starship_battery::units::electric_potential::millivolt;
+    pub use ::starship_battery::units::energy::watt_hour;
+    pub use ::starship_battery::units::power::watt;
+    pub use ::starship_battery::units::ratio::percent;
+    pub use ::starship_battery::units::thermodynamic_temperature::degree_celsius;
+    pub use ::starship_battery::units::time::second;
 }
