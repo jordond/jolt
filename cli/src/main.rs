@@ -341,9 +341,18 @@ fn run_tui_loop(
 ) -> Result<()> {
     let mut app = App::new(user_config)?;
     let mut needs_redraw = true;
+    let mut last_tick = std::time::Instant::now();
 
     loop {
-        let data_changed = app.tick()?;
+        let tick_rate = Duration::from_millis(app.refresh_ms);
+        let elapsed = last_tick.elapsed();
+
+        let data_changed = if elapsed >= tick_rate {
+            last_tick = std::time::Instant::now();
+            app.tick()?
+        } else {
+            false
+        };
         needs_redraw = needs_redraw || data_changed;
 
         if needs_redraw {
@@ -354,7 +363,7 @@ fn run_tui_loop(
         let poll_timeout = if app.using_daemon_data {
             Duration::from_millis(10)
         } else {
-            Duration::from_millis(app.refresh_ms)
+            tick_rate.saturating_sub(elapsed)
         };
 
         if event::poll(poll_timeout)? {

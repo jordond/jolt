@@ -52,6 +52,7 @@ struct DaemonState {
     recorder: Recorder,
     start_time: Instant,
     config: HistoryConfig,
+    last_refresh: Instant,
 }
 
 impl DaemonState {
@@ -72,6 +73,7 @@ impl DaemonState {
             recorder: Recorder::new(user_config.history.clone(), excluded)?,
             start_time: Instant::now(),
             config: user_config.history.clone(),
+            last_refresh: Instant::now(),
         })
     }
 
@@ -83,7 +85,17 @@ impl DaemonState {
         self.recorder
             .record_all(&self.battery, &self.power, &self.processes)?;
 
+        self.last_refresh = Instant::now();
         Ok(())
+    }
+
+    fn refresh_if_stale(&mut self, max_age: Duration) -> Result<bool> {
+        if self.last_refresh.elapsed() >= max_age {
+            self.refresh()?;
+            Ok(true)
+        } else {
+            Ok(false)
+        }
     }
 
     fn run_aggregation(&mut self) {
@@ -483,7 +495,7 @@ async fn run_daemon_async(socket: std::path::PathBuf) -> Result<()> {
 
                 let subscriber_count: usize = clients.values().filter(|c| c.is_subscriber).count();
                 if subscriber_count > 0 {
-                    if let Err(e) = state.refresh() {
+                    if let Err(e) = state.refresh_if_stale(sample_interval / 2) {
                         error!(error = %e, "Error refreshing data for broadcast");
                     }
                     let snapshot = state.create_snapshot();
