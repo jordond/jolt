@@ -1078,6 +1078,7 @@ dependencies = [
  "daemonize",
  "dirs",
  "futures",
+ "jolt-theme",
  "libc",
  "mach2",
  "plist",
@@ -1094,6 +1095,18 @@ dependencies = [
  "tracing",
  "tracing-appender",
  "tracing-subscriber",
+ "ureq",
+]
+
+[[package]]
+name = "jolt-theme"
+version = "0.1.0"
+dependencies = [
+ "plist",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.17",
+ "toml",
  "ureq",
 ]
 

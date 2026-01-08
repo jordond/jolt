@@ -1111,7 +1111,7 @@ impl App {
                 .iter()
                 .find(|t| &t.id == preview_id)
             {
-                return theme.get_colors(is_dark);
+                return theme.get_colors(is_dark).into();
             }
         }
         if self.preview_appearance.is_some() {

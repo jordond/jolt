@@ -1,185 +1,73 @@
-mod builtin;
 pub mod cache;
 pub mod contrast;
 pub mod iterm2;
-mod loader;
 pub mod validation;
 
-pub use builtin::get_builtin_themes;
-pub use loader::load_user_themes;
+use crate::config::config_dir;
+use ratatui::style::Color as RatatuiColor;
+use std::path::PathBuf;
 
-use ratatui::style::Color;
+pub use jolt_theme::{
+    generate_blank_theme_toml, generate_theme_toml, get_builtin_themes, Color, NamedTheme,
+};
+
+pub use jolt_theme::ThemeColors as JoltThemeColors;
 
 #[derive(Debug, Clone, Copy)]
 pub struct ThemeColors {
-    pub bg: Color,
-    pub dialog_bg: Color,
-    pub fg: Color,
-    pub accent: Color,
-    pub accent_secondary: Color,
-    pub highlight: Color,
-    pub muted: Color,
-    pub success: Color,
-    pub warning: Color,
-    pub danger: Color,
-    pub border: Color,
-    pub selection_bg: Color,
-    pub selection_fg: Color,
-    pub graph_line: Color,
+    pub bg: RatatuiColor,
+    pub dialog_bg: RatatuiColor,
+    pub fg: RatatuiColor,
+    pub accent: RatatuiColor,
+    pub accent_secondary: RatatuiColor,
+    pub highlight: RatatuiColor,
+    pub muted: RatatuiColor,
+    pub success: RatatuiColor,
+    pub warning: RatatuiColor,
+    pub danger: RatatuiColor,
+    pub border: RatatuiColor,
+    pub selection_bg: RatatuiColor,
+    pub selection_fg: RatatuiColor,
+    pub graph_line: RatatuiColor,
 }
 
-#[derive(Debug, Clone)]
-pub struct ThemeVariants {
-    pub dark: Option<ThemeColors>,
-    pub light: Option<ThemeColors>,
-}
-
-#[derive(Debug, Clone)]
-pub struct NamedTheme {
-    pub id: String,
-    pub name: String,
-    pub variants: ThemeVariants,
-    pub is_builtin: bool,
-}
-
-impl NamedTheme {
-    pub fn get_colors(&self, is_dark: bool) -> ThemeColors {
-        if is_dark {
-            self.variants
-                .dark
-                .or(self.variants.light)
-                .expect("Theme must have at least one variant")
-        } else {
-            self.variants
-                .light
-                .or(self.variants.dark)
-                .expect("Theme must have at least one variant")
+impl From<JoltThemeColors> for ThemeColors {
+    fn from(colors: JoltThemeColors) -> Self {
+        Self {
+            bg: to_ratatui_color(colors.bg),
+            dialog_bg: to_ratatui_color(colors.dialog_bg),
+            fg: to_ratatui_color(colors.fg),
+            accent: to_ratatui_color(colors.accent),
+            accent_secondary: to_ratatui_color(colors.accent_secondary),
+            highlight: to_ratatui_color(colors.highlight),
+            muted: to_ratatui_color(colors.muted),
+            success: to_ratatui_color(colors.success),
+            warning: to_ratatui_color(colors.warning),
+            danger: to_ratatui_color(colors.danger),
+            border: to_ratatui_color(colors.border),
+            selection_bg: to_ratatui_color(colors.selection_bg),
+            selection_fg: to_ratatui_color(colors.selection_fg),
+            graph_line: to_ratatui_color(colors.graph_line),
         }
     }
+}
 
-    pub fn has_dark(&self) -> bool {
-        self.variants.dark.is_some()
-    }
+fn to_ratatui_color(color: Color) -> RatatuiColor {
+    RatatuiColor::Rgb(color.r, color.g, color.b)
+}
 
-    pub fn has_light(&self) -> bool {
-        self.variants.light.is_some()
-    }
+fn themes_dir() -> PathBuf {
+    config_dir().join("themes")
+}
 
-    pub fn variants_label(&self) -> &'static str {
-        match (self.has_dark(), self.has_light()) {
-            (true, true) => "dark + light",
-            (true, false) => "dark only",
-            (false, true) => "light only",
-            _ => "unknown",
-        }
-    }
+pub fn load_user_themes() -> Vec<NamedTheme> {
+    jolt_theme::load_themes_from_dir(&themes_dir(), false)
 }
 
 pub fn get_all_themes() -> Vec<NamedTheme> {
-    let mut themes = get_builtin_themes();
-    themes.extend(load_user_themes());
-    themes
+    jolt_theme::get_all_themes(Some(&themes_dir()))
 }
 
 pub fn get_theme_by_id(id: &str) -> Option<NamedTheme> {
-    get_all_themes().into_iter().find(|t| t.id == id)
-}
-
-fn color_to_hex(color: Color) -> String {
-    match color {
-        Color::Rgb(r, g, b) => format!("#{:02x}{:02x}{:02x}", r, g, b),
-        _ => "#808080".to_string(),
-    }
-}
-
-fn colors_to_toml(colors: &ThemeColors, indent: &str) -> String {
-    format!(
-        r#"{i}bg = "{}"
-{i}dialog_bg = "{}"
-{i}fg = "{}"
-{i}accent = "{}"
-{i}accent_secondary = "{}"
-{i}highlight = "{}"
-{i}muted = "{}"
-{i}success = "{}"
-{i}warning = "{}"
-{i}danger = "{}"
-{i}border = "{}"
-{i}selection_bg = "{}"
-{i}selection_fg = "{}"
-{i}graph_line = "{}""#,
-        color_to_hex(colors.bg),
-        color_to_hex(colors.dialog_bg),
-        color_to_hex(colors.fg),
-        color_to_hex(colors.accent),
-        color_to_hex(colors.accent_secondary),
-        color_to_hex(colors.highlight),
-        color_to_hex(colors.muted),
-        color_to_hex(colors.success),
-        color_to_hex(colors.warning),
-        color_to_hex(colors.danger),
-        color_to_hex(colors.border),
-        color_to_hex(colors.selection_bg),
-        color_to_hex(colors.selection_fg),
-        color_to_hex(colors.graph_line),
-        i = indent,
-    )
-}
-
-pub fn generate_theme_toml(name: &str, base: &NamedTheme) -> String {
-    let mut content = format!("name = \"{}\"\n\n", name);
-
-    if let Some(ref dark) = base.variants.dark {
-        content.push_str("[dark]\n");
-        content.push_str(&colors_to_toml(dark, ""));
-        content.push_str("\n\n");
-    }
-
-    if let Some(ref light) = base.variants.light {
-        content.push_str("[light]\n");
-        content.push_str(&colors_to_toml(light, ""));
-        content.push('\n');
-    }
-
-    content
-}
-
-pub fn generate_blank_theme_toml(name: &str) -> String {
-    format!(
-        r##"name = "{}"
-
-[dark]
-bg = "#1e1e2e"
-dialog_bg = "#313244"
-fg = "#cdd6f4"
-accent = "#89b4fa"
-accent_secondary = "#cba6f7"
-highlight = "#f9e2af"
-muted = "#6c7086"
-success = "#a6e3a1"
-warning = "#fab387"
-danger = "#f38ba8"
-border = "#45475a"
-selection_bg = "#585b70"
-selection_fg = "#cdd6f4"
-graph_line = "#89b4fa"
-
-[light]
-bg = "#eff1f5"
-dialog_bg = "#e6e9ef"
-fg = "#4c4f69"
-accent = "#1e66f5"
-accent_secondary = "#8839ef"
-highlight = "#df8e1d"
-muted = "#6c6f85"
-success = "#40a02b"
-warning = "#fe640b"
-danger = "#d20f39"
-border = "#bcc0cc"
-selection_bg = "#acb0be"
-selection_fg = "#4c4f69"
-graph_line = "#1e66f5"
-"##,
-        name
-    )
+    jolt_theme::get_theme_by_id(id, Some(&themes_dir()))
 }

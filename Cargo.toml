@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["cli", "crates/protocol"]
+members = ["cli", "crates/protocol", "crates/theme"]
 
 [workspace.package]
 version = "0.1.0"
@@ -54,6 +54,7 @@ daemonize = "0.5"
 
 # Internal crates
 protocol = { path = "crates/protocol" }
+jolt-theme = { path = "crates/theme" }
 
 [profile.release]
 lto = true

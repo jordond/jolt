@@ -1,0 +1,17 @@
+[package]
+name = "jolt-theme"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Theme system for terminal TUI applications with iTerm2 import support"
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+toml = "0.9"
+plist = "1.8"
+ureq = "2.12"
+thiserror = { workspace = true }
+
+[dev-dependencies]
