@@ -1,12 +1,9 @@
-use chrono::{DateTime, Local, TimeZone, Timelike};
 use ratatui::{
     layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
     symbols::Marker,
     text::{Line, Span},
-    widgets::{
-        Axis, Bar, BarChart, BarGroup, Block, Borders, Chart, Dataset, GraphType, Paragraph,
-    },
+    widgets::{Axis, Block, Borders, Chart, Dataset, GraphType, Paragraph},
     Frame,
 };
 
@@ -30,27 +27,7 @@ fn x_axis_time_labels(data_len: usize, theme: &ThemeColors) -> Vec<Span<'static>
     ]
 }
 
-fn find_min_max_indices(data: &[(f64, f64)]) -> Option<(usize, usize)> {
-    if data.is_empty() {
-        return None;
-    }
-    let (min_idx, _) = data
-        .iter()
-        .enumerate()
-        .min_by(|(_, a), (_, b)| a.1.partial_cmp(&b.1).unwrap())?;
-    let (max_idx, _) = data
-        .iter()
-        .enumerate()
-        .max_by(|(_, a), (_, b)| a.1.partial_cmp(&b.1).unwrap())?;
-    Some((min_idx, max_idx))
-}
-
 pub fn render(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) {
-    if app.history.current_metric == HistoryMetric::HourlyBars {
-        render_hourly_bars(frame, area, app, theme);
-        return;
-    }
-
     let has_temp_data = app.history.has_temperature_data();
 
     if has_temp_data {
@@ -175,72 +152,6 @@ fn render_temperature_chart(frame: &mut Frame, area: Rect, app: &App, theme: &Th
         .style(Style::default().bg(theme.bg));
 
     frame.render_widget(chart, area);
-}
-
-fn render_hourly_bars(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) {
-    let stats = &app.history_hourly_stats;
-
-    let title_line = Line::from(vec![
-        Span::styled(
-            " Hourly Power ",
-            Style::default()
-                .fg(theme.accent)
-                .add_modifier(Modifier::BOLD),
-        ),
-        Span::styled("(g: toggle) ", Style::default().fg(theme.muted)),
-    ]);
-
-    let block = Block::default()
-        .title(title_line)
-        .borders(Borders::ALL)
-        .border_style(Style::default().fg(theme.border))
-        .style(Style::default().bg(theme.bg));
-
-    if stats.is_empty() {
-        let inner = block.inner(area);
-        frame.render_widget(block, area);
-        let msg = Paragraph::new("No hourly data available. Run daemon to collect stats.")
-            .style(Style::default().fg(theme.muted));
-        frame.render_widget(msg, inner);
-        return;
-    }
-
-    let max_power = stats
-        .iter()
-        .map(|s| s.avg_power)
-        .fold(0.0_f32, f32::max)
-        .max(1.0);
-
-    let bars: Vec<Bar> = stats
-        .iter()
-        .map(|stat| {
-            let hour = DateTime::from_timestamp(stat.hour_start, 0)
-                .map(|dt| Local.from_utc_datetime(&dt.naive_utc()))
-                .map(|local: DateTime<Local>| local.hour())
-                .unwrap_or(0);
-
-            let label = format!("{:02}", hour);
-            let value = stat.avg_power as u64;
-
-            Bar::default()
-                .value(value)
-                .label(Line::from(label))
-                .style(Style::default().fg(theme.graph_line))
-                .value_style(Style::default().fg(theme.fg).bg(theme.graph_line))
-        })
-        .collect();
-
-    let bar_chart = BarChart::default()
-        .block(block)
-        .data(BarGroup::default().bars(&bars))
-        .bar_width(3)
-        .bar_gap(1)
-        .max(max_power as u64)
-        .direction(Direction::Vertical)
-        .bar_style(Style::default().fg(theme.graph_line))
-        .value_style(Style::default().fg(theme.fg));
-
-    frame.render_widget(bar_chart, area);
 }
 
 fn render_single(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) {
@@ -391,8 +302,6 @@ fn render_single(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) 
     if is_battery && !app.history.battery_changes.is_empty() {
         render_battery_markers(frame, area, app, theme, max_x, min_y, max_y);
     }
-
-    render_min_max_markers(frame, area, &data, min_y, max_y, max_x, theme);
 }
 
 fn render_battery_markers(
@@ -422,58 +331,6 @@ fn render_battery_markers(
             let marker = Paragraph::new(format!("{:.0}", change.value))
                 .style(Style::default().fg(theme.accent_secondary));
             let marker_area = Rect::new(x.saturating_sub(1), y.saturating_sub(1), 4, 1);
-            frame.render_widget(marker, marker_area);
-        }
-    }
-}
-
-fn render_min_max_markers(
-    frame: &mut Frame,
-    area: Rect,
-    data: &[(f64, f64)],
-    min_y: f64,
-    max_y: f64,
-    max_x: f64,
-    theme: &ThemeColors,
-) {
-    if data.len() < 3 {
-        return;
-    }
-
-    let Some((min_idx, max_idx)) = find_min_max_indices(data) else {
-        return;
-    };
-
-    let inner = Rect::new(
-        area.x + 8,
-        area.y + 1,
-        area.width.saturating_sub(10),
-        area.height.saturating_sub(3),
-    );
-
-    if inner.width < 10 || inner.height < 3 {
-        return;
-    }
-
-    let y_range = max_y - min_y;
-    if y_range < 0.01 {
-        return;
-    }
-
-    for (idx, symbol, color) in [(min_idx, "▼", theme.danger), (max_idx, "▲", theme.success)] {
-        let (x_val, y_val) = data[idx];
-        let x_ratio = x_val / max_x;
-        let y_ratio = (y_val - min_y) / y_range;
-
-        let x = inner.x + (x_ratio * inner.width as f64) as u16;
-        let y = inner.y
-            + inner
-                .height
-                .saturating_sub((y_ratio * inner.height as f64) as u16 + 1);
-
-        if x >= inner.x && x < inner.x + inner.width && y >= inner.y && y < inner.y + inner.height {
-            let marker = Paragraph::new(symbol).style(Style::default().fg(color));
-            let marker_area = Rect::new(x, y, 1, 1);
             frame.render_widget(marker, marker_area);
         }
     }
