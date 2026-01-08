@@ -195,8 +195,12 @@ pub fn setting_apply(app: &mut App, id: SettingId, input: SettingInput) -> Setti
     match id {
         SettingId::Theme => SettingOutcome { open_modal: true },
         SettingId::Appearance => {
-            app.config.cycle_appearance();
-            SettingOutcome { open_modal: false }
+            if input == SettingInput::Activate {
+                app.config.cycle_appearance();
+                SettingOutcome { open_modal: false }
+            } else {
+                SettingOutcome::default()
+            }
         }
         SettingId::RefreshMs => apply_int(
             app,
