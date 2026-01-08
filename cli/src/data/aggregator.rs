@@ -164,6 +164,7 @@ impl<'a> Aggregator<'a> {
         }
 
         let partial_cycles = total_discharge_percent / 100.0;
+        let time_at_high_soc_mins = self.compute_time_at_high_soc(day_start, day_end)?;
 
         Ok(Some(DailyCycle {
             id: None,
@@ -178,8 +179,27 @@ impl<'a> Aggregator<'a> {
             partial_cycles,
             macos_cycle_count: None,
             avg_temperature_c: None,
-            time_at_high_soc_mins: 0,
+            time_at_high_soc_mins,
         }))
+    }
+
+    fn compute_time_at_high_soc(&self, from_ts: i64, to_ts: i64) -> Result<i32, HistoryStoreError> {
+        const HIGH_SOC_THRESHOLD: f32 = 80.0;
+
+        let samples = self.store.get_samples(from_ts, to_ts)?;
+        if samples.len() < 2 {
+            return Ok(0);
+        }
+
+        let mut total_secs: i64 = 0;
+        for window in samples.windows(2) {
+            if window[0].battery_percent >= HIGH_SOC_THRESHOLD {
+                let elapsed = window[1].timestamp - window[0].timestamp;
+                total_secs += elapsed;
+            }
+        }
+
+        Ok((total_secs / 60) as i32)
     }
 
     pub fn aggregate_completed_hours(&self) -> Result<usize, HistoryStoreError> {
@@ -282,8 +302,7 @@ impl<'a> Aggregator<'a> {
             result.daily_cycles_deleted = self.store.delete_daily_cycles_before(&cutoff_date)?;
         }
 
-        let session_retention_days = 90;
-        let session_cutoff = now - Duration::days(session_retention_days);
+        let session_cutoff = now - Duration::days(self.config.retention_sessions_days as i64);
         let session_cutoff_ts = session_cutoff.timestamp();
         result.sessions_deleted = self
             .store

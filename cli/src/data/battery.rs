@@ -169,7 +169,7 @@ impl BatteryData {
             } else if line.contains("\"BatteryData\"") {
                 if let Some(pos) = line.find("\"DailyMinSoc\"=") {
                     let after = &line[pos + 14..];
-                    if let Some(end) = after.find(|c: char| !c.is_ascii_digit()) {
+                    if let Some(end) = after.find(|c: char| !c.is_ascii_digit() && c != '.') {
                         if let Ok(val) = after[..end].parse::<f32>() {
                             self.daily_min_soc = Some(val);
                         }
@@ -177,7 +177,7 @@ impl BatteryData {
                 }
                 if let Some(pos) = line.find("\"DailyMaxSoc\"=") {
                     let after = &line[pos + 14..];
-                    if let Some(end) = after.find(|c: char| !c.is_ascii_digit()) {
+                    if let Some(end) = after.find(|c: char| !c.is_ascii_digit() && c != '.') {
                         if let Ok(val) = after[..end].parse::<f32>() {
                             self.daily_max_soc = Some(val);
                         }

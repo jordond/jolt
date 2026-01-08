@@ -1021,6 +1021,7 @@ impl App {
         ("Raw Retention (days)", false),
         ("Hourly Retention (days)", false),
         ("Daily Retention (days)", false),
+        ("Session Retention (days)", false),
         ("Max Database (MB)", false),
     ];
 
@@ -1093,6 +1094,12 @@ impl App {
                     days.to_string()
                 }
             }
+            "Session Retention (days)" => self
+                .config
+                .user_config
+                .history
+                .retention_sessions_days
+                .to_string(),
             "Max Database (MB)" => self.config.user_config.history.max_database_mb.to_string(),
             _ => String::new(),
         }
@@ -1179,6 +1186,11 @@ impl App {
                     (self.config.user_config.history.retention_daily_days + 30).min(3650);
                 let _ = self.config.user_config.save();
             }
+            "Session Retention (days)" => {
+                self.config.user_config.history.retention_sessions_days =
+                    (self.config.user_config.history.retention_sessions_days + 30).min(365);
+                let _ = self.config.user_config.save();
+            }
             "Max Database (MB)" => {
                 self.config.user_config.history.max_database_mb =
                     (self.config.user_config.history.max_database_mb + 100).min(10000);
@@ -1261,6 +1273,16 @@ impl App {
                     .history
                     .retention_daily_days
                     .saturating_sub(30);
+                let _ = self.config.user_config.save();
+            }
+            "Session Retention (days)" => {
+                self.config.user_config.history.retention_sessions_days = self
+                    .config
+                    .user_config
+                    .history
+                    .retention_sessions_days
+                    .saturating_sub(30)
+                    .max(7);
                 let _ = self.config.user_config.save();
             }
             "Max Database (MB)" => {
@@ -1498,7 +1520,7 @@ impl App {
             }
 
             let now = chrono::Utc::now();
-            let session_window_days = 7;
+            let session_window_days = self.history_period.days() as i64;
             let session_from = (now - chrono::Duration::days(session_window_days)).timestamp();
             if let Ok(sessions) = client.get_charge_sessions(session_from, now.timestamp()) {
                 self.recent_charge_sessions = sessions;

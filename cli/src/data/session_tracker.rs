@@ -6,12 +6,17 @@ use crate::data::BatteryData;
 const HIGH_SOC_THRESHOLD: f32 = 80.0;
 const MIN_SESSION_DURATION_SECS: i64 = 60;
 
+/// Events emitted when charge/discharge state changes.
 #[derive(Debug, Clone)]
 pub enum SessionEvent {
     Started(ChargeSession),
     Ended(ChargeSession),
 }
 
+/// Tracks battery charge/discharge sessions by detecting state transitions.
+///
+/// Monitors charging state changes and emits `SessionEvent`s when sessions
+/// start or end. Also tracks partial discharge cycles and time at high SOC.
 pub struct SessionTracker {
     current_session: Option<ChargeSession>,
     last_is_charging: Option<bool>,
@@ -39,12 +44,16 @@ impl SessionTracker {
         }
     }
 
+    /// Restores tracker state from an incomplete session (e.g., after app restart).
     pub fn with_incomplete_session(session: ChargeSession) -> Self {
         let mut tracker = Self::new();
+        tracker.last_is_charging = Some(matches!(session.session_type, SessionType::Charge));
+        tracker.last_battery_percent = Some(session.start_percent);
         tracker.current_session = Some(session);
         tracker
     }
 
+    /// Processes a battery sample and returns an event if a session state change occurred.
     pub fn process_sample(&mut self, battery: &BatteryData) -> Option<SessionEvent> {
         let now = Utc::now().timestamp();
         let is_charging = battery.is_charging();
@@ -224,6 +233,11 @@ impl SessionTracker {
 
     pub fn reset_time_at_high_soc(&mut self) {
         self.time_at_high_soc_secs = 0;
+    }
+
+    #[allow(dead_code)]
+    pub fn get_time_at_high_soc_secs(&self) -> i64 {
+        self.time_at_high_soc_secs
     }
 }
 
