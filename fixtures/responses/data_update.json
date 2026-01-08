@@ -1,0 +1,68 @@
+{
+  "DataUpdate": {
+    "timestamp": 1704067200,
+    "battery": {
+      "charge_percent": 85.5,
+      "state": "discharging",
+      "state_label": "On Battery",
+      "health_percent": 92.0,
+      "max_capacity_wh": 52.6,
+      "design_capacity_wh": 58.0,
+      "cycle_count": 245,
+      "time_remaining_mins": 180,
+      "time_remaining_formatted": "3:00",
+      "charging_watts": null,
+      "charger_watts": null,
+      "discharge_watts": 12.5,
+      "voltage_mv": 11500,
+      "amperage_ma": -1087,
+      "external_connected": false,
+      "temperature_c": 32.5,
+      "daily_min_soc": 25.0,
+      "daily_max_soc": 95.0
+    },
+    "power": {
+      "cpu_power_watts": 8.5,
+      "gpu_power_watts": 2.3,
+      "total_power_watts": 12.8,
+      "power_mode": "automatic",
+      "power_mode_label": "Automatic",
+      "is_warmed_up": true
+    },
+    "processes": [
+      {
+        "pid": 1234,
+        "name": "Safari",
+        "command": "/Applications/Safari.app/Contents/MacOS/Safari",
+        "cpu_usage": 15.5,
+        "memory_mb": 256.0,
+        "energy_impact": 25.0,
+        "parent_pid": 1,
+        "children": [
+          {
+            "pid": 1235,
+            "name": "Safari Web Content",
+            "command": "Safari Web Content",
+            "cpu_usage": 5.0,
+            "memory_mb": 128.0,
+            "energy_impact": 10.0,
+            "parent_pid": 1234,
+            "children": null,
+            "is_killable": false,
+            "disk_read_bytes": 1000,
+            "disk_write_bytes": 500,
+            "status": "running",
+            "run_time_secs": 3600,
+            "total_cpu_time_secs": 120
+          }
+        ],
+        "is_killable": true,
+        "disk_read_bytes": 10000,
+        "disk_write_bytes": 5000,
+        "status": "running",
+        "run_time_secs": 7200,
+        "total_cpu_time_secs": 600
+      }
+    ]
+  }
+}

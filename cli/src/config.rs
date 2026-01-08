@@ -249,11 +249,11 @@ impl RuntimeConfig {
     }
 
     pub fn theme(&self) -> ThemeColors {
-        self.current_theme.get_colors(self.is_dark_mode())
+        self.current_theme.get_colors(self.is_dark_mode()).into()
     }
 
     pub fn theme_with_mode(&self, is_dark: bool) -> ThemeColors {
-        self.current_theme.get_colors(is_dark)
+        self.current_theme.get_colors(is_dark).into()
     }
 
     pub fn set_theme(&mut self, theme_id: &str) {

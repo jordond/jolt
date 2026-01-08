@@ -809,6 +809,7 @@ fn run_theme(command: Option<ThemeCommands>) -> Result<()> {
 
                         match theme::iterm2::find_variant_suggestions(&scheme, missing) {
                             Ok(suggestions) if !suggestions.is_empty() => {
+                                let suggestions: Vec<String> = suggestions;
                                 println!("\nPossible {} variants:", missing_name);
                                 for (i, suggestion) in suggestions.iter().take(10).enumerate() {
                                     println!("  {}. {}", i + 1, suggestion);

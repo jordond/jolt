@@ -1,0 +1,62 @@
+[workspace]
+resolver = "2"
+members = ["cli", "crates/protocol", "crates/theme"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+repository = "https://github.com/jordond/jolt"
+
+[workspace.dependencies]
+# Serialization
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+chrono = { version = "0.4", features = ["serde"] }
+
+# Async
+tokio = { version = "1", features = ["full"] }
+tokio-stream = "0.1"
+futures = "0.3"
+
+# Error handling
+color-eyre = "0.6"
+thiserror = "2"
+
+# TUI
+ratatui = { version = "0.30", features = ["crossterm"] }
+crossterm = "0.29"
+
+# CLI
+clap = { version = "4", features = ["derive"] }
+
+# Logging
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "time"] }
+tracing-appender = "0.2"
+
+# System
+sysinfo = "0.37"
+core-foundation = "0.10"
+core-foundation-sys = "0.8"
+libc = "0.2"
+mach2 = "0.6"
+
+# Config/Storage
+toml = "0.9.8"
+dirs = "6"
+rusqlite = { version = "0.32", features = ["bundled"] }
+plist = "1"
+
+# Network/Other
+ureq = "2"
+daemonize = "0.5"
+
+# Internal crates
+protocol = { path = "crates/protocol" }
+jolt-theme = { path = "crates/theme" }
+
+[profile.release]
+lto = true
+codegen-units = 1
+strip = true

@@ -1,0 +1,5 @@
+{
+  "SetBroadcastInterval": {
+    "interval_ms": 1000
+  }
+}

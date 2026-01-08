@@ -1,0 +1,14 @@
+{
+  "TopProcesses": [
+    {
+      "date": "2024-01-01",
+      "process_name": "Safari",
+      "total_impact": 500.0,
+      "avg_cpu": 15.0,
+      "avg_memory_mb": 256.0,
+      "sample_count": 100,
+      "avg_power": 12.5,
+      "total_energy_wh": 15.0
+    }
+  ]
+}

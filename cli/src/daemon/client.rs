@@ -3,11 +3,10 @@ use std::os::unix::net::UnixStream;
 use std::time::Duration;
 
 use crate::daemon::protocol::{
-    CycleSummary, DaemonRequest, DaemonResponse, DaemonStatus, DataSnapshot, KillProcessResult,
-    KillSignal,
+    ChargeSession, CycleSummary, DaemonRequest, DaemonResponse, DaemonStatus, DailyCycle,
+    DailyStat, DailyTopProcess, DataSnapshot, HourlyStat, KillProcessResult, KillSignal, Sample,
 };
 use crate::daemon::socket_path;
-use crate::data::{ChargeSession, DailyCycle, DailyStat, DailyTopProcess, HourlyStat, Sample};
 
 #[derive(Debug, thiserror::Error)]
 pub enum ClientError {

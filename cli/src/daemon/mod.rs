@@ -5,9 +5,10 @@ mod server;
 pub use client::DaemonClient;
 #[allow(unused_imports)]
 pub use protocol::{
-    BatterySnapshot, BatteryState, CycleSummary, DaemonRequest, DaemonResponse, DaemonStatus,
-    DataSnapshot, KillProcessResult, KillSignal, PowerMode, PowerSnapshot, ProcessSnapshot,
-    ProcessState, MAX_SUBSCRIBERS,
+    BatterySnapshot, BatteryState, ChargeSession, ChargingState, CycleSummary, DaemonRequest,
+    DaemonResponse, DaemonStatus, DailyCycle, DailyStat, DailyTopProcess, DataSnapshot, HourlyStat,
+    KillProcessResult, KillSignal, PowerMode, PowerSnapshot, ProcessSnapshot, ProcessState, Sample,
+    SessionType, MAX_SUBSCRIBERS, MIN_SUPPORTED_VERSION, PROTOCOL_VERSION,
 };
 pub use server::run_daemon;
 #[allow(unused_imports)]

@@ -1,0 +1,6 @@
+{
+  "KillProcess": {
+    "pid": 1234,
+    "signal": "force"
+  }
+}

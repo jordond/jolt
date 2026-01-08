@@ -1,0 +1,15 @@
+{
+  "ChargeSessions": [
+    {
+      "start_time": 1704060000,
+      "end_time": 1704067200,
+      "start_percent": 20.0,
+      "end_percent": 80.0,
+      "energy_wh": 35.0,
+      "charger_watts": 67,
+      "avg_power_watts": 17.5,
+      "session_type": "Charge",
+      "is_complete": true
+    }
+  ]
+}
