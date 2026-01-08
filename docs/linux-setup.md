@@ -33,8 +33,8 @@ Create a udev rule to make RAPL energy counters readable:
 ```bash
 # Create udev rule
 sudo tee /etc/udev/rules.d/99-rapl.rules << 'EOF'
-# Allow reading RAPL energy counters
-SUBSYSTEM=="powercap", ACTION=="add", RUN+="/bin/chmod o+r /sys/class/powercap/intel-rapl/intel-rapl:0/energy_uj /sys/class/powercap/intel-rapl/intel-rapl:0/*/energy_uj"
+# Allow reading RAPL energy counters (covers all CPU packages)
+SUBSYSTEM=="powercap", ACTION=="add", RUN+="/bin/sh -c 'chmod o+r /sys/class/powercap/intel-rapl/*/energy_uj /sys/class/powercap/intel-rapl/*/*/energy_uj 2>/dev/null || true'"
 EOF
 
 # Reload udev rules
@@ -45,8 +45,8 @@ sudo udevadm trigger
 Or set permissions manually (needs to be done after each boot):
 
 ```bash
-sudo chmod o+r /sys/class/powercap/intel-rapl/intel-rapl:0/energy_uj
-sudo chmod o+r /sys/class/powercap/intel-rapl/intel-rapl:0/*/energy_uj
+sudo chmod o+r /sys/class/powercap/intel-rapl/*/energy_uj
+sudo chmod o+r /sys/class/powercap/intel-rapl/*/*/energy_uj
 ```
 
 #### Option 3: Add user to a power group

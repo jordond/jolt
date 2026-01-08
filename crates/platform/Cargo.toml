@@ -19,7 +19,6 @@ linux = []
 # Cross-platform
 battery = "0.7.8"
 color-eyre = { workspace = true }
-thiserror = { workspace = true }
 sysinfo = { workspace = true }
 
 # macOS-specific (optional)
