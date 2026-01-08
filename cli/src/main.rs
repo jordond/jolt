@@ -4,6 +4,7 @@ mod daemon;
 mod data;
 mod input;
 mod logging;
+mod settings;
 mod theme;
 mod ui;
 
