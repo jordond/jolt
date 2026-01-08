@@ -1,0 +1,12 @@
+{
+  "RecentSamples": [
+    {
+      "timestamp": 1704067200,
+      "battery_percent": 85.0,
+      "power_watts": 12.5,
+      "cpu_power": 8.5,
+      "gpu_power": 2.3,
+      "charging_state": "Discharging"
+    }
+  ]
+}

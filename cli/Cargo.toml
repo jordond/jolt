@@ -1,42 +1,38 @@
 [package]
 name = "jolt"
-version = "0.1.0"
-edition = "2021"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
 authors = ["Jordon"]
 description = "A beautiful TUI for monitoring battery and energy usage on macOS"
-license = "MIT"
-repository = "https://github.com/jordond/jolt"
 keywords = ["tui", "battery", "macos", "energy", "monitoring"]
 categories = ["command-line-utilities"]
 
 [dependencies]
-ratatui = { version = "0.30", features = ["crossterm"] }
-crossterm = "0.29"
-tokio = { version = "1", features = ["full"] }
-tokio-stream = "0.1"
-futures = "0.3"
-color-eyre = "0.6"
-thiserror = "2"
-sysinfo = "0.37"
-core-foundation = "0.10"
-core-foundation-sys = "0.8"
-libc = "0.2"
-mach2 = "0.6"
-chrono = { version = "0.4", features = ["serde"] }
-serde = { version = "1", features = ["derive"] }
-serde_json = "1"
-clap = { version = "4", features = ["derive"] }
-tracing = "0.1"
-tracing-subscriber = { version = "0.3", features = ["env-filter", "time"] }
-tracing-appender = "0.2"
-toml = "0.9.8"
-dirs = "6"
-ureq = "2"
-plist = "1"
-rusqlite = { version = "0.32", features = ["bundled"] }
-daemonize = "0.5"
-
-[profile.release]
-lto = true
-codegen-units = 1
-strip = true
+protocol = { workspace = true }
+ratatui = { workspace = true }
+crossterm = { workspace = true }
+tokio = { workspace = true }
+tokio-stream = { workspace = true }
+futures = { workspace = true }
+color-eyre = { workspace = true }
+thiserror = { workspace = true }
+sysinfo = { workspace = true }
+core-foundation = { workspace = true }
+core-foundation-sys = { workspace = true }
+libc = { workspace = true }
+mach2 = { workspace = true }
+chrono = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+clap = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+tracing-appender = { workspace = true }
+toml = { workspace = true }
+dirs = { workspace = true }
+ureq = { workspace = true }
+plist = { workspace = true }
+rusqlite = { workspace = true }
+daemonize = { workspace = true }

@@ -1,0 +1,12 @@
+{
+  "CycleSummary": {
+    "total_cycles_macos": 245,
+    "partial_cycles_calculated": 0.75,
+    "avg_daily_cycles": 0.25,
+    "avg_depth_of_discharge": 60.0,
+    "avg_charge_sessions_per_day": 2.0,
+    "time_at_high_soc_percent": 10.0,
+    "estimated_cycles_remaining": 755,
+    "days_analyzed": 7
+  }
+}

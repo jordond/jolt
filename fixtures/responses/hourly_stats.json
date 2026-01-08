@@ -1,0 +1,13 @@
+{
+  "HourlyStats": [
+    {
+      "hour_start": 1704067200,
+      "avg_power": 12.5,
+      "max_power": 25.0,
+      "min_power": 5.0,
+      "avg_battery": 75.0,
+      "battery_delta": -5.0,
+      "total_samples": 60
+    }
+  ]
+}

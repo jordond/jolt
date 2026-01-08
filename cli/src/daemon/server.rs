@@ -9,8 +9,10 @@ use tracing::{debug, error, info, trace, warn};
 
 use crate::config::{runtime_dir, HistoryConfig, UserConfig};
 use crate::daemon::protocol::{
-    BatterySnapshot, BatteryState, DaemonRequest, DaemonResponse, DaemonStatus, DataSnapshot,
-    KillProcessResult, PowerMode, PowerSnapshot, ProcessSnapshot, ProcessState, MAX_SUBSCRIBERS,
+    BatterySnapshot, BatteryState, ChargeSession, DaemonRequest, DaemonResponse, DaemonStatus,
+    DailyCycle, DailyStat, DailyTopProcess, DataSnapshot, HourlyStat, KillProcessResult, PowerMode,
+    PowerSnapshot, ProcessSnapshot, ProcessState, Sample, MAX_SUBSCRIBERS, MIN_SUPPORTED_VERSION,
+    PROTOCOL_VERSION,
 };
 use crate::daemon::socket_path;
 use crate::data::aggregator::Aggregator;
@@ -160,6 +162,8 @@ impl DaemonState {
             version: env!("CARGO_PKG_VERSION").to_string(),
             subscriber_count,
             history_enabled: self.config.background_recording,
+            protocol_version: PROTOCOL_VERSION,
+            min_supported_version: MIN_SUPPORTED_VERSION,
         }
     }
 
@@ -267,13 +271,19 @@ impl DaemonState {
             DaemonRequest::GetStatus => DaemonResponse::Status(self.get_status(subscriber_count)),
             DaemonRequest::GetHourlyStats { from, to } => {
                 match self.recorder.store().get_hourly_stats(*from, *to) {
-                    Ok(stats) => DaemonResponse::HourlyStats(stats),
+                    Ok(stats) => {
+                        let converted: Vec<HourlyStat> = stats.iter().map(Into::into).collect();
+                        DaemonResponse::HourlyStats(converted)
+                    }
                     Err(e) => DaemonResponse::Error(e.to_string()),
                 }
             }
             DaemonRequest::GetDailyStats { from, to } => {
                 match self.recorder.store().get_daily_stats(from, to) {
-                    Ok(stats) => DaemonResponse::DailyStats(stats),
+                    Ok(stats) => {
+                        let converted: Vec<DailyStat> = stats.iter().map(Into::into).collect();
+                        DaemonResponse::DailyStats(converted)
+                    }
                     Err(e) => DaemonResponse::Error(e.to_string()),
                 }
             }
@@ -283,7 +293,11 @@ impl DaemonState {
                     .store()
                     .get_top_processes_range(from, to, *limit)
                 {
-                    Ok(processes) => DaemonResponse::TopProcesses(processes),
+                    Ok(processes) => {
+                        let converted: Vec<DailyTopProcess> =
+                            processes.iter().map(Into::into).collect();
+                        DaemonResponse::TopProcesses(converted)
+                    }
                     Err(e) => DaemonResponse::Error(e.to_string()),
                 }
             }
@@ -291,7 +305,10 @@ impl DaemonState {
                 let now = chrono::Utc::now().timestamp();
                 let from = now - *window_secs as i64;
                 match self.recorder.store().get_samples(from, now) {
-                    Ok(samples) => DaemonResponse::RecentSamples(samples),
+                    Ok(samples) => {
+                        let converted: Vec<Sample> = samples.iter().map(Into::into).collect();
+                        DaemonResponse::RecentSamples(converted)
+                    }
                     Err(e) => DaemonResponse::Error(e.to_string()),
                 }
             }
@@ -342,13 +359,20 @@ impl DaemonState {
             },
             DaemonRequest::GetChargeSessions { from, to } => {
                 match self.recorder.store().get_charge_sessions(*from, *to, None) {
-                    Ok(sessions) => DaemonResponse::ChargeSessions(sessions),
+                    Ok(sessions) => {
+                        let converted: Vec<ChargeSession> =
+                            sessions.iter().map(Into::into).collect();
+                        DaemonResponse::ChargeSessions(converted)
+                    }
                     Err(e) => DaemonResponse::Error(e.to_string()),
                 }
             }
             DaemonRequest::GetDailyCycles { from, to } => {
                 match self.recorder.store().get_daily_cycles(from, to) {
-                    Ok(cycles) => DaemonResponse::DailyCycles(cycles),
+                    Ok(cycles) => {
+                        let converted: Vec<DailyCycle> = cycles.iter().map(Into::into).collect();
+                        DaemonResponse::DailyCycles(converted)
+                    }
                     Err(e) => DaemonResponse::Error(e.to_string()),
                 }
             }

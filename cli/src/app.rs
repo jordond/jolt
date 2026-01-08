@@ -523,8 +523,10 @@ impl App {
         let forecast_window = self.config.user_config.forecast_window_secs;
         if let Ok(mut client) = DaemonClient::connect() {
             if let Ok(samples) = client.get_recent_samples(forecast_window) {
+                let converted: Vec<crate::data::Sample> =
+                    samples.into_iter().map(Into::into).collect();
                 if self.forecast.calculate_from_daemon_samples(
-                    &samples,
+                    &converted,
                     battery_percent,
                     battery_capacity_wh,
                     forecast_window as i64,
@@ -1246,11 +1248,11 @@ impl App {
             let (from_date, to_date) = self.get_period_dates();
 
             if let Ok(daily) = client.get_daily_stats(&from_date, &to_date) {
-                self.history_daily_stats = daily;
+                self.history_daily_stats = daily.into_iter().map(Into::into).collect();
             }
 
             if let Ok(top) = client.get_top_processes_range(&from_date, &to_date, 10) {
-                self.history_top_processes = top;
+                self.history_top_processes = top.into_iter().map(Into::into).collect();
             }
 
             let cycle_days = self.history_period.days();
@@ -1259,14 +1261,14 @@ impl App {
             }
 
             if let Ok(cycles) = client.get_daily_cycles(&from_date, &to_date) {
-                self.daily_cycles = cycles;
+                self.daily_cycles = cycles.into_iter().map(Into::into).collect();
             }
 
             let now = chrono::Utc::now();
             let session_window_days = self.history_period.days() as i64;
             let session_from = (now - chrono::Duration::days(session_window_days)).timestamp();
             if let Ok(sessions) = client.get_charge_sessions(session_from, now.timestamp()) {
-                self.recent_charge_sessions = sessions;
+                self.recent_charge_sessions = sessions.into_iter().map(Into::into).collect();
             }
 
             if self.history_period == HistoryPeriod::Today {
@@ -1278,7 +1280,7 @@ impl App {
                     .timestamp();
                 let end_ts = now.timestamp();
                 if let Ok(hourly) = client.get_hourly_stats(start_of_day, end_ts) {
-                    self.history_hourly_stats = hourly;
+                    self.history_hourly_stats = hourly.into_iter().map(Into::into).collect();
                 }
             }
         } else {

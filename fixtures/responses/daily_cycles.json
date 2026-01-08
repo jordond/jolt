@@ -1,0 +1,18 @@
+{
+  "DailyCycles": [
+    {
+      "date": "2024-01-01",
+      "charge_sessions": 2,
+      "discharge_sessions": 3,
+      "total_charging_mins": 120,
+      "total_discharge_mins": 360,
+      "deepest_discharge_percent": 20.0,
+      "energy_charged_wh": 50.0,
+      "energy_discharged_wh": 45.0,
+      "partial_cycles": 0.75,
+      "macos_cycle_count": 245,
+      "avg_temperature_c": 32.5,
+      "time_at_high_soc_mins": 60
+    }
+  ]
+}

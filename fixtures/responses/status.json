@@ -1,0 +1,14 @@
+{
+  "Status": {
+    "running": true,
+    "uptime_secs": 3600,
+    "sample_count": 1000,
+    "last_sample_time": 1704067200,
+    "database_size_bytes": 1024000,
+    "version": "0.1.0",
+    "subscriber_count": 2,
+    "history_enabled": true,
+    "protocol_version": 1,
+    "min_supported_version": 1
+  }
+}

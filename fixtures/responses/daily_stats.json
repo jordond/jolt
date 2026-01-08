@@ -1,0 +1,13 @@
+{
+  "DailyStats": [
+    {
+      "date": "2024-01-01",
+      "avg_power": 15.0,
+      "max_power": 35.0,
+      "total_energy_wh": 180.0,
+      "screen_on_hours": 8.5,
+      "charging_hours": 2.0,
+      "battery_cycles": 0.5
+    }
+  ]
+}
