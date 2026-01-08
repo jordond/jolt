@@ -118,7 +118,8 @@ pub struct UserConfig {
     pub theme: String,
     pub refresh_ms: u64,
     pub show_graph: bool,
-    pub show_display_power: bool,
+    #[serde(rename = "show_brightness", alias = "show_display_power")]
+    pub show_brightness: bool,
     pub graph_metric: GraphMetric,
     pub process_count: usize,
     pub energy_threshold: f32,
@@ -139,7 +140,7 @@ impl Default for UserConfig {
             theme: "default".to_string(),
             refresh_ms: 2000,
             show_graph: true,
-            show_display_power: true,
+            show_brightness: true,
             graph_metric: GraphMetric::Merged,
             process_count: 50,
             energy_threshold: 0.5,

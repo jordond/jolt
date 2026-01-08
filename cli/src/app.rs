@@ -466,6 +466,7 @@ impl App {
         self.power.refresh()?;
         self.display.refresh()?;
 
+        // Skip process refresh during selection to prevent list from jumping
         if !self.selection_mode {
             self.processes.refresh()?;
         }
@@ -1045,7 +1046,7 @@ impl App {
                 "Off"
             }
             .to_string(),
-            "Show Brightness" => if self.config.user_config.show_display_power {
+            "Show Brightness" => if self.config.user_config.show_brightness {
                 "On"
             } else {
                 "Off"
@@ -1109,8 +1110,7 @@ impl App {
                 let _ = self.config.user_config.save();
             }
             "Show Brightness" => {
-                self.config.user_config.show_display_power =
-                    !self.config.user_config.show_display_power;
+                self.config.user_config.show_brightness = !self.config.user_config.show_brightness;
                 let _ = self.config.user_config.save();
             }
             "Merge Mode" => {

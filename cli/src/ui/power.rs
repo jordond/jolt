@@ -11,16 +11,16 @@ use crate::data::power::PowerMode;
 use crate::theme::ThemeColors;
 
 const GAUGE_WIDTH: usize = 8;
-const GAUGE_FILLED: char = '█';
-const GAUGE_EMPTY: char = '░';
+const GAUGE_FILLED: &str = "█";
+const GAUGE_EMPTY: &str = "░";
 
 fn render_mini_gauge(percent: f32, width: usize) -> String {
     let filled = ((percent / 100.0) * width as f32).round() as usize;
     let empty = width.saturating_sub(filled);
     format!(
         "{}{}",
-        GAUGE_FILLED.to_string().repeat(filled),
-        GAUGE_EMPTY.to_string().repeat(empty)
+        GAUGE_FILLED.repeat(filled),
+        GAUGE_EMPTY.repeat(empty)
     )
 }
 
@@ -34,7 +34,7 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) {
     let inner = block.inner(area);
     frame.render_widget(block, area);
 
-    let show_display = app.config.user_config.show_display_power;
+    let show_display = app.config.user_config.show_brightness;
 
     let chunks = if show_display {
         Layout::default()

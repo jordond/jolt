@@ -83,8 +83,8 @@ mod tests {
     #[test]
     fn test_brightness_parsing() {
         let output = r#"
-  |   "IOMFBBrightnessLevel" = 32768
-  |   "limit_max_physical_brightness" = 104857600
+    "IOMFBBrightnessLevel" = 32768
+    "limit_max_physical_brightness" = 104857600
         "#;
 
         let mut data = DisplayData {
