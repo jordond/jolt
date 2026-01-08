@@ -594,7 +594,8 @@ fn run_config(path: bool, reset: bool, edit: bool) -> Result<()> {
 }
 
 fn run_theme(command: Option<ThemeCommands>) -> Result<()> {
-    use theme::{contrast, get_all_themes, get_builtin_themes, load_user_themes, validation};
+    let themes_dir = config::themes_dir();
+    let cache_dir = config::cache_dir();
 
     let cmd = command.unwrap_or(ThemeCommands::Check {
         all: false,
@@ -605,17 +606,17 @@ fn run_theme(command: Option<ThemeCommands>) -> Result<()> {
         ThemeCommands::Check { all, verbose } => {
             let mut has_validation_errors = false;
 
-            let validation_results = validation::validate_user_themes();
+            let validation_results = jolt_theme::validation::validate_theme_files(&themes_dir);
             if !validation_results.is_empty() {
-                validation::print_validation_results(&validation_results, verbose);
+                jolt_theme::validation::print_validation_results(&validation_results, verbose);
                 has_validation_errors = validation_results.iter().any(|r| !r.is_valid());
                 println!();
             }
 
             let themes = if all {
-                get_all_themes()
+                jolt_theme::get_all_themes(Some(&themes_dir))
             } else {
-                load_user_themes()
+                jolt_theme::load_themes_from_dir(&themes_dir, false)
             };
 
             let valid_theme_ids: std::collections::HashSet<_> = validation_results
@@ -648,8 +649,8 @@ fn run_theme(command: Option<ThemeCommands>) -> Result<()> {
             }
 
             if !themes_for_contrast.is_empty() {
-                let results = contrast::check_all_themes(&themes_for_contrast);
-                contrast::print_results(&results, verbose);
+                let results = jolt_theme::contrast::check_all_themes(&themes_for_contrast);
+                jolt_theme::contrast::print_results(&results, verbose);
 
                 let has_contrast_failures = results.iter().any(|r| !r.pass);
                 if has_contrast_failures || has_validation_errors {
@@ -658,7 +659,6 @@ fn run_theme(command: Option<ThemeCommands>) -> Result<()> {
             }
         }
         ThemeCommands::Open => {
-            let themes_dir = config::themes_dir();
             if !themes_dir.exists() {
                 std::fs::create_dir_all(&themes_dir)?;
             }
@@ -677,7 +677,6 @@ fn run_theme(command: Option<ThemeCommands>) -> Result<()> {
             template,
             base,
         } => {
-            let themes_dir = config::themes_dir();
             if !themes_dir.exists() {
                 std::fs::create_dir_all(&themes_dir)?;
             }
@@ -697,16 +696,16 @@ fn run_theme(command: Option<ThemeCommands>) -> Result<()> {
             let content = match template.as_str() {
                 "copy" => {
                     let base_id = base.as_deref().unwrap_or("default");
-                    let base_theme = get_builtin_themes()
+                    let base_theme = jolt_theme::get_builtin_themes()
                         .into_iter()
                         .find(|t| t.id == base_id)
                         .ok_or_else(|| {
                             color_eyre::eyre::eyre!("Base theme '{}' not found", base_id)
                         })?;
 
-                    theme::generate_theme_toml(&name, &base_theme)
+                    jolt_theme::generate_theme_toml(&name, &base_theme)
                 }
-                _ => theme::generate_blank_theme_toml(&name),
+                _ => jolt_theme::generate_blank_theme_toml(&name),
             };
 
             std::fs::write(&theme_path, content)?;
@@ -724,9 +723,9 @@ fn run_theme(command: Option<ThemeCommands>) -> Result<()> {
                 std::io::Write::flush(&mut std::io::stdout())?;
 
                 let schemes = if let Some(ref query) = search {
-                    theme::iterm2::search_schemes(query)
+                    jolt_theme::iterm2::search_schemes(query)
                 } else {
-                    theme::iterm2::list_available_schemes()
+                    jolt_theme::iterm2::list_available_schemes()
                 };
 
                 match schemes {
@@ -762,7 +761,7 @@ fn run_theme(command: Option<ThemeCommands>) -> Result<()> {
                             println!();
                             println!(
                                 "Browse themes visually: {}",
-                                theme::iterm2::ITERM2_GALLERY_URL
+                                jolt_theme::iterm2::ITERM2_GALLERY_URL
                             );
                             println!("Import with: jolt theme import <scheme-name>");
                         }
@@ -776,11 +775,11 @@ fn run_theme(command: Option<ThemeCommands>) -> Result<()> {
             }
 
             let themes = if builtin {
-                get_builtin_themes()
+                jolt_theme::get_builtin_themes()
             } else if user {
-                load_user_themes()
+                jolt_theme::load_themes_from_dir(&themes_dir, false)
             } else {
-                get_all_themes()
+                jolt_theme::get_all_themes(Some(&themes_dir))
             };
 
             if themes.is_empty() {
@@ -803,7 +802,7 @@ fn run_theme(command: Option<ThemeCommands>) -> Result<()> {
         ThemeCommands::Import { scheme, name } => {
             println!("Fetching iTerm2 scheme '{}'...", scheme);
 
-            match theme::iterm2::import_scheme(&scheme, name.as_deref()) {
+            match jolt_theme::iterm2::import_scheme(&scheme, name.as_deref(), &themes_dir) {
                 Ok(result) => {
                     let has_dark = result.dark_source.is_some();
                     let has_light = result.light_source.is_some();
@@ -823,9 +822,9 @@ fn run_theme(command: Option<ThemeCommands>) -> Result<()> {
                         );
                     } else {
                         let missing = if has_dark {
-                            theme::iterm2::SchemeVariant::Light
+                            jolt_theme::iterm2::SchemeVariant::Light
                         } else {
-                            theme::iterm2::SchemeVariant::Dark
+                            jolt_theme::iterm2::SchemeVariant::Dark
                         };
                         let missing_name = if has_dark { "light" } else { "dark" };
 
@@ -835,7 +834,7 @@ fn run_theme(command: Option<ThemeCommands>) -> Result<()> {
                             missing_name
                         );
 
-                        match theme::iterm2::find_variant_suggestions(&scheme, missing) {
+                        match jolt_theme::iterm2::find_variant_suggestions(&scheme, missing) {
                             Ok(suggestions) if !suggestions.is_empty() => {
                                 let suggestions: Vec<String> = suggestions;
                                 println!("\nPossible {} variants:", missing_name);
@@ -862,8 +861,11 @@ fn run_theme(command: Option<ThemeCommands>) -> Result<()> {
                 }
                 Err(e) => {
                     eprintln!("Error: {}", e);
-                    if matches!(e, theme::iterm2::Iterm2Error::NotFound(_)) {
-                        eprintln!("\nBrowse themes: {}", theme::iterm2::ITERM2_GALLERY_URL);
+                    if matches!(e, jolt_theme::iterm2::Iterm2Error::NotFound(_)) {
+                        eprintln!(
+                            "\nBrowse themes: {}",
+                            jolt_theme::iterm2::ITERM2_GALLERY_URL
+                        );
                         eprintln!("Search: jolt theme list --search <query>");
                     }
                     std::process::exit(1);
@@ -873,7 +875,7 @@ fn run_theme(command: Option<ThemeCommands>) -> Result<()> {
         ThemeCommands::Fetch { force } => {
             println!("Fetching iTerm2 theme list...");
 
-            match theme::cache::fetch_and_cache_schemes(force) {
+            match jolt_theme::cache::fetch_and_cache_schemes(&cache_dir, force) {
                 Ok(cache) => {
                     println!(
                         "Cached {} themes in {} groups.",
@@ -894,14 +896,12 @@ fn run_theme(command: Option<ThemeCommands>) -> Result<()> {
             }
         }
         ThemeCommands::Clean { yes } => {
-            let themes_path = config::themes_dir();
-
-            if !themes_path.exists() {
+            if !themes_dir.exists() {
                 println!("No user themes directory found.");
                 return Ok(());
             }
 
-            let theme_files: Vec<_> = std::fs::read_dir(&themes_path)
+            let theme_files: Vec<_> = std::fs::read_dir(&themes_dir)
                 .map(|entries| {
                     entries
                         .filter_map(|e| e.ok())

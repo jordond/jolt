@@ -1,4 +1,5 @@
-use crate::theme::{get_theme_by_id, NamedTheme, ThemeColors};
+use crate::theme::ThemeColors;
+use jolt_theme::NamedTheme;
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::PathBuf;
@@ -227,8 +228,11 @@ pub struct RuntimeConfig {
 impl RuntimeConfig {
     pub fn new(user_config: UserConfig) -> Self {
         let system_is_dark = detect_system_dark_mode();
-        let current_theme = get_theme_by_id(&user_config.theme)
-            .unwrap_or_else(|| get_theme_by_id("default").expect("Default theme must exist"));
+        let current_theme = jolt_theme::get_theme_by_id(&user_config.theme, Some(&themes_dir()))
+            .unwrap_or_else(|| {
+                jolt_theme::get_theme_by_id("default", Some(&themes_dir()))
+                    .expect("Default theme must exist")
+            });
 
         Self {
             user_config,
@@ -254,7 +258,7 @@ impl RuntimeConfig {
     }
 
     pub fn set_theme(&mut self, theme_id: &str) {
-        if let Some(theme) = get_theme_by_id(theme_id) {
+        if let Some(theme) = jolt_theme::get_theme_by_id(theme_id, Some(&themes_dir())) {
             self.current_theme = theme;
             self.user_config.theme = theme_id.to_string();
             let _ = self.user_config.save();

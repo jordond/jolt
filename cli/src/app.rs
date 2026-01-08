@@ -7,14 +7,16 @@ use crate::config::{GraphMetric, RuntimeConfig, UserConfig};
 
 const FORECAST_REFRESH_TICKS: u32 = 10;
 const THEME_CHECK_INTERVAL: Duration = Duration::from_secs(2);
+use crate::config::{cache_dir, themes_dir};
 use crate::daemon::CycleSummary;
 use crate::daemon::{DaemonClient, DaemonStatus, DataSnapshot, KillSignal};
 use crate::data::{
     BatteryData, ChargeSession, DailyCycle, DailyStat, DailyTopProcess, ForecastData, HistoryData,
     HistoryMetric, HourlyStat, PowerData, ProcessData, ProcessInfo, SystemInfo,
 };
-use crate::theme::cache::ThemeGroup;
-use crate::theme::{get_all_themes, NamedTheme, ThemeColors};
+use crate::theme::ThemeColors;
+use jolt_theme::cache::ThemeGroup;
+use jolt_theme::NamedTheme;
 
 fn get_base_process_name(name: &str) -> String {
     let name = name
@@ -722,7 +724,7 @@ impl App {
                 self.config.cycle_appearance();
             }
             Action::OpenThemePicker => {
-                self.theme_picker_themes = get_all_themes();
+                self.theme_picker_themes = jolt_theme::get_all_themes(Some(&themes_dir()));
                 self.theme_picker_index = self
                     .theme_picker_themes
                     .iter()
@@ -1159,7 +1161,7 @@ impl App {
     }
 
     fn open_theme_picker_from_config(&mut self) {
-        self.theme_picker_themes = get_all_themes();
+        self.theme_picker_themes = jolt_theme::get_all_themes(Some(&themes_dir()));
         self.theme_picker_index = self
             .theme_picker_themes
             .iter()
@@ -1201,12 +1203,10 @@ impl App {
     }
 
     fn open_theme_importer(&mut self) {
-        use crate::theme::cache::{fetch_and_cache_schemes, get_cached_or_empty};
-
-        let cached = get_cached_or_empty();
+        let cached = jolt_theme::cache::get_cached_or_empty(&cache_dir());
         if cached.groups.is_empty() || cached.is_expired() {
             self.importer_loading = true;
-            if let Ok(fresh) = fetch_and_cache_schemes(false) {
+            if let Ok(fresh) = jolt_theme::cache::fetch_and_cache_schemes(&cache_dir(), false) {
                 let age = fresh.age_description();
                 self.importer_groups = fresh.groups;
                 self.importer_cache_age = Some(age);
@@ -1230,10 +1230,8 @@ impl App {
     }
 
     fn refresh_importer_cache(&mut self) {
-        use crate::theme::cache::fetch_and_cache_schemes;
-
         self.importer_loading = true;
-        if let Ok(fresh) = fetch_and_cache_schemes(true) {
+        if let Ok(fresh) = jolt_theme::cache::fetch_and_cache_schemes(&cache_dir(), true) {
             let age = fresh.age_description();
             self.importer_groups = fresh.groups;
             self.importer_cache_age = Some(age);
@@ -1267,8 +1265,6 @@ impl App {
     }
 
     fn preview_selected_importer_theme(&mut self) {
-        use crate::theme::iterm2::import_scheme;
-
         let group_info: Option<(Option<String>, String)> = {
             let groups = self.get_filtered_importer_groups();
             groups
@@ -1277,8 +1273,10 @@ impl App {
         };
 
         if let Some((Some(scheme_name), group_name)) = group_info {
-            if let Ok(result) = import_scheme(&scheme_name, Some(&group_name)) {
-                self.theme_picker_themes = get_all_themes();
+            if let Ok(result) =
+                jolt_theme::iterm2::import_scheme(&scheme_name, Some(&group_name), &themes_dir())
+            {
+                self.theme_picker_themes = jolt_theme::get_all_themes(Some(&themes_dir()));
                 let new_id = result
                     .path
                     .file_stem()
@@ -1298,8 +1296,6 @@ impl App {
     }
 
     fn import_selected_themes(&mut self) {
-        use crate::theme::iterm2::import_scheme;
-
         if self.importer_selected.is_empty() {
             self.preview_selected_importer_theme();
             return;
@@ -1309,12 +1305,13 @@ impl App {
             if let Some(group) = self.importer_groups.iter().find(|g| g.name == group_name) {
                 let scheme_name = group.dark.as_ref().or(group.light.as_ref());
                 if let Some(name) = scheme_name {
-                    let _ = import_scheme(name, Some(&group.name));
+                    let _ =
+                        jolt_theme::iterm2::import_scheme(name, Some(&group.name), &themes_dir());
                 }
             }
         }
 
-        self.theme_picker_themes = get_all_themes();
+        self.theme_picker_themes = jolt_theme::get_all_themes(Some(&themes_dir()));
         self.importer_selected.clear();
         self.view = AppView::ThemePicker;
     }

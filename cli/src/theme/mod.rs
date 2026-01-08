@@ -1,18 +1,11 @@
-pub mod cache;
-pub mod contrast;
-pub mod iterm2;
-pub mod validation;
+// UI adapter: converts jolt-theme colors to ratatui colors
+// The actual theme logic lives in the jolt-theme crate
 
-use crate::config::config_dir;
 use ratatui::style::Color as RatatuiColor;
-use std::path::PathBuf;
 
-pub use jolt_theme::{
-    generate_blank_theme_toml, generate_theme_toml, get_builtin_themes, Color, NamedTheme,
-};
+pub use jolt_theme::Color;
 
-pub use jolt_theme::ThemeColors as JoltThemeColors;
-
+/// ThemeColors with ratatui Color types for direct use in UI rendering
 #[derive(Debug, Clone, Copy)]
 pub struct ThemeColors {
     pub bg: RatatuiColor,
@@ -31,8 +24,8 @@ pub struct ThemeColors {
     pub graph_line: RatatuiColor,
 }
 
-impl From<JoltThemeColors> for ThemeColors {
-    fn from(colors: JoltThemeColors) -> Self {
+impl From<jolt_theme::ThemeColors> for ThemeColors {
+    fn from(colors: jolt_theme::ThemeColors) -> Self {
         Self {
             bg: to_ratatui_color(colors.bg),
             dialog_bg: to_ratatui_color(colors.dialog_bg),
@@ -54,20 +47,4 @@ impl From<JoltThemeColors> for ThemeColors {
 
 fn to_ratatui_color(color: Color) -> RatatuiColor {
     RatatuiColor::Rgb(color.r, color.g, color.b)
-}
-
-fn themes_dir() -> PathBuf {
-    config_dir().join("themes")
-}
-
-pub fn load_user_themes() -> Vec<NamedTheme> {
-    jolt_theme::load_themes_from_dir(&themes_dir(), false)
-}
-
-pub fn get_all_themes() -> Vec<NamedTheme> {
-    jolt_theme::get_all_themes(Some(&themes_dir()))
-}
-
-pub fn get_theme_by_id(id: &str) -> Option<NamedTheme> {
-    jolt_theme::get_theme_by_id(id, Some(&themes_dir()))
 }
