@@ -14,3 +14,22 @@ target
 
 # Local scratch files
 scratchpad/
+
+# Gradle
+*.iml
+*.local.json
+.gradle
+.idea
+.idea/other.xml
+.idea/deploymentTargetSelector.xml
+.idea/appInsightsSettings.xml
+.idea/gradle.xml
+.idea/misc.xml
+.ruby-lsp
+.kotlin
+local.properties
+tmp
+build/
+reports/
+*/build
+env.properties
