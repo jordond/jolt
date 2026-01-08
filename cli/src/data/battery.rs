@@ -13,6 +13,8 @@ type PlatformBattery = jolt_platform::macos::MacOSBattery;
 #[cfg(target_os = "linux")]
 type PlatformBattery = jolt_platform::linux::LinuxBattery;
 
+#[cfg(not(any(target_os = "macos", target_os = "linux")))]
+compile_error!("BatteryData (PlatformBattery) is only supported on macOS and Linux targets.");
 pub struct BatteryData {
     provider: PlatformBattery,
     time_to_full: Option<Duration>,
