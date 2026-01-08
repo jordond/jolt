@@ -254,13 +254,8 @@ impl ProcessData {
     pub fn kill_process(&self, pid: u32, signal: KillSignal) -> Result<()> {
         use std::process::Command;
 
-        let signal_arg = match signal {
-            KillSignal::Graceful => "-15",
-            KillSignal::Force => "-9",
-        };
-
         Command::new("kill")
-            .args([signal_arg, &pid.to_string()])
+            .args([signal.as_arg(), &pid.to_string()])
             .output()?;
 
         Ok(())

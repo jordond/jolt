@@ -46,6 +46,15 @@ pub enum KillSignal {
     Force,
 }
 
+impl KillSignal {
+    pub fn as_arg(&self) -> &'static str {
+        match self {
+            KillSignal::Graceful => "-15",
+            KillSignal::Force => "-9",
+        }
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct BatterySnapshot {
     pub charge_percent: f32,

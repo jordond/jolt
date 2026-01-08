@@ -10,8 +10,7 @@ use tracing::{debug, error, info, trace, warn};
 use crate::config::{runtime_dir, HistoryConfig, UserConfig};
 use crate::daemon::protocol::{
     BatterySnapshot, BatteryState, DaemonRequest, DaemonResponse, DaemonStatus, DataSnapshot,
-    KillProcessResult, KillSignal, PowerMode, PowerSnapshot, ProcessSnapshot, ProcessState,
-    MAX_SUBSCRIBERS,
+    KillProcessResult, PowerMode, PowerSnapshot, ProcessSnapshot, ProcessState, MAX_SUBSCRIBERS,
 };
 use crate::daemon::socket_path;
 use crate::data::aggregator::Aggregator;
@@ -295,12 +294,8 @@ impl DaemonState {
             }
             DaemonRequest::GetCurrentData => DaemonResponse::CurrentData(self.create_snapshot()),
             DaemonRequest::KillProcess { pid, signal } => {
-                let signal_arg = match signal {
-                    KillSignal::Graceful => "-15",
-                    KillSignal::Force => "-9",
-                };
                 match std::process::Command::new("kill")
-                    .args([signal_arg, &pid.to_string()])
+                    .args([signal.as_arg(), &pid.to_string()])
                     .output()
                 {
                     Ok(output) => {
