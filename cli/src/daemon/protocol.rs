@@ -38,6 +38,23 @@ pub enum ProcessState {
     Unknown,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum KillSignal {
+    Graceful,
+    #[default]
+    Force,
+}
+
+impl KillSignal {
+    pub fn as_arg(&self) -> &'static str {
+        match self {
+            KillSignal::Graceful => "-15",
+            KillSignal::Force => "-9",
+        }
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct BatterySnapshot {
     pub charge_percent: f32,
@@ -129,6 +146,7 @@ pub enum DaemonRequest {
     GetCurrentData,
     KillProcess {
         pid: u32,
+        signal: KillSignal,
     },
     SetBroadcastInterval {
         interval_ms: u64,
@@ -346,13 +364,46 @@ mod tests {
 
     #[test]
     fn test_daemon_request_kill_process() {
-        let req = DaemonRequest::KillProcess { pid: 12345 };
+        let req = DaemonRequest::KillProcess {
+            pid: 12345,
+            signal: KillSignal::Force,
+        };
         let json = req.to_json().unwrap();
         let deserialized = DaemonRequest::from_json(&json).unwrap();
 
         match deserialized {
-            DaemonRequest::KillProcess { pid } => assert_eq!(pid, 12345),
+            DaemonRequest::KillProcess { pid, signal } => {
+                assert_eq!(pid, 12345);
+                assert_eq!(signal, KillSignal::Force);
+            }
             _ => panic!("Expected KillProcess"),
+        }
+    }
+
+    #[test]
+    fn test_daemon_request_kill_process_graceful() {
+        let req = DaemonRequest::KillProcess {
+            pid: 99999,
+            signal: KillSignal::Graceful,
+        };
+        let json = req.to_json().unwrap();
+        let deserialized = DaemonRequest::from_json(&json).unwrap();
+
+        match deserialized {
+            DaemonRequest::KillProcess { pid, signal } => {
+                assert_eq!(pid, 99999);
+                assert_eq!(signal, KillSignal::Graceful);
+            }
+            _ => panic!("Expected KillProcess"),
+        }
+    }
+
+    #[test]
+    fn test_kill_signal_variants() {
+        for signal in [KillSignal::Graceful, KillSignal::Force] {
+            let json = serde_json::to_string(&signal).unwrap();
+            let deserialized: KillSignal = serde_json::from_str(&json).unwrap();
+            assert_eq!(deserialized, signal);
         }
     }
 

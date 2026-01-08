@@ -293,9 +293,9 @@ impl DaemonState {
                 }
             }
             DaemonRequest::GetCurrentData => DaemonResponse::CurrentData(self.create_snapshot()),
-            DaemonRequest::KillProcess { pid } => {
+            DaemonRequest::KillProcess { pid, signal } => {
                 match std::process::Command::new("kill")
-                    .args(["-9", &pid.to_string()])
+                    .args([signal.as_arg(), &pid.to_string()])
                     .output()
                 {
                     Ok(output) => {
