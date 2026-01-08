@@ -1,9 +1,8 @@
 use ratatui::{
-    buffer::Buffer,
     layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
     text::{Line, Span},
-    widgets::{Block, Borders, Paragraph, Widget},
+    widgets::{Block, Borders, Gauge, Paragraph},
     Frame,
 };
 
@@ -62,107 +61,37 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) {
 
 fn render_battery_gauge(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) {
     let percent = app.battery.charge_percent();
-    let ratio = (percent / 100.0).clamp(0.0, 1.0);
     let gauge_color = percent_to_color(percent, 50.0, 20.0, theme);
+    let unfilled_color = darken_color(theme.border, 0.4);
 
-    let gauge = ThickGauge {
-        ratio,
-        filled_color: gauge_color,
-        border_color: theme.border,
-        bg_color: theme.bg,
-    };
+    let label = Span::styled(
+        format!("{:.0}%", percent),
+        Style::default().fg(theme.fg).add_modifier(Modifier::BOLD),
+    );
+
+    let gauge = Gauge::default()
+        .block(
+            Block::default()
+                .borders(Borders::ALL)
+                .border_style(Style::default().fg(theme.border))
+                .style(Style::default().bg(theme.bg)),
+        )
+        .gauge_style(Style::default().fg(gauge_color).bg(unfilled_color))
+        .ratio((percent / 100.0).clamp(0.0, 1.0) as f64)
+        .label(label)
+        .use_unicode(true);
 
     frame.render_widget(gauge, area);
 }
 
-struct ThickGauge {
-    ratio: f32,
-    filled_color: ratatui::style::Color,
-    border_color: ratatui::style::Color,
-    bg_color: ratatui::style::Color,
-}
-
-impl Widget for ThickGauge {
-    fn render(self, area: Rect, buf: &mut Buffer) {
-        if area.width < 10 || area.height == 0 {
-            return;
-        }
-
-        let (inner, has_border) = if area.height >= 3 {
-            let block = Block::default()
-                .borders(Borders::ALL)
-                .border_style(Style::default().fg(self.border_color))
-                .style(Style::default().bg(self.bg_color));
-            let inner = block.inner(area);
-            block.render(area, buf);
-            (inner, true)
-        } else {
-            (area, false)
-        };
-
-        if inner.width < 8 || inner.height == 0 {
-            return;
-        }
-
-        let show_labels = inner.width >= 15 && has_border;
-        let bar_start = if show_labels { inner.x + 3 } else { inner.x };
-        let bar_end = if show_labels {
-            inner.x + inner.width - 5
-        } else {
-            inner.x + inner.width
-        };
-        let bar_width = bar_end.saturating_sub(bar_start);
-
-        if bar_width < 5 {
-            return;
-        }
-
-        let filled_width = (bar_width as f32 * self.ratio).round() as u16;
-
-        for y in inner.y..inner.y + inner.height {
-            for x in bar_start..bar_end {
-                if let Some(cell) = buf.cell_mut((x, y)) {
-                    let rel_x = x - bar_start;
-                    let is_last_filled =
-                        rel_x == filled_width.saturating_sub(1) && filled_width > 0;
-
-                    if rel_x < filled_width {
-                        if is_last_filled && filled_width < bar_width {
-                            cell.set_char('▌');
-                        } else {
-                            cell.set_char('█');
-                        }
-                        cell.set_fg(self.filled_color);
-                    } else {
-                        cell.set_char(' ');
-                    }
-                }
-            }
-        }
-
-        let label_y = inner.y + inner.height / 2;
-
-        if show_labels {
-            for (i, ch) in "0%".chars().enumerate() {
-                let x = inner.x + i as u16;
-                if x < bar_start {
-                    if let Some(cell) = buf.cell_mut((x, label_y)) {
-                        cell.set_char(ch);
-                        cell.set_fg(self.border_color);
-                    }
-                }
-            }
-
-            for (i, ch) in "100%".chars().enumerate() {
-                let x = bar_end + i as u16;
-                if x < inner.x + inner.width {
-                    if let Some(cell) = buf.cell_mut((x, label_y)) {
-                        cell.set_char(ch);
-                        cell.set_fg(self.border_color);
-                    }
-                }
-            }
-        }
+fn darken_color(color: Color, factor: f32) -> Color {
+    match color {
+        Color::Rgb(r, g, b) => Color::Rgb(
+            (r as f32 * factor) as u8,
+            (g as f32 * factor) as u8,
+            (b as f32 * factor) as u8,
+        ),
+        _ => Color::Rgb(40, 40, 45),
     }
 }
 
@@ -237,12 +166,7 @@ fn render_battery_info_card(frame: &mut Frame, area: Rect, app: &App, theme: &Th
         .cycle_count()
         .map_or("—".to_string(), |c| c.to_string());
 
-    let percent = app.battery.charge_percent();
-    let percent_color = percent_to_color(percent, 50.0, 20.0, theme);
-
     let single_line = build_single_line(
-        percent,
-        percent_color,
         state_icon,
         app.battery.state_label(),
         time_label,
@@ -287,13 +211,6 @@ fn render_battery_info_card(frame: &mut Frame, area: Rect, app: &App, theme: &Th
             Span::styled(
                 app.battery.state_label(),
                 Style::default().fg(theme.fg).add_modifier(Modifier::BOLD),
-            ),
-            Span::styled("  ", Style::default()),
-            Span::styled(
-                format!("{:.0}%", percent),
-                Style::default()
-                    .fg(percent_color)
-                    .add_modifier(Modifier::BOLD),
             ),
             Span::styled("  │  ", Style::default().fg(theme.border)),
             Span::styled(format!("{} ", time_label), Style::default().fg(theme.muted)),
@@ -368,8 +285,6 @@ fn render_battery_info_card(frame: &mut Frame, area: Rect, app: &App, theme: &Th
 
 #[allow(clippy::too_many_arguments)]
 fn build_single_line<'a>(
-    percent: f32,
-    percent_color: ratatui::style::Color,
     icon: &'a str,
     state: &'a str,
     time_label: &'a str,
@@ -388,13 +303,6 @@ fn build_single_line<'a>(
         Span::styled(
             state,
             Style::default().fg(theme.fg).add_modifier(Modifier::BOLD),
-        ),
-        Span::styled("  ", Style::default()),
-        Span::styled(
-            format!("{:.0}%", percent),
-            Style::default()
-                .fg(percent_color)
-                .add_modifier(Modifier::BOLD),
         ),
         Span::styled("  │  ", Style::default().fg(theme.border)),
         Span::styled(format!("{} ", time_label), Style::default().fg(theme.muted)),
