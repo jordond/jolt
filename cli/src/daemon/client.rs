@@ -4,6 +4,7 @@ use std::time::Duration;
 
 use crate::daemon::protocol::{
     CycleSummary, DaemonRequest, DaemonResponse, DaemonStatus, DataSnapshot, KillProcessResult,
+    KillSignal,
 };
 use crate::daemon::socket_path;
 use crate::data::{ChargeSession, DailyCycle, DailyStat, DailyTopProcess, HourlyStat, Sample};
@@ -180,8 +181,8 @@ impl DaemonClient {
     }
 
     #[allow(dead_code)]
-    pub fn kill_process(&mut self, pid: u32) -> Result<KillProcessResult> {
-        match self.send_request(DaemonRequest::KillProcess { pid })? {
+    pub fn kill_process(&mut self, pid: u32, signal: KillSignal) -> Result<KillProcessResult> {
+        match self.send_request(DaemonRequest::KillProcess { pid, signal })? {
             DaemonResponse::KillResult(result) => Ok(result),
             DaemonResponse::Error(e) => Err(ClientError::Daemon(e)),
             _ => Err(ClientError::Protocol("Unexpected response".into())),
@@ -298,7 +299,7 @@ pub mod async_client {
     use tokio::net::UnixStream;
 
     use crate::daemon::protocol::{
-        DaemonRequest, DaemonResponse, DaemonStatus, DataSnapshot, KillProcessResult,
+        DaemonRequest, DaemonResponse, DaemonStatus, DataSnapshot, KillProcessResult, KillSignal,
     };
     use crate::daemon::socket_path;
     use crate::data::{DailyStat, DailyTopProcess, HourlyStat, Sample};
@@ -431,9 +432,13 @@ pub mod async_client {
             }
         }
 
-        pub async fn kill_process(&mut self, pid: u32) -> Result<KillProcessResult> {
+        pub async fn kill_process(
+            &mut self,
+            pid: u32,
+            signal: KillSignal,
+        ) -> Result<KillProcessResult> {
             match self
-                .send_request(DaemonRequest::KillProcess { pid })
+                .send_request(DaemonRequest::KillProcess { pid, signal })
                 .await?
             {
                 DaemonResponse::KillResult(result) => Ok(result),

@@ -7,6 +7,7 @@ use ratatui::{
 };
 
 use crate::app::App;
+use crate::daemon::KillSignal;
 use crate::input::KEY_BINDINGS;
 use crate::theme::ThemeColors;
 use crate::ui::VERSION;
@@ -133,7 +134,7 @@ pub fn render_help(frame: &mut Frame, app: &App, theme: &ThemeColors) {
 }
 
 pub fn render_kill_confirm(frame: &mut Frame, app: &App, theme: &ThemeColors) {
-    let area = centered_fixed_rect(frame.area(), 50, 14);
+    let area = centered_fixed_rect(frame.area(), 54, 16);
 
     frame.render_widget(Clear, area);
 
@@ -153,6 +154,23 @@ pub fn render_kill_confirm(frame: &mut Frame, app: &App, theme: &ThemeColors) {
         .split(inner)[0];
 
     let content = if let Some(process) = app.process_to_kill() {
+        let (graceful_style, force_style, warning_text) = match app.kill_signal {
+            KillSignal::Graceful => (
+                Style::default()
+                    .fg(theme.success)
+                    .add_modifier(Modifier::BOLD),
+                Style::default().fg(theme.muted),
+                "Process will be asked to terminate gracefully.",
+            ),
+            KillSignal::Force => (
+                Style::default().fg(theme.muted),
+                Style::default()
+                    .fg(theme.danger)
+                    .add_modifier(Modifier::BOLD),
+                "Process will be forcefully terminated immediately.",
+            ),
+        };
+
         vec![
             Line::from(""),
             Line::from(vec![
@@ -181,8 +199,16 @@ pub fn render_kill_confirm(frame: &mut Frame, app: &App, theme: &ThemeColors) {
                 ),
             ]),
             Line::from(""),
+            Line::from(vec![
+                Span::styled("Signal: ", Style::default().fg(theme.muted)),
+                Span::styled(" Graceful ", graceful_style),
+                Span::styled(" | ", Style::default().fg(theme.muted)),
+                Span::styled(" Force ", force_style),
+                Span::styled("  [Tab]", Style::default().fg(theme.muted)),
+            ]),
+            Line::from(""),
             Line::from(vec![Span::styled(
-                "This will forcefully terminate the process.",
+                warning_text,
                 Style::default().fg(theme.warning),
             )]),
             Line::from(""),
