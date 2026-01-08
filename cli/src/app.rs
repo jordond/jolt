@@ -9,8 +9,8 @@ const FORECAST_REFRESH_TICKS: u32 = 10;
 const THEME_CHECK_INTERVAL: Duration = Duration::from_secs(2);
 use crate::daemon::{DaemonClient, DaemonStatus, DataSnapshot};
 use crate::data::{
-    BatteryData, DailyStat, DailyTopProcess, ForecastData, HistoryData, HistoryMetric, HourlyStat,
-    PowerData, ProcessData, ProcessInfo, SystemInfo,
+    BatteryData, DailyStat, DailyTopProcess, DisplayData, ForecastData, HistoryData, HistoryMetric,
+    HourlyStat, PowerData, ProcessData, ProcessInfo, SystemInfo,
 };
 use crate::theme::cache::ThemeGroup;
 use crate::theme::{get_all_themes, NamedTheme, ThemeColors};
@@ -163,6 +163,7 @@ pub struct App {
     pub system_info: SystemInfo,
     pub battery: BatteryData,
     pub power: PowerData,
+    pub display: DisplayData,
     pub processes: ProcessData,
     pub history: HistoryData,
     pub forecast: ForecastData,
@@ -233,6 +234,7 @@ impl App {
             system_info: SystemInfo::new(),
             battery: BatteryData::new()?,
             power: PowerData::new()?,
+            display: DisplayData::new()?,
             processes: ProcessData::with_exclusions(excluded)?,
             history: HistoryData::with_metric(graph_metric),
             forecast: ForecastData::new(),
@@ -462,8 +464,8 @@ impl App {
     fn tick_from_local(&mut self) -> Result<()> {
         self.battery.refresh()?;
         self.power.refresh()?;
+        self.display.refresh()?;
 
-        // Skip process refresh during selection to prevent list from jumping
         if !self.selection_mode {
             self.processes.refresh()?;
         }
@@ -996,6 +998,7 @@ impl App {
         ("Refresh Rate (ms)", false),
         ("Display", true),
         ("Show Graph", false),
+        ("Show Brightness", false),
         ("Merge Mode", false),
         ("Process Count", false),
         ("Energy Threshold", false),
@@ -1037,6 +1040,12 @@ impl App {
             "Appearance" => self.config.appearance_label().to_string(),
             "Refresh Rate (ms)" => self.refresh_ms.to_string(),
             "Show Graph" => if self.config.user_config.show_graph {
+                "On"
+            } else {
+                "Off"
+            }
+            .to_string(),
+            "Show Brightness" => if self.config.user_config.show_display_power {
                 "On"
             } else {
                 "Off"
@@ -1097,6 +1106,11 @@ impl App {
             "Appearance" => self.config.cycle_appearance(),
             "Show Graph" => {
                 self.config.user_config.show_graph = !self.config.user_config.show_graph;
+                let _ = self.config.user_config.save();
+            }
+            "Show Brightness" => {
+                self.config.user_config.show_display_power =
+                    !self.config.user_config.show_display_power;
                 let _ = self.config.user_config.save();
             }
             "Merge Mode" => {

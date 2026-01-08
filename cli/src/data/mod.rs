@@ -1,5 +1,6 @@
 pub mod aggregator;
 pub mod battery;
+pub mod display;
 pub mod forecast;
 pub mod history;
 pub mod history_store;
@@ -9,6 +10,7 @@ pub mod recorder;
 pub mod system;
 
 pub use battery::BatteryData;
+pub use display::DisplayData;
 pub use forecast::{ForecastData, ForecastSource};
 pub use history::{HistoryData, HistoryMetric};
 pub use history_store::{
