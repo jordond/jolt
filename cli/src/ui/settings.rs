@@ -8,6 +8,7 @@ use ratatui::{
 
 use crate::app::App;
 use crate::input::keys;
+use crate::settings::{self, SettingsRow, SETTINGS_LAYOUT};
 use crate::theme::ThemeColors;
 
 const CONTENT_WIDTH: u16 = 44;
@@ -22,7 +23,7 @@ fn centered_fixed_rect(area: Rect, width: u16, height: u16) -> Rect {
 
 pub fn render(frame: &mut Frame, app: &App, theme: &ThemeColors) {
     let status_height: u16 = 4;
-    let items_height = App::SETTINGS_ITEMS.len() as u16;
+    let items_height = settings::row_count() as u16;
     let footer_height: u16 = 1;
     let content_height = status_height + items_height + footer_height + 6;
     let dialog_width = CONTENT_WIDTH + 8;
@@ -136,19 +137,18 @@ fn render_divider(frame: &mut Frame, area: Rect, theme: &ThemeColors) {
 }
 
 fn render_items_section(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) {
-    let items: Vec<Line> = App::SETTINGS_ITEMS
+    let items: Vec<Line> = SETTINGS_LAYOUT
         .iter()
         .enumerate()
-        .map(|(i, (name, is_header))| {
-            if *is_header {
-                Line::from(vec![Span::styled(
-                    format!("\u{25b8} {}", name),
-                    Style::default()
-                        .fg(theme.muted)
-                        .add_modifier(Modifier::BOLD),
-                )])
-            } else {
-                let value = app.settings_item_value(i);
+        .map(|(i, row)| match row {
+            SettingsRow::Section(label) => Line::from(vec![Span::styled(
+                format!("\u{25b8} {}", label),
+                Style::default()
+                    .fg(theme.muted)
+                    .add_modifier(Modifier::BOLD),
+            )]),
+            SettingsRow::Item { id, label } => {
+                let value = settings::setting_value(app, *id);
                 let is_selected = i == app.settings_selected_item;
 
                 let style = if is_selected {
@@ -167,7 +167,7 @@ fn render_items_section(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeC
                 };
 
                 Line::from(vec![
-                    Span::styled(format!("  {:<24}", name), style),
+                    Span::styled(format!("  {:<24}", label), style),
                     Span::styled(format!("{:>16}", value), value_style),
                     Span::styled("  ", style),
                 ])
