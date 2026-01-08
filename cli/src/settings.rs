@@ -66,8 +66,6 @@ pub enum SettingInput {
 /// Result of applying a setting action.
 #[derive(Debug, Clone, Copy, Default)]
 pub struct SettingOutcome {
-    #[allow(dead_code)]
-    pub changed: bool,
     pub open_modal: bool,
 }
 
@@ -195,16 +193,10 @@ pub fn setting_value(app: &App, id: SettingId) -> String {
 /// Apply an input action to a setting. Returns the outcome.
 pub fn setting_apply(app: &mut App, id: SettingId, input: SettingInput) -> SettingOutcome {
     match id {
-        SettingId::Theme => SettingOutcome {
-            changed: false,
-            open_modal: true,
-        },
+        SettingId::Theme => SettingOutcome { open_modal: true },
         SettingId::Appearance => {
             app.config.cycle_appearance();
-            SettingOutcome {
-                changed: true,
-                open_modal: false,
-            }
+            SettingOutcome { open_modal: false }
         }
         SettingId::RefreshMs => apply_int(
             app,
@@ -360,10 +352,7 @@ where
         let new_val = !get(app);
         set(app, new_val);
         let _ = app.config.user_config.save();
-        SettingOutcome {
-            changed: true,
-            open_modal: false,
-        }
+        SettingOutcome { open_modal: false }
     } else {
         SettingOutcome::default()
     }
@@ -392,10 +381,7 @@ where
     if new_val != current {
         set(app, new_val);
         let _ = app.config.user_config.save();
-        SettingOutcome {
-            changed: true,
-            open_modal: false,
-        }
+        SettingOutcome { open_modal: false }
     } else {
         SettingOutcome::default()
     }
@@ -425,10 +411,7 @@ where
     if (new_val - current).abs() > f64::EPSILON {
         set(app, new_val);
         let _ = app.config.user_config.save();
-        SettingOutcome {
-            changed: true,
-            open_modal: false,
-        }
+        SettingOutcome { open_modal: false }
     } else {
         SettingOutcome::default()
     }
