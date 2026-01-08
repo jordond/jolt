@@ -40,4 +40,3 @@ ureq = { workspace = true }
 plist = { workspace = true }
 rusqlite = { workspace = true }
 daemonize = { workspace = true }
-core-foundation-sys = { workspace = true }

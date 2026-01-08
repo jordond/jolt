@@ -60,7 +60,7 @@ enum RefreshRequest {
 struct RefreshWorker {
     request_tx: std_mpsc::Sender<RefreshRequest>,
     response_rx: std_mpsc::Receiver<DataSnapshot>,
-    _handle: thread::JoinHandle<()>,
+    _handle: Option<thread::JoinHandle<()>>,
 }
 
 impl RefreshWorker {
@@ -84,7 +84,7 @@ impl RefreshWorker {
         Ok(Self {
             request_tx,
             response_rx,
-            _handle: handle,
+            _handle: Some(handle),
         })
     }
 
@@ -126,7 +126,26 @@ impl RefreshWorker {
 
         let mut last_process_refresh = Instant::now();
 
-        while let Ok(request) = request_rx.recv() {
+        while let Ok(mut request) = request_rx.recv() {
+            // Drain any pending requests to avoid queue buildup in long-running daemon
+            let mut drained_count = 0u64;
+            while let Ok(pending) = request_rx.try_recv() {
+                drained_count += 1;
+                request = match (&request, &pending) {
+                    // Shutdown always takes priority
+                    (_, RefreshRequest::Shutdown) | (RefreshRequest::Shutdown, _) => {
+                        RefreshRequest::Shutdown
+                    }
+                    // Full takes priority over MetricsOnly
+                    (RefreshRequest::Full, _) | (_, RefreshRequest::Full) => RefreshRequest::Full,
+                    // Both MetricsOnly
+                    _ => RefreshRequest::MetricsOnly,
+                };
+            }
+            if drained_count > 0 {
+                debug!(drained_count, "Drained stale refresh requests from queue");
+            }
+
             let refresh_start = Instant::now();
             let request_type = match &request {
                 RefreshRequest::Shutdown => "shutdown",
@@ -197,6 +216,17 @@ impl RefreshWorker {
 
     fn shutdown(&self) {
         let _ = self.request_tx.send(RefreshRequest::Shutdown);
+    }
+}
+
+impl Drop for RefreshWorker {
+    fn drop(&mut self) {
+        let _ = self.request_tx.send(RefreshRequest::Shutdown);
+        if let Some(handle) = self._handle.take() {
+            if let Err(e) = handle.join() {
+                error!("Failed to join refresh worker thread: {:?}", e);
+            }
+        }
     }
 }
 

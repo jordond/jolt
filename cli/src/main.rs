@@ -346,6 +346,7 @@ fn run_tui_loop(
     let mut needs_redraw = true;
     let mut last_tick = std::time::Instant::now();
     let mut tick_count: u64 = 0;
+    let mut wait_log_counter: u64 = 0;
 
     loop {
         let tick_rate = Duration::from_millis(app.refresh_ms);
@@ -366,13 +367,16 @@ fn run_tui_loop(
                 using_daemon = app.using_daemon_data,
                 "TUI tick completed"
             );
+            wait_log_counter = 0;
             result
         } else {
-            // Only log occasionally to avoid spam
-            if elapsed.as_millis() % 500 < 10 {
+            // Only log occasionally to avoid spam (~every 500ms at 10ms poll rate)
+            wait_log_counter += 1;
+            if wait_log_counter.is_multiple_of(50) {
                 trace!(
                     elapsed_ms = elapsed.as_millis() as u64,
                     tick_rate_ms = app.refresh_ms,
+                    wait_iterations = wait_log_counter,
                     "TUI waiting for next tick"
                 );
             }

@@ -250,7 +250,6 @@ impl App {
             system_info: SystemInfo::new(),
             battery: BatteryData::new()?,
             power: PowerData::new()?,
-
             processes: ProcessData::with_exclusions(excluded)?,
             history: HistoryData::with_metric(graph_metric),
             forecast: ForecastData::new(),

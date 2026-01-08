@@ -1072,7 +1072,6 @@ dependencies = [
  "chrono",
  "clap",
  "color-eyre",
- "core-foundation-sys",
  "crossterm",
  "daemonize",
  "dirs",
