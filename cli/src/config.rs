@@ -40,18 +40,6 @@ impl LogLevel {
             _ => LogLevel::Info,
         }
     }
-
-    #[allow(dead_code)]
-    pub fn label(&self) -> &'static str {
-        match self {
-            LogLevel::Off => "off",
-            LogLevel::Error => "error",
-            LogLevel::Warn => "warn",
-            LogLevel::Info => "info",
-            LogLevel::Debug => "debug",
-            LogLevel::Trace => "trace",
-        }
-    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]

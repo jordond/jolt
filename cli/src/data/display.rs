@@ -65,11 +65,6 @@ impl DisplayData {
     pub fn brightness_percent(&self) -> f32 {
         self.brightness_percent
     }
-
-    #[allow(dead_code)]
-    pub fn max_nits(&self) -> Option<u32> {
-        self.max_nits
-    }
 }
 
 fn extract_number(line: &str) -> Option<i64> {

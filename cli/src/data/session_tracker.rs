@@ -234,11 +234,6 @@ impl SessionTracker {
     pub fn reset_time_at_high_soc(&mut self) {
         self.time_at_high_soc_secs = 0;
     }
-
-    #[allow(dead_code)]
-    pub fn get_time_at_high_soc_secs(&self) -> i64 {
-        self.time_at_high_soc_secs
-    }
 }
 
 impl Default for SessionTracker {

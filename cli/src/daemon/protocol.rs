@@ -2,7 +2,6 @@ use serde::{Deserialize, Serialize};
 
 use crate::data::{ChargeSession, DailyCycle, DailyStat, DailyTopProcess, HourlyStat, Sample};
 
-#[allow(dead_code)]
 pub const MAX_SUBSCRIBERS: usize = 10;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
