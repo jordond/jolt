@@ -62,11 +62,14 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) {
 fn render_battery_gauge(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) {
     let percent = app.battery.charge_percent();
     let gauge_color = percent_to_color(percent, 50.0, 20.0, theme);
-    let unfilled_color = darken_color(theme.border, 0.4);
+    let unfilled_color = darken_color(theme.border, 0.6);
 
     let label = Span::styled(
         format!("{:.0}%", percent),
-        Style::default().fg(theme.fg).add_modifier(Modifier::BOLD),
+        Style::default()
+            .fg(theme.fg)
+            .bg(theme.bg)
+            .add_modifier(Modifier::BOLD),
     );
 
     let gauge = Gauge::default()
