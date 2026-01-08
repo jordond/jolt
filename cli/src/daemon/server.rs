@@ -197,6 +197,9 @@ impl DaemonState {
             voltage_mv: self.battery.voltage_mv(),
             amperage_ma: self.battery.amperage_ma(),
             external_connected: self.battery.external_connected(),
+            temperature_c: self.battery.temperature_c(),
+            daily_min_soc: self.battery.daily_min_soc(),
+            daily_max_soc: self.battery.daily_max_soc(),
         }
     }
 
@@ -333,7 +336,89 @@ impl DaemonState {
             | DaemonRequest::SetBroadcastInterval { .. } => {
                 DaemonResponse::Error("Handled separately".to_string())
             }
+            DaemonRequest::GetCycleSummary { days } => match self.compute_cycle_summary(*days) {
+                Ok(summary) => DaemonResponse::CycleSummary(summary),
+                Err(e) => DaemonResponse::Error(e.to_string()),
+            },
+            DaemonRequest::GetChargeSessions { from, to } => {
+                match self.recorder.store().get_charge_sessions(*from, *to, None) {
+                    Ok(sessions) => DaemonResponse::ChargeSessions(sessions),
+                    Err(e) => DaemonResponse::Error(e.to_string()),
+                }
+            }
+            DaemonRequest::GetDailyCycles { from, to } => {
+                match self.recorder.store().get_daily_cycles(from, to) {
+                    Ok(cycles) => DaemonResponse::DailyCycles(cycles),
+                    Err(e) => DaemonResponse::Error(e.to_string()),
+                }
+            }
         }
+    }
+
+    fn compute_cycle_summary(
+        &self,
+        days: u32,
+    ) -> std::result::Result<crate::daemon::protocol::CycleSummary, crate::data::HistoryStoreError>
+    {
+        use crate::daemon::protocol::CycleSummary;
+
+        let now = chrono::Utc::now();
+        let from_date = (now - chrono::Duration::days(days as i64))
+            .format("%Y-%m-%d")
+            .to_string();
+        let to_date = now.format("%Y-%m-%d").to_string();
+
+        let daily_cycles = self
+            .recorder
+            .store()
+            .get_daily_cycles(&from_date, &to_date)?;
+
+        if daily_cycles.is_empty() {
+            return Ok(CycleSummary::default());
+        }
+
+        let days_count = daily_cycles.len() as f32;
+
+        let total_charge_sessions: i32 = daily_cycles.iter().map(|c| c.charge_sessions).sum();
+        let total_partial_cycles: f32 = daily_cycles.iter().map(|c| c.partial_cycles).sum();
+
+        let deepest_discharges: Vec<f32> = daily_cycles
+            .iter()
+            .filter_map(|c| c.deepest_discharge_percent)
+            .collect();
+
+        let avg_depth_of_discharge = if !deepest_discharges.is_empty() {
+            100.0 - (deepest_discharges.iter().sum::<f32>() / deepest_discharges.len() as f32)
+        } else {
+            0.0
+        };
+
+        let total_high_soc_mins: i32 = daily_cycles.iter().map(|c| c.time_at_high_soc_mins).sum();
+        let total_active_mins = days_count * 24.0 * 60.0;
+        let time_at_high_soc_percent = if total_active_mins > 0.0 {
+            (total_high_soc_mins as f32 / total_active_mins) * 100.0
+        } else {
+            0.0
+        };
+
+        let macos_cycle_count = self.battery.cycle_count().unwrap_or(0);
+
+        let estimated_remaining = if macos_cycle_count > 0 && macos_cycle_count < 1000 {
+            Some(1000 - macos_cycle_count)
+        } else {
+            None
+        };
+
+        Ok(CycleSummary {
+            total_cycles_macos: macos_cycle_count,
+            partial_cycles_calculated: total_partial_cycles,
+            avg_daily_cycles: total_partial_cycles / days_count,
+            avg_depth_of_discharge,
+            avg_charge_sessions_per_day: total_charge_sessions as f32 / days_count,
+            time_at_high_soc_percent,
+            estimated_cycles_remaining: estimated_remaining,
+            days_analyzed: days_count as u32,
+        })
     }
 }
 

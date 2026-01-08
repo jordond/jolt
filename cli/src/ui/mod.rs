@@ -1,4 +1,5 @@
 mod battery;
+mod cycles;
 mod graphs;
 mod help;
 mod history;

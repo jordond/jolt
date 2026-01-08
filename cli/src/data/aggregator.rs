@@ -2,7 +2,9 @@ use chrono::{DateTime, Duration, Timelike, Utc};
 use tracing::debug;
 
 use crate::config::HistoryConfig;
-use crate::data::{DailyStat, HistoryStore, HistoryStoreError, HourlyStat};
+use crate::data::{
+    DailyCycle, DailyStat, HistoryStore, HistoryStoreError, HourlyStat, SessionType,
+};
 
 pub struct Aggregator<'a> {
     store: &'a HistoryStore,
@@ -97,6 +99,89 @@ impl<'a> Aggregator<'a> {
         }))
     }
 
+    pub fn compute_daily_cycles(
+        &self,
+        date: &str,
+    ) -> Result<Option<DailyCycle>, HistoryStoreError> {
+        let day_start = date_to_timestamp(date)?;
+        let day_end = day_start + 86400;
+
+        let sessions = self
+            .store
+            .get_charge_sessions(day_start, day_end - 1, None)?;
+        if sessions.is_empty() {
+            return Ok(None);
+        }
+
+        let charge_sessions = sessions
+            .iter()
+            .filter(|s| matches!(s.session_type, SessionType::Charge))
+            .count() as i32;
+
+        let discharge_sessions = sessions
+            .iter()
+            .filter(|s| matches!(s.session_type, SessionType::Discharge))
+            .count() as i32;
+
+        let mut total_charging_secs: i64 = 0;
+        let mut total_discharge_secs: i64 = 0;
+        let mut energy_charged_wh: f32 = 0.0;
+        let mut energy_discharged_wh: f32 = 0.0;
+        let mut deepest_discharge: Option<f32> = None;
+        let mut total_discharge_percent: f32 = 0.0;
+
+        for session in &sessions {
+            let duration = session.duration_secs().unwrap_or(0);
+
+            match session.session_type {
+                SessionType::Charge => {
+                    total_charging_secs += duration;
+                    if let Some(energy) = session.energy_wh {
+                        energy_charged_wh += energy;
+                    }
+                }
+                SessionType::Discharge => {
+                    total_discharge_secs += duration;
+                    if let Some(energy) = session.energy_wh {
+                        energy_discharged_wh += energy;
+                    }
+                    if let Some(end_percent) = session.end_percent {
+                        match deepest_discharge {
+                            Some(current) if end_percent < current => {
+                                deepest_discharge = Some(end_percent);
+                            }
+                            None => {
+                                deepest_discharge = Some(end_percent);
+                            }
+                            _ => {}
+                        }
+                    }
+                    if let Some(delta) = session.percent_delta() {
+                        total_discharge_percent += delta.abs();
+                    }
+                }
+            }
+        }
+
+        let partial_cycles = total_discharge_percent / 100.0;
+
+        Ok(Some(DailyCycle {
+            id: None,
+            date: date.to_string(),
+            charge_sessions,
+            discharge_sessions,
+            total_charging_mins: (total_charging_secs / 60) as i32,
+            total_discharge_mins: (total_discharge_secs / 60) as i32,
+            deepest_discharge_percent: deepest_discharge,
+            energy_charged_wh,
+            energy_discharged_wh,
+            partial_cycles,
+            macos_cycle_count: None,
+            avg_temperature_c: None,
+            time_at_high_soc_mins: 0,
+        }))
+    }
+
     pub fn aggregate_completed_hours(&self) -> Result<usize, HistoryStoreError> {
         let now = Utc::now();
         let current_hour = now.date_naive().and_hms_opt(now.hour(), 0, 0).unwrap();
@@ -160,6 +245,13 @@ impl<'a> Aggregator<'a> {
                 }
             }
 
+            let existing_cycles = self.store.get_daily_cycle(&current_date)?;
+            if existing_cycles.is_none() {
+                if let Some(cycle) = self.compute_daily_cycles(&current_date)? {
+                    self.store.upsert_daily_cycle(&cycle)?;
+                }
+            }
+
             current_date = next_date(&current_date);
         }
 
@@ -187,7 +279,15 @@ impl<'a> Aggregator<'a> {
             let cutoff_date = cutoff.format("%Y-%m-%d").to_string();
             result.daily_deleted = self.store.delete_daily_stats_before(&cutoff_date)?;
             result.processes_deleted = self.store.delete_daily_processes_before(&cutoff_date)?;
+            result.daily_cycles_deleted = self.store.delete_daily_cycles_before(&cutoff_date)?;
         }
+
+        let session_retention_days = 90;
+        let session_cutoff = now - Duration::days(session_retention_days);
+        let session_cutoff_ts = session_cutoff.timestamp();
+        result.sessions_deleted = self
+            .store
+            .delete_charge_sessions_before(session_cutoff_ts)?;
 
         if self.config.max_database_mb > 0 {
             let max_bytes = (self.config.max_database_mb as u64) * 1024 * 1024;
@@ -226,6 +326,8 @@ impl<'a> Aggregator<'a> {
 pub struct PruneResult {
     pub samples_deleted: usize,
     pub hourly_deleted: usize,
+    pub sessions_deleted: usize,
+    pub daily_cycles_deleted: usize,
     pub daily_deleted: usize,
     pub processes_deleted: usize,
 }

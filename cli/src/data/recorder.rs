@@ -1,12 +1,12 @@
 use std::time::{Duration, Instant};
 
 use chrono::Utc;
-use tracing::debug;
+use tracing::{debug, trace};
 
 use crate::config::HistoryConfig;
 use crate::data::{
-    BatteryData, BatteryHealthSnapshot, ChargingState, DailyTopProcess, HistoryStore,
-    HistoryStoreError, PowerData, ProcessData, Sample,
+    BatteryData, BatteryHealthSnapshot, ChargingState, CycleSnapshot, DailyTopProcess,
+    HistoryStore, HistoryStoreError, PowerData, ProcessData, Sample, SessionEvent, SessionTracker,
 };
 
 pub struct Recorder {
@@ -14,7 +14,9 @@ pub struct Recorder {
     config: HistoryConfig,
     last_sample_time: Option<Instant>,
     last_health_date: Option<String>,
+    last_cycle_snapshot_date: Option<String>,
     excluded_processes: Vec<String>,
+    session_tracker: SessionTracker,
 }
 
 impl Recorder {
@@ -23,6 +25,15 @@ impl Recorder {
         excluded_processes: Vec<String>,
     ) -> Result<Self, HistoryStoreError> {
         let store = HistoryStore::open()?;
+
+        let session_tracker = match store.get_incomplete_session()? {
+            Some(session) => {
+                debug!(session_id = session.id, "Recovered incomplete session");
+                SessionTracker::with_incomplete_session(session)
+            }
+            None => SessionTracker::new(),
+        };
+
         debug!(
             sample_interval_secs = config.sample_interval_secs,
             retention_raw_days = config.retention_raw_days,
@@ -33,7 +44,9 @@ impl Recorder {
             config,
             last_sample_time: None,
             last_health_date: None,
+            last_cycle_snapshot_date: None,
             excluded_processes,
+            session_tracker,
         })
     }
 
@@ -81,6 +94,31 @@ impl Recorder {
         self.store.insert_sample(&sample)?;
         self.last_sample_time = Some(Instant::now());
 
+        self.session_tracker
+            .record_power_sample(power.total_power_watts());
+        if let Some(event) = self.session_tracker.process_sample(battery) {
+            self.handle_session_event(event)?;
+        }
+
+        Ok(())
+    }
+
+    fn handle_session_event(&mut self, event: SessionEvent) -> Result<(), HistoryStoreError> {
+        match event {
+            SessionEvent::Started(session) => {
+                let id = self.store.insert_charge_session(&session)?;
+                trace!(session_id = id, session_type = ?session.session_type, "Session started");
+            }
+            SessionEvent::Ended(session) => {
+                if session.id.is_some() {
+                    self.store.update_charge_session(&session)?;
+                    trace!(session_id = session.id, "Session ended and updated");
+                } else {
+                    let id = self.store.insert_charge_session(&session)?;
+                    trace!(session_id = id, "Session ended and inserted");
+                }
+            }
+        }
         Ok(())
     }
 
@@ -151,6 +189,40 @@ impl Recorder {
         Ok(())
     }
 
+    pub fn record_cycle_snapshot(
+        &mut self,
+        battery: &BatteryData,
+    ) -> Result<(), HistoryStoreError> {
+        let today = Utc::now().format("%Y-%m-%d").to_string();
+
+        if self.last_cycle_snapshot_date.as_ref() == Some(&today) {
+            return Ok(());
+        }
+
+        let macos_cycle_count = battery.cycle_count().unwrap_or(0) as i32;
+        let calculated_partial_cycles = self.session_tracker.get_partial_cycles();
+
+        let snapshot = CycleSnapshot {
+            id: None,
+            date: today.clone(),
+            macos_cycle_count,
+            calculated_partial_cycles,
+            battery_health_percent: battery.health_percent(),
+        };
+
+        self.store.upsert_cycle_snapshot(&snapshot)?;
+        self.last_cycle_snapshot_date = Some(today);
+        self.session_tracker.reset_partial_cycles();
+        self.session_tracker.reset_time_at_high_soc();
+
+        debug!(
+            macos_cycle_count,
+            calculated_partial_cycles, "Recorded daily cycle snapshot"
+        );
+
+        Ok(())
+    }
+
     pub fn record_all(
         &mut self,
         battery: &BatteryData,
@@ -161,6 +233,7 @@ impl Recorder {
             self.record_sample(battery, power)?;
             self.record_processes(processes, power.cpu_power_watts())?;
             self.record_battery_health(battery)?;
+            self.record_cycle_snapshot(battery)?;
         }
         Ok(())
     }

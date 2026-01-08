@@ -9,6 +9,7 @@ use ratatui::{
     Frame,
 };
 
+use super::cycles;
 use crate::app::{App, HistoryPeriod};
 use crate::input::keys;
 use crate::theme::ThemeColors;
@@ -49,6 +50,7 @@ pub fn render(frame: &mut Frame, app: &App, theme: &ThemeColors) {
         .constraints([
             Constraint::Length(3),
             Constraint::Length(10),
+            Constraint::Length(5),
             Constraint::Min(5),
             Constraint::Length(2),
         ])
@@ -57,8 +59,9 @@ pub fn render(frame: &mut Frame, app: &App, theme: &ThemeColors) {
 
     render_period_tabs(frame, chunks[0], app, theme);
     render_power_chart(frame, chunks[1], app, theme);
-    render_stats_and_processes(frame, chunks[2], app, theme);
-    render_footer(frame, chunks[3], theme);
+    render_cycle_row(frame, chunks[2], app, theme);
+    render_stats_and_processes(frame, chunks[3], app, theme);
+    render_footer(frame, chunks[4], theme);
 }
 
 fn render_no_daemon(frame: &mut Frame, area: Rect, theme: &ThemeColors) {
@@ -220,6 +223,16 @@ fn render_power_chart(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeCol
         );
 
     frame.render_widget(chart, inner);
+}
+
+fn render_cycle_row(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) {
+    let chunks = Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints([Constraint::Percentage(50), Constraint::Percentage(50)])
+        .split(area);
+
+    cycles::render_cycle_summary(frame, chunks[0], app, theme);
+    cycles::render_recent_sessions(frame, chunks[1], app, theme);
 }
 
 fn render_stats_and_processes(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) {
