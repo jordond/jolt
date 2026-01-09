@@ -1,12 +1,15 @@
 use std::time::Duration;
 
 use color_eyre::eyre::Result;
-use systemstat::{Platform, System};
+use sysinfo::System as SysinfoSystem;
+use systemstat::{Platform, System as SystemstatSystem};
 
 const BYTES_PER_GB: f64 = 1_073_741_824.0;
 
 pub struct SystemStatsData {
-    system: System,
+    systemstat: SystemstatSystem,
+    sysinfo: SysinfoSystem,
+    cpu_usage_percent: f32,
     load_one: f32,
     memory_used_bytes: u64,
     memory_total_bytes: u64,
@@ -16,10 +19,13 @@ pub struct SystemStatsData {
 
 impl SystemStatsData {
     pub fn new() -> Result<Self> {
-        let system = System::new();
+        let systemstat = SystemstatSystem::new();
+        let sysinfo = SysinfoSystem::new();
 
         let mut stats = Self {
-            system,
+            systemstat,
+            sysinfo,
+            cpu_usage_percent: 0.0,
             load_one: 0.0,
             memory_used_bytes: 0,
             memory_total_bytes: 0,
@@ -35,6 +41,7 @@ impl SystemStatsData {
     }
 
     pub fn refresh(&mut self) -> Result<()> {
+        self.refresh_cpu();
         self.refresh_load_average();
         self.refresh_memory();
         self.refresh_uptime();
@@ -42,14 +49,23 @@ impl SystemStatsData {
         Ok(())
     }
 
+    fn refresh_cpu(&mut self) {
+        self.sysinfo.refresh_cpu_usage();
+        let cpus = self.sysinfo.cpus();
+        if !cpus.is_empty() {
+            let total: f32 = cpus.iter().map(|cpu| cpu.cpu_usage()).sum();
+            self.cpu_usage_percent = total / cpus.len() as f32;
+        }
+    }
+
     fn refresh_load_average(&mut self) {
-        if let Ok(load) = self.system.load_average() {
+        if let Ok(load) = self.systemstat.load_average() {
             self.load_one = load.one;
         }
     }
 
     fn refresh_memory(&mut self) {
-        if let Ok(mem) = self.system.memory() {
+        if let Ok(mem) = self.systemstat.memory() {
             self.memory_total_bytes = mem.total.as_u64();
             let free = mem.free.as_u64();
             self.memory_used_bytes = self.memory_total_bytes.saturating_sub(free);
@@ -57,9 +73,13 @@ impl SystemStatsData {
     }
 
     fn refresh_uptime(&mut self) {
-        if let Ok(uptime) = self.system.uptime() {
+        if let Ok(uptime) = self.systemstat.uptime() {
             self.uptime = uptime;
         }
+    }
+
+    pub fn cpu_usage_percent(&self) -> f32 {
+        self.cpu_usage_percent
     }
 
     pub fn load_one(&self) -> f32 {

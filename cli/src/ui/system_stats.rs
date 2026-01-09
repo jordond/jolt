@@ -22,20 +22,40 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) {
     let chunks = Layout::default()
         .direction(Direction::Horizontal)
         .constraints([
-            Constraint::Ratio(1, 3),
-            Constraint::Ratio(1, 3),
-            Constraint::Ratio(1, 3),
+            Constraint::Percentage(25),
+            Constraint::Percentage(25),
+            Constraint::Percentage(25),
+            Constraint::Percentage(25),
         ])
         .split(inner);
 
-    let (load_text, memory_text, uptime_text) = if app.system_stats.is_warmed_up() {
+    let (cpu_text, load_text, memory_text, uptime_text) = if app.system_stats.is_warmed_up() {
         (
+            format!("{:.0}%", app.system_stats.cpu_usage_percent()),
             format!("{:.2}", app.system_stats.load_one()),
             app.system_stats.memory_formatted(),
             app.system_stats.uptime_formatted(),
         )
     } else {
-        ("—".to_string(), "—".to_string(), "—".to_string())
+        (
+            "—".to_string(),
+            "—".to_string(),
+            "—".to_string(),
+            "—".to_string(),
+        )
+    };
+
+    let cpu_color = if app.system_stats.is_warmed_up() {
+        let cpu = app.system_stats.cpu_usage_percent();
+        if cpu > 80.0 {
+            theme.danger
+        } else if cpu > 50.0 {
+            theme.warning
+        } else {
+            theme.success
+        }
+    } else {
+        theme.muted
     };
 
     let load_color = if app.system_stats.is_warmed_up() {
@@ -69,6 +89,15 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) {
     } else {
         theme.muted
     };
+
+    let cpu = Paragraph::new(Line::from(vec![
+        Span::styled("CPU: ", Style::default().fg(theme.muted)),
+        Span::styled(
+            cpu_text,
+            Style::default().fg(cpu_color).add_modifier(Modifier::BOLD),
+        ),
+    ]))
+    .centered();
 
     let load = Paragraph::new(Line::from(vec![
         Span::styled("Load: ", Style::default().fg(theme.muted)),
@@ -110,7 +139,8 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) {
             .split(chunk)[1]
     };
 
-    frame.render_widget(load, v_center(chunks[0]));
-    frame.render_widget(memory, v_center(chunks[1]));
-    frame.render_widget(uptime, v_center(chunks[2]));
+    frame.render_widget(cpu, v_center(chunks[0]));
+    frame.render_widget(load, v_center(chunks[1]));
+    frame.render_widget(memory, v_center(chunks[2]));
+    frame.render_widget(uptime, v_center(chunks[3]));
 }
