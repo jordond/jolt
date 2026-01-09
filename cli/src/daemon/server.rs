@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, VecDeque};
 use std::fs;
 use std::sync::mpsc as std_mpsc;
 use std::thread;
@@ -97,6 +97,7 @@ impl RefreshWorker {
         config: HistoryConfig,
         excluded: Vec<String>,
     ) {
+        debug!("Worker thread starting initialization");
         let mut battery = match BatteryData::new() {
             Ok(b) => b,
             Err(e) => {
@@ -138,6 +139,9 @@ impl RefreshWorker {
         };
 
         let mut last_process_refresh = Instant::now();
+        let mut recent_samples: VecDeque<crate::data::Sample> = VecDeque::new();
+
+        debug!("Worker initialization complete, waiting for requests");
 
         while let Ok(mut request) = request_rx.recv() {
             // Drain any pending requests to avoid queue buildup in long-running daemon
@@ -199,18 +203,42 @@ impl RefreshWorker {
                 }
             }
 
-            if let Some(ref rec) = recorder {
-                let now = chrono::Utc::now().timestamp();
-                let from = now - FORECAST_WINDOW_SECS;
-                if let Ok(samples) = rec.store().get_samples(from, now) {
-                    forecast.calculate_from_daemon_samples(
-                        &samples,
-                        battery.charge_percent(),
-                        battery.max_capacity_wh(),
-                        FORECAST_WINDOW_SECS,
-                    );
-                }
+            let now = chrono::Utc::now().timestamp();
+
+            let charging_state = match battery.state_label() {
+                "Charging" => crate::data::ChargingState::Charging,
+                "Full" => crate::data::ChargingState::Full,
+                _ => crate::data::ChargingState::Discharging,
+            };
+            recent_samples.push_back(crate::data::Sample {
+                id: None,
+                timestamp: now,
+                battery_percent: battery.charge_percent(),
+                power_watts: power.total_power_watts(),
+                cpu_power: power.cpu_power_watts(),
+                gpu_power: power.gpu_power_watts(),
+                charging_state,
+            });
+
+            let cutoff = now - FORECAST_WINDOW_SECS;
+            while recent_samples.front().is_some_and(|s| s.timestamp < cutoff) {
+                recent_samples.pop_front();
             }
+
+            let samples: Vec<_> = recent_samples.iter().cloned().collect();
+            let success = forecast.calculate_from_daemon_samples(
+                &samples,
+                battery.charge_percent(),
+                battery.max_capacity_wh(),
+                FORECAST_WINDOW_SECS,
+            );
+            debug!(
+                sample_count = samples.len(),
+                forecast_success = success,
+                has_forecast = forecast.has_forecast(),
+                forecast_duration_secs = ?forecast.duration_secs(),
+                "Forecast calculation"
+            );
 
             let forecast_snapshot: ForecastSnapshot = (&forecast).into();
             let system_stats_snapshot: SystemStatsSnapshot = (&system_stats).into();
@@ -351,6 +379,7 @@ fn process_to_snapshot(p: &crate::data::ProcessInfo) -> ProcessSnapshot {
         pid: p.pid,
         name: p.name.clone(),
         command: p.command.clone(),
+        command_args: p.command_args.clone(),
         cpu_usage: p.cpu_usage,
         memory_mb: p.memory_mb,
         energy_impact: p.energy_impact,
