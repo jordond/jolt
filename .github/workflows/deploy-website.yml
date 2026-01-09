@@ -1,11 +1,8 @@
 name: Deploy Website
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'website/**'
-      - '.github/workflows/deploy-website.yml'
+  release:
+    types: [created]
   workflow_dispatch:
 
 permissions:
@@ -37,6 +34,9 @@ jobs:
 
       - name: Build
         run: bun run build
+
+      - name: Copy install script
+        run: cp ../install.sh dist/install.sh
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
