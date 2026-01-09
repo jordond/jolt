@@ -7,7 +7,7 @@
 mod daemon;
 // pub mod history;
 // pub mod process;
-// pub mod theme;
+mod theme;
 pub mod types;
 
 // Re-exports will be added as submodules are created:
