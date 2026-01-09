@@ -1,0 +1,25 @@
+{
+  "active": true,
+  "spec": "001-we-were-in-the-midst-of-refactoring-the-main-rs-an",
+  "state": "complete",
+  "subtasks": {
+    "completed": 14,
+    "total": 14,
+    "in_progress": 0,
+    "failed": 0
+  },
+  "phase": {
+    "current": "Final Cleanup and Verification",
+    "id": null,
+    "total": 4
+  },
+  "workers": {
+    "active": 0,
+    "max": 1
+  },
+  "session": {
+    "number": 14,
+    "started_at": "2026-01-09T10:12:44.472061"
+  },
+  "last_update": "2026-01-09T10:44:01.286404"
+}
