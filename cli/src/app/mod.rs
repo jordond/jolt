@@ -221,7 +221,7 @@ impl App {
                 self.battery.temperature_c(),
             );
 
-            if self.tick_count.is_multiple_of(FORECAST_REFRESH_TICKS) {
+            if !self.using_daemon_data && self.tick_count.is_multiple_of(FORECAST_REFRESH_TICKS) {
                 self.refresh_forecast();
             }
         }

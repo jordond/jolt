@@ -1,8 +1,9 @@
 pub use protocol::{
     BatterySnapshot, BatteryState, ChargeSession, ChargingState, CycleSummary, DaemonRequest,
-    DaemonResponse, DaemonStatus, DailyCycle, DailyStat, DailyTopProcess, DataSnapshot, HourlyStat,
-    KillProcessResult, KillSignal, PowerMode, PowerSnapshot, ProcessSnapshot, ProcessState, Sample,
-    SessionType, MAX_SUBSCRIBERS, MIN_SUPPORTED_VERSION, PROTOCOL_VERSION,
+    DaemonResponse, DaemonStatus, DailyCycle, DailyStat, DailyTopProcess, DataSnapshot,
+    ForecastSnapshot, ForecastSource, HourlyStat, KillProcessResult, KillSignal, PowerMode,
+    PowerSnapshot, ProcessSnapshot, ProcessState, Sample, SessionType, SystemSnapshot,
+    MAX_SUBSCRIBERS, MIN_SUPPORTED_VERSION, PROTOCOL_VERSION,
 };
 
 use crate::data;
@@ -114,6 +115,48 @@ impl From<&data::DailyCycle> for DailyCycle {
             macos_cycle_count: c.macos_cycle_count,
             avg_temperature_c: c.avg_temperature_c,
             time_at_high_soc_mins: c.time_at_high_soc_mins,
+        }
+    }
+}
+
+impl From<&data::SystemInfo> for SystemSnapshot {
+    fn from(s: &data::SystemInfo) -> Self {
+        Self {
+            chip: s.chip.clone(),
+            os_version: s.os_version.clone(),
+            p_cores: s.p_cores,
+            e_cores: s.e_cores,
+        }
+    }
+}
+
+impl From<&data::ForecastData> for ForecastSnapshot {
+    fn from(f: &data::ForecastData) -> Self {
+        Self {
+            duration_secs: f.duration_secs(),
+            avg_power_watts: f.avg_power_watts(),
+            sample_count: f.sample_count(),
+            source: f.source().into(),
+        }
+    }
+}
+
+impl From<data::ForecastSource> for ForecastSource {
+    fn from(s: data::ForecastSource) -> Self {
+        match s {
+            data::ForecastSource::Daemon => ForecastSource::Daemon,
+            data::ForecastSource::Session => ForecastSource::Session,
+            data::ForecastSource::None => ForecastSource::None,
+        }
+    }
+}
+
+impl From<ForecastSource> for data::ForecastSource {
+    fn from(s: ForecastSource) -> Self {
+        match s {
+            ForecastSource::Daemon => data::ForecastSource::Daemon,
+            ForecastSource::Session => data::ForecastSource::Session,
+            ForecastSource::None => data::ForecastSource::None,
         }
     }
 }

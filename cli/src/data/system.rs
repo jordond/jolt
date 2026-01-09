@@ -1,5 +1,7 @@
 use std::process::Command;
 
+use crate::daemon::SystemSnapshot;
+
 #[derive(Debug, Clone)]
 pub struct SystemInfo {
     pub chip: String,
@@ -27,6 +29,13 @@ impl SystemInfo {
         } else {
             format!("{}", self.p_cores + self.e_cores)
         }
+    }
+
+    pub fn update_from_snapshot(&mut self, snapshot: &SystemSnapshot) {
+        self.chip = snapshot.chip.clone();
+        self.os_version = snapshot.os_version.clone();
+        self.p_cores = snapshot.p_cores;
+        self.e_cores = snapshot.e_cores;
     }
 }
 
