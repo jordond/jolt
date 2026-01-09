@@ -50,6 +50,17 @@ impl ServiceStatus {
     }
 }
 
+fn warn_if_dev_binary(exe_path: &std::path::Path) {
+    let exe_str = exe_path.to_string_lossy();
+    if exe_str.contains("/target/debug/") || exe_str.contains("/target/release/") {
+        eprintln!(
+            "Warning: Using development binary at {}\n\
+             Consider installing jolt to a stable location (e.g., /usr/local/bin/jolt)",
+            exe_path.display()
+        );
+    }
+}
+
 pub fn install_service(force: bool) -> Result<()> {
     #[cfg(target_os = "macos")]
     {
@@ -108,9 +119,11 @@ pub fn get_service_status() -> ServiceStatus {
 
 #[cfg(target_os = "macos")]
 fn macos_plist_path() -> PathBuf {
-    dirs::home_dir()
-        .unwrap_or_default()
-        .join("Library/LaunchAgents")
+    let home = dirs::home_dir().unwrap_or_else(|| {
+        PathBuf::from(std::env::var("HOME").expect("HOME environment variable not set"))
+    });
+
+    home.join("Library/LaunchAgents")
         .join(format!("{}.plist", SERVICE_LABEL))
 }
 
@@ -169,14 +182,7 @@ fn install_macos_service(force: bool) -> Result<()> {
         ));
     }
 
-    let exe_str = exe_path.to_string_lossy();
-    if exe_str.contains("/target/debug/") || exe_str.contains("/target/release/") {
-        eprintln!(
-            "Warning: Using development binary at {}\n\
-             Consider installing jolt to a stable location (e.g., /usr/local/bin/jolt)",
-            exe_path.display()
-        );
-    }
+    warn_if_dev_binary(&exe_path);
 
     if is_macos_service_loaded() {
         let _ = unload_macos_service();
@@ -193,24 +199,39 @@ fn install_macos_service(force: bool) -> Result<()> {
     std::fs::write(&plist_path, plist_content)?;
 
     let uid = get_uid();
-    let load_result = std::process::Command::new("launchctl")
+    let bootstrap_result = std::process::Command::new("launchctl")
         .args(["bootstrap", &format!("gui/{}", uid)])
         .arg(&plist_path)
         .output();
 
-    let loaded = match load_result {
-        Ok(output) if output.status.success() => true,
+    let (loaded, error_msg) = match bootstrap_result {
+        Ok(output) if output.status.success() => (true, None),
         _ => {
             let legacy_result = std::process::Command::new("launchctl")
                 .args(["load", "-w"])
                 .arg(&plist_path)
-                .status()?;
-            legacy_result.success()
+                .output();
+
+            match legacy_result {
+                Ok(output) if output.status.success() => (true, None),
+                Ok(output) => {
+                    let stderr = String::from_utf8_lossy(&output.stderr);
+                    (
+                        false,
+                        Some(format!("Legacy 'launchctl load' failed: {}", stderr.trim())),
+                    )
+                }
+                Err(e) => (
+                    false,
+                    Some(format!("Failed to execute 'launchctl load': {}", e)),
+                ),
+            }
         }
     };
 
     if !loaded {
-        return Err(eyre!("Failed to load service with launchctl"));
+        let msg = error_msg.unwrap_or_else(|| "Failed to load service with launchctl".to_string());
+        return Err(eyre!(msg));
     }
 
     println!("Daemon installed and started.");
@@ -327,6 +348,9 @@ fn extract_exe_from_plist(content: &str) -> Option<PathBuf> {
 
 #[cfg(target_os = "macos")]
 fn get_uid() -> u32 {
+    // SAFETY: `libc::getuid` is a simple read-only syscall that returns the
+    // calling process's user ID. It does not dereference pointers or rely on
+    // any Rust-side invariants, so it cannot cause undefined behavior.
     unsafe { libc::getuid() }
 }
 
@@ -337,10 +361,12 @@ const SYSTEMD_SERVICE_NAME: &str = "jolt-daemon.service";
 
 #[cfg(target_os = "linux")]
 fn linux_service_path() -> PathBuf {
-    dirs::config_dir()
-        .unwrap_or_else(|| PathBuf::from("~/.config"))
-        .join("systemd/user")
-        .join(SYSTEMD_SERVICE_NAME)
+    let config_dir = dirs::config_dir().unwrap_or_else(|| {
+        let home = std::env::var("HOME").unwrap_or_default();
+        PathBuf::from(home).join(".config")
+    });
+
+    config_dir.join("systemd/user").join(SYSTEMD_SERVICE_NAME)
 }
 
 #[cfg(target_os = "linux")]
@@ -384,14 +410,7 @@ fn install_linux_service(force: bool) -> Result<()> {
         ));
     }
 
-    let exe_str = exe_path.to_string_lossy();
-    if exe_str.contains("/target/debug/") || exe_str.contains("/target/release/") {
-        eprintln!(
-            "Warning: Using development binary at {}\n\
-             Consider installing jolt to a stable location (e.g., /usr/local/bin/jolt)",
-            exe_path.display()
-        );
-    }
+    warn_if_dev_binary(&exe_path);
 
     if is_linux_service_enabled() {
         let _ = disable_linux_service();
