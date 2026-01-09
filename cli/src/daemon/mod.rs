@@ -1,6 +1,7 @@
 mod client;
 mod protocol;
 mod server;
+pub mod service;
 
 pub use client::DaemonClient;
 #[allow(unused_imports)]
