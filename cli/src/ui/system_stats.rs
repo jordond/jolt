@@ -32,7 +32,7 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) {
     let (cpu_text, load_text, memory_text, uptime_text) = if app.system_stats.is_warmed_up() {
         (
             format!("{:.0}%", app.system_stats.cpu_usage_percent()),
-            format!("{:.2}", app.system_stats.load_one()),
+            app.system_stats.load_formatted(),
             app.system_stats.memory_formatted(),
             app.system_stats.uptime_formatted(),
         )

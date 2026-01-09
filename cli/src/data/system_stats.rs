@@ -11,6 +11,8 @@ pub struct SystemStatsData {
     sysinfo: SysinfoSystem,
     cpu_usage_percent: f32,
     load_one: f32,
+    load_five: f32,
+    load_fifteen: f32,
     memory_used_bytes: u64,
     memory_total_bytes: u64,
     uptime: Duration,
@@ -27,6 +29,8 @@ impl SystemStatsData {
             sysinfo,
             cpu_usage_percent: 0.0,
             load_one: 0.0,
+            load_five: 0.0,
+            load_fifteen: 0.0,
             memory_used_bytes: 0,
             memory_total_bytes: 0,
             uptime: Duration::ZERO,
@@ -61,6 +65,8 @@ impl SystemStatsData {
     fn refresh_load_average(&mut self) {
         if let Ok(load) = self.systemstat.load_average() {
             self.load_one = load.one;
+            self.load_five = load.five;
+            self.load_fifteen = load.fifteen;
         }
     }
 
@@ -84,6 +90,13 @@ impl SystemStatsData {
 
     pub fn load_one(&self) -> f32 {
         self.load_one
+    }
+
+    pub fn load_formatted(&self) -> String {
+        format!(
+            "{:.2} {:.2} {:.2}",
+            self.load_one, self.load_five, self.load_fifteen
+        )
     }
 
     pub fn memory_used_gb(&self) -> f64 {
