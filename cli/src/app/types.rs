@@ -324,7 +324,7 @@ mod tests {
     #[test]
     fn app_view_clone_produces_equal_value() {
         let view = AppView::Settings;
-        let cloned = view.clone();
+        let cloned = view;
         assert_eq!(view, cloned);
     }
 
@@ -338,9 +338,9 @@ mod tests {
     // Constants tests
     #[test]
     fn refresh_constants_have_valid_range() {
-        assert!(MIN_REFRESH_MS < MAX_REFRESH_MS);
-        assert!(REFRESH_STEP_MS > 0);
-        assert!(MIN_REFRESH_MS > 0);
+        const { assert!(MIN_REFRESH_MS < MAX_REFRESH_MS) };
+        const { assert!(REFRESH_STEP_MS > 0) };
+        const { assert!(MIN_REFRESH_MS > 0) };
     }
 
     #[test]
