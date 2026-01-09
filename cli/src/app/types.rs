@@ -153,6 +153,7 @@ pub enum AppView {
 mod tests {
     use super::*;
 
+    // HistoryPeriod tests
     #[test]
     fn history_period_next_cycles_through_all_variants() {
         assert_eq!(HistoryPeriod::Today.next(), HistoryPeriod::Week);
@@ -191,6 +192,37 @@ mod tests {
     }
 
     #[test]
+    fn history_period_next_then_prev_returns_original() {
+        assert_eq!(HistoryPeriod::Today.next().prev(), HistoryPeriod::Today);
+        assert_eq!(HistoryPeriod::Week.next().prev(), HistoryPeriod::Week);
+        assert_eq!(HistoryPeriod::Month.next().prev(), HistoryPeriod::Month);
+        assert_eq!(HistoryPeriod::All.next().prev(), HistoryPeriod::All);
+    }
+
+    #[test]
+    fn history_period_prev_then_next_returns_original() {
+        assert_eq!(HistoryPeriod::Today.prev().next(), HistoryPeriod::Today);
+        assert_eq!(HistoryPeriod::Week.prev().next(), HistoryPeriod::Week);
+        assert_eq!(HistoryPeriod::Month.prev().next(), HistoryPeriod::Month);
+        assert_eq!(HistoryPeriod::All.prev().next(), HistoryPeriod::All);
+    }
+
+    #[test]
+    fn history_period_full_cycle_returns_to_start() {
+        let start = HistoryPeriod::Today;
+        let result = start.next().next().next().next();
+        assert_eq!(result, start);
+    }
+
+    #[test]
+    fn history_period_days_are_increasing() {
+        assert!(HistoryPeriod::Today.days() < HistoryPeriod::Week.days());
+        assert!(HistoryPeriod::Week.days() < HistoryPeriod::Month.days());
+        assert!(HistoryPeriod::Month.days() < HistoryPeriod::All.days());
+    }
+
+    // SortColumn tests
+    #[test]
     fn sort_column_next_cycles_through_all_variants() {
         assert_eq!(SortColumn::Pid.next(), SortColumn::Name);
         assert_eq!(SortColumn::Name.next(), SortColumn::Cpu);
@@ -205,15 +237,115 @@ mod tests {
     }
 
     #[test]
+    fn sort_column_full_cycle_returns_to_start() {
+        let start = SortColumn::Pid;
+        let result = start.next().next().next().next().next();
+        assert_eq!(result, start);
+    }
+
+    #[test]
+    fn sort_column_all_variants_are_distinct() {
+        assert_ne!(SortColumn::Pid, SortColumn::Name);
+        assert_ne!(SortColumn::Pid, SortColumn::Cpu);
+        assert_ne!(SortColumn::Pid, SortColumn::Memory);
+        assert_ne!(SortColumn::Pid, SortColumn::Energy);
+        assert_ne!(SortColumn::Name, SortColumn::Cpu);
+        assert_ne!(SortColumn::Name, SortColumn::Memory);
+        assert_ne!(SortColumn::Name, SortColumn::Energy);
+        assert_ne!(SortColumn::Cpu, SortColumn::Memory);
+        assert_ne!(SortColumn::Cpu, SortColumn::Energy);
+        assert_ne!(SortColumn::Memory, SortColumn::Energy);
+    }
+
+    // Action tests
+    #[test]
     fn action_enum_has_none_variant() {
         let action = Action::None;
         assert_eq!(action, Action::None);
     }
 
     #[test]
+    fn action_quit_is_distinct_from_none() {
+        assert_ne!(Action::Quit, Action::None);
+    }
+
+    #[test]
+    fn action_clone_produces_equal_value() {
+        let action = Action::ToggleHelp;
+        let cloned = action.clone();
+        assert_eq!(action, cloned);
+    }
+
+    #[test]
+    fn action_importer_filter_char_holds_character() {
+        let action = Action::ImporterFilterChar('a');
+        if let Action::ImporterFilterChar(c) = action {
+            assert_eq!(c, 'a');
+        } else {
+            panic!("Expected ImporterFilterChar variant");
+        }
+    }
+
+    #[test]
+    fn action_importer_filter_char_different_chars_are_different() {
+        assert_ne!(
+            Action::ImporterFilterChar('a'),
+            Action::ImporterFilterChar('b')
+        );
+    }
+
+    #[test]
+    fn action_navigation_variants_are_distinct() {
+        assert_ne!(Action::SelectNext, Action::SelectPrevious);
+        assert_ne!(Action::PageUp, Action::PageDown);
+        assert_ne!(Action::Home, Action::End);
+    }
+
+    // AppView tests
+    #[test]
     fn app_view_main_is_distinct_from_others() {
         assert_ne!(AppView::Main, AppView::Help);
         assert_ne!(AppView::Main, AppView::Settings);
         assert_ne!(AppView::Main, AppView::History);
+    }
+
+    #[test]
+    fn app_view_all_variants_are_distinct() {
+        assert_ne!(AppView::Main, AppView::Help);
+        assert_ne!(AppView::Main, AppView::About);
+        assert_ne!(AppView::Main, AppView::KillConfirm);
+        assert_ne!(AppView::Main, AppView::ThemePicker);
+        assert_ne!(AppView::Main, AppView::ThemeImporter);
+        assert_ne!(AppView::Main, AppView::History);
+        assert_ne!(AppView::Main, AppView::Settings);
+        assert_ne!(AppView::Main, AppView::BatteryDetails);
+    }
+
+    #[test]
+    fn app_view_clone_produces_equal_value() {
+        let view = AppView::Settings;
+        let cloned = view.clone();
+        assert_eq!(view, cloned);
+    }
+
+    #[test]
+    fn app_view_copy_is_implemented() {
+        let view = AppView::History;
+        let copied: AppView = view;
+        assert_eq!(view, copied);
+    }
+
+    // Constants tests
+    #[test]
+    fn refresh_constants_have_valid_range() {
+        assert!(MIN_REFRESH_MS < MAX_REFRESH_MS);
+        assert!(REFRESH_STEP_MS > 0);
+        assert!(MIN_REFRESH_MS > 0);
+    }
+
+    #[test]
+    fn refresh_step_divides_range_evenly() {
+        // Verify that stepping from min to max is possible
+        assert_eq!((MAX_REFRESH_MS - MIN_REFRESH_MS) % REFRESH_STEP_MS, 0);
     }
 }
