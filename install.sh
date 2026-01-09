@@ -181,8 +181,48 @@ verify_checksum() {
     fi
 }
 
+is_daemon_running() {
+    if [ -x "${INSTALL_DIR}/${BINARY_NAME}" ]; then
+        "${INSTALL_DIR}/${BINARY_NAME}" daemon status >/dev/null 2>&1
+        return $?
+    fi
+    return 1
+}
+
+stop_daemon() {
+    if is_daemon_running; then
+        log_info "Stopping running daemon..."
+        if "${INSTALL_DIR}/${BINARY_NAME}" daemon stop >/dev/null 2>&1; then
+            log_info "Daemon stopped"
+            return 0
+        else
+            log_warn "Failed to stop daemon gracefully"
+            return 1
+        fi
+    fi
+    return 0
+}
+
+start_daemon() {
+    log_info "Starting daemon..."
+    if "${INSTALL_DIR}/${BINARY_NAME}" daemon start >/dev/null 2>&1; then
+        log_info "Daemon started"
+        return 0
+    else
+        log_warn "Failed to start daemon"
+        return 1
+    fi
+}
+
 install_jolt() {
     log_info "Installing jolt..."
+
+    # Check if daemon is running and stop it
+    local daemon_was_running=false
+    if is_daemon_running; then
+        daemon_was_running=true
+        stop_daemon
+    fi
 
     local os arch variant
     os="$(detect_os)"
@@ -238,6 +278,11 @@ install_jolt() {
     mv "${binary_path}" "${INSTALL_DIR}/${BINARY_NAME}"
 
     log_info "Successfully installed jolt v${version}!"
+
+    # Restart daemon if it was running
+    if [ "${daemon_was_running}" = "true" ]; then
+        start_daemon
+    fi
 
     if [[ ":${PATH}:" != *":${INSTALL_DIR}:"* ]]; then
         log_warn "${INSTALL_DIR} is not in your PATH"
