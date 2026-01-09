@@ -139,6 +139,7 @@ pub struct ProcessSnapshot {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default)]
 pub struct DataSnapshot {
     pub timestamp: i64,
     pub battery: BatterySnapshot,
