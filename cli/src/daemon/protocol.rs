@@ -2,7 +2,7 @@ pub use protocol::{
     BatterySnapshot, BatteryState, ChargeSession, ChargingState, CycleSummary, DaemonRequest,
     DaemonResponse, DaemonStatus, DailyCycle, DailyStat, DailyTopProcess, DataSnapshot, HourlyStat,
     KillProcessResult, KillSignal, PowerMode, PowerSnapshot, ProcessSnapshot, ProcessState, Sample,
-    SessionType, MAX_SUBSCRIBERS, MIN_SUPPORTED_VERSION, PROTOCOL_VERSION,
+    SessionType, SystemSnapshot, MAX_SUBSCRIBERS, MIN_SUPPORTED_VERSION, PROTOCOL_VERSION,
 };
 
 use crate::data;
@@ -114,6 +114,17 @@ impl From<&data::DailyCycle> for DailyCycle {
             macos_cycle_count: c.macos_cycle_count,
             avg_temperature_c: c.avg_temperature_c,
             time_at_high_soc_mins: c.time_at_high_soc_mins,
+        }
+    }
+}
+
+impl From<&data::SystemInfo> for SystemSnapshot {
+    fn from(s: &data::SystemInfo) -> Self {
+        Self {
+            chip: s.chip.clone(),
+            os_version: s.os_version.clone(),
+            p_cores: s.p_cores,
+            e_cores: s.e_cores,
         }
     }
 }

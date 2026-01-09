@@ -102,6 +102,24 @@ pub struct PowerSnapshot {
     pub is_warmed_up: bool,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct SystemSnapshot {
+    pub chip: String,
+    pub os_version: String,
+    pub p_cores: u32,
+    pub e_cores: u32,
+}
+
+impl SystemSnapshot {
+    pub fn cores_display(&self) -> String {
+        if self.p_cores > 0 && self.e_cores > 0 {
+            format!("{}P+{}E", self.p_cores, self.e_cores)
+        } else {
+            format!("{}", self.p_cores + self.e_cores)
+        }
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ProcessSnapshot {
     pub pid: u32,
@@ -126,6 +144,7 @@ pub struct DataSnapshot {
     pub battery: BatterySnapshot,
     pub power: PowerSnapshot,
     pub processes: Vec<ProcessSnapshot>,
+    pub system: SystemSnapshot,
 }
 
 impl Default for DataSnapshot {
@@ -135,6 +154,7 @@ impl Default for DataSnapshot {
             battery: BatterySnapshot::default(),
             power: PowerSnapshot::default(),
             processes: Vec::new(),
+            system: SystemSnapshot::default(),
         }
     }
 }

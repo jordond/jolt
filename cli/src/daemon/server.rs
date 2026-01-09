@@ -13,12 +13,12 @@ use crate::config::{runtime_dir, HistoryConfig, UserConfig};
 use crate::daemon::protocol::{
     BatterySnapshot, BatteryState, ChargeSession, DaemonRequest, DaemonResponse, DaemonStatus,
     DailyCycle, DailyStat, DailyTopProcess, DataSnapshot, HourlyStat, KillProcessResult, PowerMode,
-    PowerSnapshot, ProcessSnapshot, ProcessState, Sample, MAX_SUBSCRIBERS, MIN_SUPPORTED_VERSION,
-    PROTOCOL_VERSION,
+    PowerSnapshot, ProcessSnapshot, ProcessState, Sample, SystemSnapshot, MAX_SUBSCRIBERS,
+    MIN_SUPPORTED_VERSION, PROTOCOL_VERSION,
 };
 use crate::daemon::socket_path;
 use crate::data::aggregator::Aggregator;
-use crate::data::{BatteryData, PowerData, ProcessData, Recorder};
+use crate::data::{BatteryData, PowerData, ProcessData, Recorder, SystemInfo};
 
 #[derive(Debug, thiserror::Error)]
 pub enum DaemonError {
@@ -116,6 +116,8 @@ impl RefreshWorker {
             }
         };
 
+        let system_snapshot: SystemSnapshot = (&SystemInfo::new()).into();
+
         let mut recorder = match Recorder::new(config, excluded) {
             Ok(r) => Some(r),
             Err(e) => {
@@ -184,7 +186,7 @@ impl RefreshWorker {
                 }
             }
 
-            let snapshot = create_snapshot(&battery, &power, &processes);
+            let snapshot = create_snapshot(&battery, &power, &processes, &system_snapshot);
             let refresh_duration = refresh_start.elapsed();
             debug!(
                 request_type,
@@ -234,6 +236,7 @@ fn create_snapshot(
     battery: &BatteryData,
     power: &PowerData,
     processes: &ProcessData,
+    system: &SystemSnapshot,
 ) -> DataSnapshot {
     let battery_state = match battery.state_label() {
         "Charging" => BatteryState::Charging,
@@ -291,6 +294,7 @@ fn create_snapshot(
         battery: battery_snapshot,
         power: power_snapshot,
         processes: process_snapshots,
+        system: system.clone(),
     }
 }
 

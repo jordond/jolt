@@ -9,7 +9,7 @@ pub use protocol::{
     BatterySnapshot, BatteryState, ChargeSession, ChargingState, CycleSummary, DaemonRequest,
     DaemonResponse, DaemonStatus, DailyCycle, DailyStat, DailyTopProcess, DataSnapshot, HourlyStat,
     KillProcessResult, KillSignal, PowerMode, PowerSnapshot, ProcessSnapshot, ProcessState, Sample,
-    SessionType, MAX_SUBSCRIBERS, MIN_SUPPORTED_VERSION, PROTOCOL_VERSION,
+    SessionType, SystemSnapshot, MAX_SUBSCRIBERS, MIN_SUPPORTED_VERSION, PROTOCOL_VERSION,
 };
 pub use server::run_daemon;
 #[allow(unused_imports)]

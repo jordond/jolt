@@ -238,13 +238,13 @@ impl App {
         }
     }
 
-    /// Applies a data snapshot received from the daemon to update app state.
     fn apply_snapshot(&mut self, snapshot: &DataSnapshot) {
         let prev_battery_state = self.battery.state_label();
         let prev_external = self.battery.external_connected();
 
         self.battery.update_from_snapshot(&snapshot.battery);
         self.power.update_from_snapshot(&snapshot.power);
+        self.system_info.update_from_snapshot(&snapshot.system);
 
         if !self.selection_mode {
             self.processes
