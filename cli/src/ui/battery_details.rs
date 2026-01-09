@@ -28,6 +28,13 @@ fn color_for_percent(percent: f32, high: f32, low: f32, theme: &ThemeColors) -> 
     }
 }
 
+fn text_gauge(percent: f32, width: usize, color: Color) -> Span<'static> {
+    let filled = ((percent / 100.0) * width as f32) as usize;
+    let empty = width.saturating_sub(filled);
+    let gauge_str = format!("{}{}", "█".repeat(filled), "░".repeat(empty));
+    Span::styled(gauge_str, Style::default().fg(color))
+}
+
 pub fn render(frame: &mut Frame, app: &App, theme: &ThemeColors) {
     let popup_width = 70;
     let popup_height = 28;
@@ -109,11 +116,6 @@ fn render_charge_info(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeCol
 
     let percent_color = color_for_percent(percent, 50.0, 20.0, theme);
 
-    let gauge_width = 20;
-    let filled = ((percent / 100.0) * gauge_width as f32) as usize;
-    let empty = gauge_width - filled;
-    let gauge_str = format!("{}{}", "█".repeat(filled), "░".repeat(empty));
-
     let lines = vec![
         Line::from(vec![
             Span::styled("Charge:     ", Style::default().fg(theme.muted)),
@@ -124,7 +126,7 @@ fn render_charge_info(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeCol
                     .add_modifier(Modifier::BOLD),
             ),
             Span::styled("  ", Style::default()),
-            Span::styled(&gauge_str, Style::default().fg(percent_color)),
+            text_gauge(percent, 20, percent_color),
             Span::styled(
                 format!("  ({:.1} Wh)", energy),
                 Style::default().fg(theme.muted),
