@@ -1,5 +1,7 @@
 # AGENTS.md - jolt
 
+**Generated:** 2026-01-08 | **Commit:** c962424 | **Branch:** main
+
 Monorepo: macOS battery/energy TUI (Rust) + documentation website (Astro).
 
 ## Structure

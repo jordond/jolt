@@ -1,5 +1,7 @@
 # AGENTS.md - jolt UI Widgets
 
+**Generated:** 2026-01-08 | **Commit:** c962424
+
 > See `/cli/AGENTS.md` for module context, `/AGENTS.md` for code style.
 
 Ratatui widget layer. Each file = one widget or modal.
@@ -19,17 +21,17 @@ Modals use `&mut App` if they mutate state during render.
 |------|--------|-------|
 | mod.rs | Main render orchestrator | Layout logic, AppView dispatch |
 | battery.rs | Battery gauge + info card | 2-column layout |
+| battery_details.rs | Expanded battery modal | Health, cycles, capacity |
 | power.rs | Power metrics bar | CPU/GPU/total watts |
 | processes.rs | Process table | Scrollable, expandable groups |
-| graphs.rs | Sparkline charts | Battery % and power history |
+| graphs.rs | Sparkline charts (550 LOC) | Battery % and power history |
 | status_bar.rs | Title + status bars | System info, hints |
 | help.rs | Help/About/Kill modals | Centered popups |
-| config_editor.rs | Settings modal | Toggle list |
+| settings.rs | Settings modal | Toggle list |
 | theme_picker.rs | Theme selection | Scrollable list |
 | theme_importer.rs | iTerm2 import | URL fetch + preview |
-| history.rs | Historical data view | Date picker + stats |
-| history_config.rs | History settings | Daemon controls |
-| daemon_info.rs | Daemon status modal | Connection + stats |
+| history.rs | Historical data view (534 LOC) | Date picker + stats |
+| cycles.rs | Cycle count details | Daily cycle breakdown |
 
 ## Layout System
 
