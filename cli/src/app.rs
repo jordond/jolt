@@ -1427,3 +1427,132 @@ impl App {
         self.daemon_subscription = None;
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn history_period_next_cycles_through_all_variants() {
+        assert_eq!(HistoryPeriod::Today.next(), HistoryPeriod::Week);
+        assert_eq!(HistoryPeriod::Week.next(), HistoryPeriod::Month);
+        assert_eq!(HistoryPeriod::Month.next(), HistoryPeriod::All);
+        assert_eq!(HistoryPeriod::All.next(), HistoryPeriod::Today);
+    }
+
+    #[test]
+    fn history_period_prev_cycles_through_all_variants() {
+        assert_eq!(HistoryPeriod::Today.prev(), HistoryPeriod::All);
+        assert_eq!(HistoryPeriod::Week.prev(), HistoryPeriod::Today);
+        assert_eq!(HistoryPeriod::Month.prev(), HistoryPeriod::Week);
+        assert_eq!(HistoryPeriod::All.prev(), HistoryPeriod::Month);
+    }
+
+    #[test]
+    fn history_period_label_returns_display_string() {
+        assert_eq!(HistoryPeriod::Today.label(), "Today");
+        assert_eq!(HistoryPeriod::Week.label(), "Week");
+        assert_eq!(HistoryPeriod::Month.label(), "Month");
+        assert_eq!(HistoryPeriod::All.label(), "All");
+    }
+
+    #[test]
+    fn history_period_days_returns_expected_values() {
+        assert_eq!(HistoryPeriod::Today.days(), 1);
+        assert_eq!(HistoryPeriod::Week.days(), 7);
+        assert_eq!(HistoryPeriod::Month.days(), 30);
+        assert_eq!(HistoryPeriod::All.days(), 365);
+    }
+
+    #[test]
+    fn history_period_default_is_today() {
+        assert_eq!(HistoryPeriod::default(), HistoryPeriod::Today);
+    }
+
+    #[test]
+    fn sort_column_next_cycles_through_all_variants() {
+        assert_eq!(SortColumn::Pid.next(), SortColumn::Name);
+        assert_eq!(SortColumn::Name.next(), SortColumn::Cpu);
+        assert_eq!(SortColumn::Cpu.next(), SortColumn::Memory);
+        assert_eq!(SortColumn::Memory.next(), SortColumn::Energy);
+        assert_eq!(SortColumn::Energy.next(), SortColumn::Pid);
+    }
+
+    #[test]
+    fn sort_column_default_is_energy() {
+        assert_eq!(SortColumn::default(), SortColumn::Energy);
+    }
+
+    #[test]
+    fn get_base_process_name_strips_helper_suffix() {
+        assert_eq!(get_base_process_name("Chrome Helper"), "Chrome");
+    }
+
+    #[test]
+    fn get_base_process_name_strips_helper_renderer_suffix() {
+        assert_eq!(get_base_process_name("Chrome Helper (Renderer)"), "Chrome");
+    }
+
+    #[test]
+    fn get_base_process_name_strips_helper_gpu_suffix() {
+        assert_eq!(get_base_process_name("Chrome Helper (GPU)"), "Chrome");
+    }
+
+    #[test]
+    fn get_base_process_name_strips_helper_plugin_suffix() {
+        assert_eq!(get_base_process_name("Chrome Helper (Plugin)"), "Chrome");
+    }
+
+    #[test]
+    fn get_base_process_name_strips_renderer_suffix() {
+        assert_eq!(get_base_process_name("Safari Renderer"), "Safari");
+    }
+
+    #[test]
+    fn get_base_process_name_strips_gpu_process_suffix() {
+        assert_eq!(get_base_process_name("Firefox (GPU Process)"), "Firefox");
+    }
+
+    #[test]
+    fn get_base_process_name_strips_web_content_suffix() {
+        assert_eq!(get_base_process_name("Firefox Web Content"), "Firefox");
+    }
+
+    #[test]
+    fn get_base_process_name_strips_parenthesized_suffix() {
+        assert_eq!(get_base_process_name("MyApp (Worker 1)"), "MyApp");
+        assert_eq!(get_base_process_name("Node (12345)"), "Node");
+    }
+
+    #[test]
+    fn get_base_process_name_preserves_plain_name() {
+        assert_eq!(get_base_process_name("Safari"), "Safari");
+        assert_eq!(get_base_process_name("Terminal"), "Terminal");
+    }
+
+    #[test]
+    fn get_base_process_name_preserves_name_with_unclosed_paren() {
+        assert_eq!(get_base_process_name("App (test"), "App (test");
+    }
+
+    #[test]
+    fn get_base_process_name_strips_rightmost_suffix_first() {
+        assert_eq!(
+            get_base_process_name("Chrome Helper (GPU) Helper"),
+            "Chrome"
+        );
+    }
+
+    #[test]
+    fn action_enum_has_none_variant() {
+        let action = Action::None;
+        assert_eq!(action, Action::None);
+    }
+
+    #[test]
+    fn app_view_main_is_distinct_from_others() {
+        assert_ne!(AppView::Main, AppView::Help);
+        assert_ne!(AppView::Main, AppView::Settings);
+        assert_ne!(AppView::Main, AppView::History);
+    }
+}

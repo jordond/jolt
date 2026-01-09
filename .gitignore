@@ -33,3 +33,6 @@ build/
 reports/
 */build
 env.properties
+
+# Auto Claude data directory
+.auto-claude/
