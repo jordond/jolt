@@ -5,7 +5,7 @@
 // Submodules will be added as they are created:
 // pub mod actions;
 mod daemon;
-// pub mod history;
+mod history;
 // pub mod process;
 mod theme;
 pub mod types;

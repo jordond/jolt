@@ -1,0 +1,34 @@
+{
+  "sandbox": {
+    "enabled": true,
+    "autoAllowBashIfSandboxed": true
+  },
+  "permissions": {
+    "defaultMode": "acceptEdits",
+    "allow": [
+      "Read(./**)",
+      "Write(./**)",
+      "Edit(./**)",
+      "Glob(./**)",
+      "Grep(./**)",
+      "Read(/Users/jordon/dev/jolt-refactor/.worktrees/001-we-were-in-the-midst-of-refactoring-the-main-rs-an/**)",
+      "Write(/Users/jordon/dev/jolt-refactor/.worktrees/001-we-were-in-the-midst-of-refactoring-the-main-rs-an/**)",
+      "Edit(/Users/jordon/dev/jolt-refactor/.worktrees/001-we-were-in-the-midst-of-refactoring-the-main-rs-an/**)",
+      "Glob(/Users/jordon/dev/jolt-refactor/.worktrees/001-we-were-in-the-midst-of-refactoring-the-main-rs-an/**)",
+      "Grep(/Users/jordon/dev/jolt-refactor/.worktrees/001-we-were-in-the-midst-of-refactoring-the-main-rs-an/**)",
+      "Read(/Users/jordon/dev/jolt-refactor/.worktrees/001-we-were-in-the-midst-of-refactoring-the-main-rs-an/.auto-claude/specs/001-we-were-in-the-midst-of-refactoring-the-main-rs-an/**)",
+      "Write(/Users/jordon/dev/jolt-refactor/.worktrees/001-we-were-in-the-midst-of-refactoring-the-main-rs-an/.auto-claude/specs/001-we-were-in-the-midst-of-refactoring-the-main-rs-an/**)",
+      "Edit(/Users/jordon/dev/jolt-refactor/.worktrees/001-we-were-in-the-midst-of-refactoring-the-main-rs-an/.auto-claude/specs/001-we-were-in-the-midst-of-refactoring-the-main-rs-an/**)",
+      "Bash(*)",
+      "WebFetch(*)",
+      "WebSearch(*)",
+      "mcp__context7__resolve-library-id(*)",
+      "mcp__context7__get-library-docs(*)",
+      "mcp__graphiti-memory__search_nodes(*)",
+      "mcp__graphiti-memory__search_facts(*)",
+      "mcp__graphiti-memory__add_episode(*)",
+      "mcp__graphiti-memory__get_episodes(*)",
+      "mcp__graphiti-memory__get_entity_edge(*)"
+    ]
+  }
+}
