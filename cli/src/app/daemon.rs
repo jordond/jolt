@@ -8,7 +8,7 @@ use std::time::Duration;
 use color_eyre::eyre::Result;
 use tracing::{debug, info};
 
-use crate::daemon::{DaemonClient, DaemonStatus, DataSnapshot};
+use crate::daemon::{DaemonClient, DataSnapshot};
 
 /// App struct placeholder - the actual App struct will be in mod.rs
 /// once the refactoring is complete. For now, this impl block extends

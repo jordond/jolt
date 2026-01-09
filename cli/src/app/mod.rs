@@ -7,7 +7,10 @@ mod daemon;
 mod history;
 mod process;
 mod theme;
+mod tui;
 pub mod types;
+
+pub use tui::run_tui;
 
 use std::time::Duration;
 
@@ -25,7 +28,6 @@ use jolt_theme::cache::ThemeGroup;
 use jolt_theme::NamedTheme;
 
 pub use types::{Action, AppView, HistoryPeriod, SortColumn};
-pub use types::{MAX_REFRESH_MS, MIN_REFRESH_MS, REFRESH_STEP_MS};
 
 /// How many ticks between forecast refreshes.
 const FORECAST_REFRESH_TICKS: u32 = 10;
