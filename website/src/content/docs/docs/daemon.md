@@ -64,7 +64,9 @@ jolt daemon logs --follow
 
 ## Auto-Start on Login
 
-### Install
+### macOS
+
+Install a LaunchAgent:
 
 ```bash
 jolt daemon install
@@ -72,15 +74,51 @@ jolt daemon install
 
 This creates a LaunchAgent that starts the daemon automatically when you log in.
 
+### Linux
+
+Use systemd to run on login:
+
+```bash
+# Create user service
+mkdir -p ~/.config/systemd/user
+cat > ~/.config/systemd/user/jolt-daemon.service << 'EOF'
+[Unit]
+Description=Jolt Battery Monitor Daemon
+After=graphical-session.target
+
+[Service]
+ExecStart=%h/.local/bin/jolt daemon start --foreground
+Restart=on-failure
+
+[Install]
+WantedBy=default.target
+EOF
+
+# Enable and start
+systemctl --user enable jolt-daemon
+systemctl --user start jolt-daemon
+```
+
 ### Uninstall
 
+**macOS:**
 ```bash
 jolt daemon uninstall
 ```
 
+**Linux:**
+```bash
+systemctl --user disable jolt-daemon
+systemctl --user stop jolt-daemon
+rm ~/.config/systemd/user/jolt-daemon.service
+```
+
 ## Configuration
 
-Daemon settings in `~/.config/jolt/config.toml`:
+Daemon settings in config file:
+
+**macOS:** `~/Library/Application Support/jolt/config.toml`
+**Linux:** `~/.config/jolt/config.toml`
 
 ```toml
 [daemon]
@@ -90,8 +128,8 @@ enabled = true
 # Sample interval in seconds
 sample_interval = 60
 
-# Socket path for IPC
-socket_path = "~/.local/share/jolt/daemon.sock"
+# Socket path for IPC (macOS: ~/Library/Caches/jolt/daemon.sock, Linux: ~/.local/share/jolt/daemon.sock)
+socket_path = "auto"
 ```
 
 ### Sample Interval
@@ -114,6 +152,12 @@ sample_interval = 60
 
 The daemon stores data in SQLite:
 
+**macOS:**
+```
+~/Library/Caches/jolt/history.db
+```
+
+**Linux:**
 ```
 ~/.local/share/jolt/history.db
 ```
@@ -181,6 +225,12 @@ If TUI can't connect to daemon:
 
 2. Check socket file exists:
 
+   **macOS:**
+   ```bash
+   ls ~/Library/Caches/jolt/daemon.sock
+   ```
+
+   **Linux:**
    ```bash
    ls ~/.local/share/jolt/daemon.sock
    ```

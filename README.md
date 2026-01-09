@@ -1,8 +1,8 @@
 # jolt
 
-A beautiful terminal-based battery and energy monitor for macOS.
+A beautiful terminal-based battery and energy monitor for macOS and Linux.
 
-Built for MacBook users who want to understand what's draining their battery. Provides real-time insights into power consumption, process energy usage, and battery health - all in a clean, themeable TUI.
+Built for laptop users who want to understand what's draining their battery. Provides real-time insights into power consumption, process energy usage, and battery health - all in a clean, themeable TUI.
 
 ## Packages
 
@@ -37,10 +37,28 @@ cargo build --release
 
 ## Requirements
 
-- macOS (optimized for Apple Silicon, works on Intel)
+### macOS
+- macOS 11.0 (Big Sur) or later
+- Apple Silicon (M1/M2/M3/M4) or Intel Mac
 - Rust 1.70 or newer
 
+### Linux
+- Linux kernel 3.13+ (for RAPL power metrics)
+- Laptop with battery
+- Intel or AMD CPU (for power metrics)
+- Rust 1.70 or newer
+
+See [docs/linux-setup.md](./docs/linux-setup.md) for Linux-specific setup instructions.
+
 ## Installation
+
+### Install Script (Recommended)
+
+Automatically detects your platform and downloads the correct binary:
+
+```bash
+curl -fsSL https://getjolt.sh/install.sh | bash
+```
 
 ### Homebrew (coming soon)
 
@@ -48,9 +66,20 @@ cargo build --release
 brew install jordond/tap/jolt
 ```
 
+### Cargo
+
+```bash
+cargo install jolt-tui
+```
+
 ### From Source
 
 See [cli/README.md](./cli/README.md) for detailed build instructions.
+
+## Platform Notes
+
+- **macOS**: Power metrics work on Apple Silicon. Intel Macs show battery data only.
+- **Linux**: Requires permissions for power metrics (RAPL). See [Linux setup guide](./docs/linux-setup.md).
 
 ## Contributing
 

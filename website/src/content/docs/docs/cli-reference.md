@@ -173,11 +173,15 @@ jolt theme create <NAME>
 
 #### `jolt theme open`
 
-Open themes folder in Finder.
+Open themes folder in file manager.
 
 ```bash
 jolt theme open
 ```
+
+Opens the themes directory in Finder (macOS) or default file manager (Linux):
+- **macOS:** `~/Library/Application Support/jolt/themes/`
+- **Linux:** `~/.config/jolt/themes/`
 
 ### `jolt daemon`
 

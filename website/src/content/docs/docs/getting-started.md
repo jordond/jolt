@@ -3,15 +3,15 @@ title: Introduction
 description: What is jolt and why use it?
 ---
 
-jolt is a terminal-based battery and energy monitor designed specifically for macOS. Built in Rust for performance and reliability, it provides real-time insights into your Mac's power consumption.
+jolt is a terminal-based battery and energy monitor for macOS and Linux. Built in Rust for performance and reliability, it provides real-time insights into your laptop's power consumption.
 
 ## Why jolt?
 
-macOS includes Activity Monitor, but it's a GUI app that doesn't work in terminal-only environments. jolt fills this gap by providing:
+Desktop operating systems include GUI battery monitors (macOS Activity Monitor, GNOME Power Statistics), but they don't work in terminal-only environments. jolt fills this gap by providing:
 
 - **SSH-friendly** — Monitor battery over SSH connections
 - **tmux compatible** — Works perfectly in terminal multiplexers
-- **Apple Silicon native** — Direct IOReport access for accurate power metrics
+- **Platform native** — Direct hardware access for accurate power metrics
 - **Scriptable** — JSON output for automation
 
 ## Key Features
@@ -29,6 +29,10 @@ macOS includes Activity Monitor, but it's a GUI app that doesn't work in termina
 - CPU and GPU power breakdown
 - Power mode detection (Low Power, Normal, High Performance)
 
+:::note
+Power metrics require Apple Silicon on macOS or RAPL support on Linux.
+:::
+
 ### Process Tracking
 
 - Processes sorted by energy impact
@@ -44,4 +48,4 @@ macOS includes Activity Monitor, but it's a GUI app that doesn't work in termina
 
 ## Next Steps
 
-Ready to get started? Head to [Installation](/jolt/docs/installation/) to set up jolt on your Mac.
+Ready to get started? Head to [Installation](/jolt/docs/installation/) to set up jolt on your system.

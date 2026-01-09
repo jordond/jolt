@@ -152,7 +152,10 @@ This permanently deletes all historical data. Use with care.
 
 ## Configuration
 
-History settings in `~/.config/jolt/config.toml`:
+History settings in config file:
+
+**macOS:** `~/Library/Application Support/jolt/config.toml`
+**Linux:** `~/.config/jolt/config.toml`
 
 ```toml
 [history]

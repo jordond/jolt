@@ -3,7 +3,7 @@ title: TUI Interface
 description: Overview of jolt's terminal user interface
 ---
 
-jolt's terminal user interface is divided into several panels, each showing different aspects of your Mac's power state.
+jolt's terminal user interface is divided into several panels, each showing different aspects of your laptop's power state.
 
 ## Layout Overview
 
@@ -26,7 +26,7 @@ The interface is organized into these main areas:
 
 ## Battery Panel
 
-Shows your Mac's battery status:
+Shows your laptop's battery status:
 
 | Field       | Description                                     |
 | ----------- | ----------------------------------------------- |
@@ -50,7 +50,9 @@ Real-time power consumption metrics:
 | **Mode**  | Current power mode (Low Power, Normal, High Performance) |
 
 :::note
-Power metrics require Apple Silicon (M1/M2/M3/M4). Intel Macs will show battery data only.
+Power metrics require:
+- **macOS:** Apple Silicon (M1/M2/M3/M4). Intel Macs will show battery data only.
+- **Linux:** RAPL support with proper permissions. See [installation guide](/jolt/docs/installation/#linux-permissions).
 :::
 
 ## Process List

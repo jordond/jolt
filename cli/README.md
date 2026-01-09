@@ -1,8 +1,8 @@
 # jolt CLI
 
-A beautiful terminal-based battery and energy monitor for macOS.
+A beautiful terminal-based battery and energy monitor for macOS and Linux.
 
-Built for MacBook users who want to understand what's draining their battery. Provides real-time insights into power consumption, process energy usage, and battery health - all in a clean, themeable TUI.
+Built for laptop users who want to understand what's draining their battery. Provides real-time insights into power consumption, process energy usage, and battery health - all in a clean, themeable TUI.
 
 ## Features
 
@@ -17,10 +17,26 @@ Built for MacBook users who want to understand what's draining their battery. Pr
 
 ## Requirements
 
-- macOS (optimized for Apple Silicon, works on Intel)
-- Rust 1.70 or newer
+### macOS
+- macOS 11.0 (Big Sur) or later
+- Apple Silicon (optimized) or Intel Mac
+
+### Linux
+- Linux kernel 3.13+ (for RAPL power metrics)
+- Laptop with battery
+- Intel or AMD CPU (for power metrics)
+
+**Note:** On Linux, see [Linux setup guide](../docs/linux-setup.md) for required permissions.
 
 ## Installation
+
+### Install Script (Recommended)
+
+```bash
+curl -fsSL https://getjolt.sh/install.sh | bash
+```
+
+Automatically detects your platform (macOS or Linux) and architecture.
 
 ### From Source
 
@@ -34,15 +50,12 @@ cargo build --release
 ### Via Cargo
 
 ```bash
-cd jolt/cli
-cargo install --path .
-jolt
+cargo install jolt-tui
 ```
 
 ### Homebrew (coming soon)
 
 ```bash
-# Future release
 brew install jordond/tap/jolt
 ```
 
@@ -97,6 +110,8 @@ jolt --help
 
 ### Prerequisites
 
+#### macOS
+
 1. Install Rust via [rustup](https://rustup.rs/):
 
    ```bash
@@ -106,6 +121,31 @@ jolt --help
 2. Ensure you have Xcode Command Line Tools:
    ```bash
    xcode-select --install
+   ```
+
+#### Linux
+
+1. Install Rust via [rustup](https://rustup.rs/):
+
+   ```bash
+   curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+   ```
+
+2. Install build dependencies:
+
+   **Ubuntu/Debian:**
+   ```bash
+   sudo apt-get install build-essential pkg-config
+   ```
+
+   **Fedora:**
+   ```bash
+   sudo dnf install gcc pkg-config
+   ```
+
+   **Arch:**
+   ```bash
+   sudo pacman -S base-devel
    ```
 
 ### Build
@@ -141,13 +181,22 @@ cargo clippy
 
 ## How it Works
 
-jolt collects system metrics using macOS-native tools and APIs:
+jolt collects system metrics using platform-native APIs:
 
+### macOS
 - **Battery Data** - Parsed from `pmset -g batt` and `ioreg -r -c AppleSmartBattery`
 - **Power Metrics** - Real-time energy data via IOReport framework (CPU, GPU, ANE power in watts)
+- **System Theme** - Detected via `defaults read -g AppleInterfaceStyle`
+
+### Linux
+- **Battery Data** - Read from `/sys/class/power_supply/BAT*/`
+- **Power Metrics** - Intel RAPL interface at `/sys/class/powercap/intel-rapl/`
+- **GPU Power** - hwmon interfaces (Intel/AMD)
+- **System Theme** - Follows environment settings
+
+### Cross-Platform
 - **Process Info** - Collected via the [sysinfo](https://crates.io/crates/sysinfo) crate
 - **Terminal UI** - Built with [ratatui](https://crates.io/crates/ratatui) and [crossterm](https://crates.io/crates/crossterm)
-- **System Theme** - Detected via `defaults read -g AppleInterfaceStyle`
 
 ## License
 

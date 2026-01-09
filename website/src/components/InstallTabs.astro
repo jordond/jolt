@@ -6,12 +6,12 @@
   <div class="tab-buttons" role="tablist">
     <button
       class="tab-btn active"
-      data-tab="brew"
+      data-tab="install"
       role="tab"
       aria-selected="true"
-      aria-controls="panel-brew"
+      aria-controls="panel-install"
     >
-      Homebrew
+      Install Script
     </button>
     <button
       class="tab-btn"
@@ -31,15 +31,25 @@
     >
       Source
     </button>
+    <button
+      class="tab-btn"
+      data-tab="brew"
+      role="tab"
+      aria-selected="false"
+      aria-controls="panel-brew"
+    >
+      Homebrew
+    </button>
   </div>
 
   <div class="tab-panels">
-    <div class="tab-content active" id="panel-brew" role="tabpanel" aria-labelledby="brew">
+    <div class="tab-content active" id="panel-install" role="tabpanel" aria-labelledby="install">
+      <p class="platform-note">Automatically detects macOS or Linux</p>
       <div class="code-block">
-        <pre><code>brew install jordond/tap/jolt</code></pre>
+        <pre><code>curl -fsSL https://getjolt.sh/install.sh | bash</code></pre>
         <button
           class="copy-btn"
-          data-code="brew install jordond/tap/jolt"
+          data-code="curl -fsSL https://getjolt.sh/install.sh | bash"
           aria-label="Copy to clipboard"
         >
           <svg
@@ -90,6 +100,35 @@ cd jolt && cargo build --release
         <button
           class="copy-btn"
           data-code="git clone https://github.com/jordond/jolt.git && cd jolt && cargo build --release && ./target/release/jolt"
+          aria-label="Copy to clipboard"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="tab-content" id="panel-brew" role="tabpanel" aria-labelledby="brew">
+      <div class="coming-soon-notice">
+        <p>🚧 Homebrew support coming soon</p>
+      </div>
+      <div class="code-block">
+        <pre><code>brew install jordond/tap/jolt</code></pre>
+        <button
+          class="copy-btn"
+          data-code="brew install jordond/tap/jolt"
           aria-label="Copy to clipboard"
         >
           <svg
@@ -263,6 +302,28 @@ cd jolt && cargo build --release
     background: rgba(39, 202, 64, 0.2);
     border-color: #27ca40;
     color: #27ca40;
+  }
+
+  .platform-note {
+    font-size: 0.85rem;
+    color: var(--sl-color-gray-3);
+    margin: 0.75rem 1.25rem 0.5rem;
+    text-align: center;
+  }
+
+  .coming-soon-notice {
+    background: rgba(229, 255, 0, 0.05);
+    border: 1px solid rgba(229, 255, 0, 0.2);
+    border-radius: 0.375rem;
+    padding: 0.5rem;
+    margin: 0.75rem 1.25rem 0.5rem;
+    text-align: center;
+  }
+
+  .coming-soon-notice p {
+    margin: 0;
+    font-size: 0.85rem;
+    color: var(--sl-color-gray-3);
   }
 
   @media (max-width: 480px) {

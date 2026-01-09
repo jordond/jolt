@@ -7,6 +7,17 @@ Common questions and answers about jolt.
 
 ## General
 
+### Does jolt work on Linux?
+
+Yes! jolt supports Linux with the same features as macOS:
+
+- ✅ Battery status (percentage, state, health, cycles)
+- ✅ Power metrics (watts) via RAPL
+- ✅ Process list with CPU usage
+- ✅ All TUI features
+
+**Note:** Power metrics on Linux require permissions. See [installation guide](/jolt/docs/installation/#linux-permissions).
+
 ### Does jolt work on Intel Macs?
 
 Yes, but with limited functionality. Intel Macs will show:
@@ -14,6 +25,8 @@ Yes, but with limited functionality. Intel Macs will show:
 - ✅ Battery status (percentage, state, health, cycles)
 - ✅ Process list with CPU usage
 - ❌ Power metrics (watts) — requires Apple Silicon
+
+For full power metrics on Intel hardware, use Linux with RAPL support.
 
 ### Does jolt work over SSH?
 
@@ -67,12 +80,19 @@ A battery at 100% charge but 80% health can only hold 80% of its original capaci
 
 ### Why don't I see power metrics (watts)?
 
-Power metrics require:
+Power metrics require platform-specific hardware support:
 
+**macOS:**
 1. Apple Silicon Mac (M1/M2/M3/M4)
 2. macOS 11.0 or later
 
 Intel Macs cannot report per-component power consumption.
+
+**Linux:**
+1. Intel or AMD CPU with RAPL support (kernel 3.13+)
+2. Proper permissions configured
+
+See the [installation guide](/jolt/docs/installation/#linux-permissions) for Linux setup.
 
 ### What does "Not Charging" mean?
 
@@ -116,8 +136,10 @@ jolt groups parent and child processes. Press `Enter` to expand a group and see 
 ### Where are themes stored?
 
 - Built-in themes: Bundled with jolt
-- Custom themes: `~/.config/jolt/themes/`
-- Imported themes: `~/.config/jolt/themes/`
+- Custom themes:
+  - **macOS:** `~/Library/Application Support/jolt/themes/`
+  - **Linux:** `~/.config/jolt/themes/`
+- Imported themes: Same as custom themes
 
 ### How do I import an iTerm2 theme?
 
@@ -225,6 +247,12 @@ Try:
 
 2. Validate config syntax:
 
+   **macOS:**
+   ```bash
+   cat ~/Library/Application\ Support/jolt/config.toml
+   ```
+
+   **Linux:**
    ```bash
    cat ~/.config/jolt/config.toml
    ```

@@ -20,6 +20,12 @@ You'll see the main TUI interface with:
 - Process list sorted by energy impact
 - Real-time graphs
 
+:::tip[Platform Note]
+All features work the same on macOS and Linux. Power metrics require:
+- macOS: Apple Silicon (M1/M2/M3/M4)
+- Linux: RAPL permissions ([setup guide](/jolt/docs/installation/#linux-permissions))
+:::
+
 ## Basic Navigation
 
 | Key       | Action                        |
@@ -49,7 +55,9 @@ The power panel shows real-time wattage:
 - **Total** — Combined system power draw
 - **CPU** — Processor power consumption
 - **GPU** — Graphics power consumption
-- **ANE** — Neural Engine power (if active)
+- **ANE** — Neural Engine power (Apple Silicon only)
+
+**Note:** On Intel Macs, power metrics are not available. On Linux, requires RAPL permissions.
 
 ### 3. Find Energy Hogs
 

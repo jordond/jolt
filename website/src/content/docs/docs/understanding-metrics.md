@@ -3,13 +3,13 @@ title: Understanding Metrics
 description: What the battery and power metrics mean
 ---
 
-jolt displays various metrics about your Mac's battery and power consumption. Here's what they mean and how to interpret them.
+jolt displays various metrics about your laptop's battery and power consumption. Here's what they mean and how to interpret them.
 
 ## Battery Metrics
 
 ### Charge Percentage
 
-The current battery charge level (0-100%). This is the same value shown in macOS menu bar.
+The current battery charge level (0-100%). This matches the value shown in your system's battery indicator.
 
 ### Battery State
 
@@ -60,6 +60,10 @@ Combined power draw of all system components. This is the primary indicator of h
 | **30-50W**  | Video editing, compilation |
 | **50W+**    | Heavy workloads, gaming    |
 
+**Platform Notes:**
+- Intel Macs cannot report power consumption
+- Linux requires RAPL support and permissions
+
 ### CPU Power
 
 Power consumed by the processor cores (both efficiency and performance cores on Apple Silicon).
@@ -79,7 +83,7 @@ Higher values when:
 - External display connected
 - Video playback
 - Graphics-intensive applications
-- Metal/GPU compute workloads
+- GPU compute workloads (Metal on macOS, OpenGL/Vulkan on Linux)
 
 ### ANE Power (Neural Engine)
 
@@ -94,13 +98,15 @@ Active during:
 
 ### Power Mode
 
-macOS power management mode:
+System power management mode (macOS-specific):
 
 | Mode                 | Description                           |
 | -------------------- | ------------------------------------- |
 | **Low Power**        | Reduced performance to save battery   |
 | **Normal**           | Balanced performance and efficiency   |
 | **High Performance** | Maximum performance (when plugged in) |
+
+**Note:** Power mode detection is currently only available on macOS. Linux users can manage power profiles through system tools like `tlp` or `power-profiles-daemon`.
 
 ## Process Energy Impact
 

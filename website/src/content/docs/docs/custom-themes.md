@@ -9,6 +9,12 @@ Create personalized themes for jolt with TOML configuration files.
 
 Custom themes are stored in:
 
+**macOS:**
+```
+~/Library/Application Support/jolt/themes/
+```
+
+**Linux:**
 ```
 ~/.config/jolt/themes/
 ```
@@ -23,14 +29,14 @@ Each theme is a `.toml` file with color definitions.
 jolt theme create "My Theme"
 ```
 
-This creates `~/.config/jolt/themes/my-theme.toml` with a template.
+This creates `my-theme.toml` in your themes directory with a template.
 
 ### Manual Creation
 
 Create a new `.toml` file in the themes directory:
 
 ```toml
-# ~/.config/jolt/themes/my-theme.toml
+# my-theme.toml
 
 [dark]
 background = "#1a1b26"
@@ -175,7 +181,7 @@ This checks:
 
 To share a theme:
 
-1. Copy the `.toml` file from `~/.config/jolt/themes/`
+1. Copy the `.toml` file from your themes directory
 2. Share it (GitHub gist, etc.)
 3. Others can place it in their themes directory
 

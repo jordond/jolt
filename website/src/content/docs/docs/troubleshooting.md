@@ -179,6 +179,13 @@ sysctl -n machdep.cpu.brand_string
    ```
 
 4. **Check socket:**
+
+   **macOS:**
+   ```bash
+   ls -la ~/Library/Caches/jolt/daemon.sock
+   ```
+
+   **Linux:**
    ```bash
    ls -la ~/.local/share/jolt/daemon.sock
    ```
@@ -193,6 +200,12 @@ sysctl -n machdep.cpu.brand_string
 
 2. **Check socket permissions:**
 
+   **macOS:**
+   ```bash
+   ls -la ~/Library/Caches/jolt/daemon.sock
+   ```
+
+   **Linux:**
    ```bash
    ls -la ~/.local/share/jolt/daemon.sock
    ```
@@ -205,10 +218,12 @@ sysctl -n machdep.cpu.brand_string
 
 ### Daemon uses too much CPU
 
-Increase sample interval:
+Increase sample interval in your config file:
+
+**macOS:** `~/Library/Application Support/jolt/config.toml`
+**Linux:** `~/.config/jolt/config.toml`
 
 ```toml
-# ~/.config/jolt/config.toml
 [daemon]
 sample_interval = 120  # Every 2 minutes
 ```
@@ -229,9 +244,6 @@ jolt creates it on first run. If missing:
 # Check location
 jolt config --path
 
-# Create directory
-mkdir -p ~/.config/jolt
-
 # Create default config
 jolt config --reset
 ```
@@ -240,6 +252,12 @@ jolt config --reset
 
 1. **Verify syntax:**
 
+   **macOS:**
+   ```bash
+   cat ~/Library/Application\ Support/jolt/config.toml
+   ```
+
+   **Linux:**
    ```bash
    cat ~/.config/jolt/config.toml
    ```
@@ -260,11 +278,7 @@ jolt config --reset
 jolt config --reset
 ```
 
-Or manually delete:
-
-```bash
-rm ~/.config/jolt/config.toml
-```
+Or manually delete the config file (see `jolt config --path` for location).
 
 ## Performance Issues
 
