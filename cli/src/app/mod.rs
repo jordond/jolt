@@ -214,7 +214,11 @@ impl App {
             true
         };
 
-        self.system_stats.refresh()?;
+        // Only refresh system stats locally when not using daemon data
+        // (daemon provides system stats in the snapshot)
+        if !self.using_daemon_data {
+            self.system_stats.refresh()?;
+        }
 
         if data_updated {
             self.tick_count = self.tick_count.wrapping_add(1);

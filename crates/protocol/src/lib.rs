@@ -9,6 +9,6 @@ pub use types::{
     BatterySnapshot, BatteryState, ChargeSession, ChargingState, CycleSummary, DaemonStatus,
     DailyCycle, DailyStat, DailyTopProcess, DataSnapshot, ForecastSnapshot, ForecastSource,
     HourlyStat, KillProcessResult, KillSignal, PowerMode, PowerSnapshot, ProcessSnapshot,
-    ProcessState, Sample, SessionType, SystemSnapshot, MAX_SUBSCRIBERS,
+    ProcessState, Sample, SessionType, SystemSnapshot, SystemStatsSnapshot, MAX_SUBSCRIBERS,
 };
 pub use version::{MIN_SUPPORTED_VERSION, PROTOCOL_VERSION};

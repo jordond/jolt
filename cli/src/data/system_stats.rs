@@ -92,11 +92,27 @@ impl SystemStatsData {
         self.load_one
     }
 
+    pub fn load_five(&self) -> f32 {
+        self.load_five
+    }
+
+    pub fn load_fifteen(&self) -> f32 {
+        self.load_fifteen
+    }
+
     pub fn load_formatted(&self) -> String {
         format!(
             "{:.2} {:.2} {:.2}",
             self.load_one, self.load_five, self.load_fifteen
         )
+    }
+
+    pub fn memory_used_bytes(&self) -> u64 {
+        self.memory_used_bytes
+    }
+
+    pub fn memory_total_bytes(&self) -> u64 {
+        self.memory_total_bytes
     }
 
     pub fn memory_used_gb(&self) -> f64 {
@@ -130,7 +146,22 @@ impl SystemStatsData {
         }
     }
 
+    pub fn uptime_secs(&self) -> u64 {
+        self.uptime.as_secs()
+    }
+
     pub fn is_warmed_up(&self) -> bool {
         self.warmed_up
+    }
+
+    pub fn update_from_snapshot(&mut self, snapshot: &crate::daemon::SystemStatsSnapshot) {
+        self.cpu_usage_percent = snapshot.cpu_usage_percent;
+        self.load_one = snapshot.load_one;
+        self.load_five = snapshot.load_five;
+        self.load_fifteen = snapshot.load_fifteen;
+        self.memory_used_bytes = snapshot.memory_used_bytes;
+        self.memory_total_bytes = snapshot.memory_total_bytes;
+        self.uptime = Duration::from_secs(snapshot.uptime_secs);
+        self.warmed_up = snapshot.is_warmed_up;
     }
 }

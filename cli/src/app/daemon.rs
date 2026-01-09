@@ -245,6 +245,8 @@ impl App {
         self.battery.update_from_snapshot(&snapshot.battery);
         self.power.update_from_snapshot(&snapshot.power);
         self.system_info.update_from_snapshot(&snapshot.system);
+        self.system_stats
+            .update_from_snapshot(&snapshot.system_stats);
         self.forecast.update_from_snapshot(&snapshot.forecast);
 
         if !self.selection_mode {

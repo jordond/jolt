@@ -3,7 +3,7 @@ pub use protocol::{
     DaemonResponse, DaemonStatus, DailyCycle, DailyStat, DailyTopProcess, DataSnapshot,
     ForecastSnapshot, ForecastSource, HourlyStat, KillProcessResult, KillSignal, PowerMode,
     PowerSnapshot, ProcessSnapshot, ProcessState, Sample, SessionType, SystemSnapshot,
-    MAX_SUBSCRIBERS, MIN_SUPPORTED_VERSION, PROTOCOL_VERSION,
+    SystemStatsSnapshot, MAX_SUBSCRIBERS, MIN_SUPPORTED_VERSION, PROTOCOL_VERSION,
 };
 
 use crate::data;
@@ -126,6 +126,21 @@ impl From<&data::SystemInfo> for SystemSnapshot {
             os_version: s.os_version.clone(),
             p_cores: s.p_cores,
             e_cores: s.e_cores,
+        }
+    }
+}
+
+impl From<&data::SystemStatsData> for SystemStatsSnapshot {
+    fn from(s: &data::SystemStatsData) -> Self {
+        Self {
+            cpu_usage_percent: s.cpu_usage_percent(),
+            load_one: s.load_one(),
+            load_five: s.load_five(),
+            load_fifteen: s.load_fifteen(),
+            memory_used_bytes: s.memory_used_bytes(),
+            memory_total_bytes: s.memory_total_bytes(),
+            uptime_secs: s.uptime_secs(),
+            is_warmed_up: s.is_warmed_up(),
         }
     }
 }

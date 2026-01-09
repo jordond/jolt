@@ -14,11 +14,13 @@ use crate::daemon::protocol::{
     BatterySnapshot, BatteryState, ChargeSession, DaemonRequest, DaemonResponse, DaemonStatus,
     DailyCycle, DailyStat, DailyTopProcess, DataSnapshot, ForecastSnapshot, HourlyStat,
     KillProcessResult, PowerMode, PowerSnapshot, ProcessSnapshot, ProcessState, Sample,
-    SystemSnapshot, MAX_SUBSCRIBERS, MIN_SUPPORTED_VERSION, PROTOCOL_VERSION,
+    SystemSnapshot, SystemStatsSnapshot, MAX_SUBSCRIBERS, MIN_SUPPORTED_VERSION, PROTOCOL_VERSION,
 };
 use crate::daemon::socket_path;
 use crate::data::aggregator::Aggregator;
-use crate::data::{BatteryData, ForecastData, PowerData, ProcessData, Recorder, SystemInfo};
+use crate::data::{
+    BatteryData, ForecastData, PowerData, ProcessData, Recorder, SystemInfo, SystemStatsData,
+};
 
 #[derive(Debug, thiserror::Error)]
 pub enum DaemonError {
@@ -118,6 +120,13 @@ impl RefreshWorker {
         };
 
         let system_snapshot: SystemSnapshot = (&SystemInfo::new()).into();
+        let mut system_stats = match SystemStatsData::new() {
+            Ok(s) => s,
+            Err(e) => {
+                error!(error = %e, "Failed to initialize system stats in worker");
+                return;
+            }
+        };
         let mut forecast = ForecastData::new();
 
         let mut recorder = match Recorder::new(config, excluded) {
@@ -163,6 +172,7 @@ impl RefreshWorker {
                     let _ = battery.refresh();
                     let _ = power.refresh();
                     let _ = processes.refresh();
+                    let _ = system_stats.refresh();
                     last_process_refresh = Instant::now();
 
                     if let Some(ref mut rec) = recorder {
@@ -174,6 +184,7 @@ impl RefreshWorker {
                 RefreshRequest::MetricsOnly => {
                     let _ = battery.refresh();
                     let _ = power.refresh();
+                    let _ = system_stats.refresh();
                     let process_refresh_due =
                         last_process_refresh.elapsed() >= PROCESS_REFRESH_INTERVAL;
                     if process_refresh_due {
@@ -202,11 +213,13 @@ impl RefreshWorker {
             }
 
             let forecast_snapshot: ForecastSnapshot = (&forecast).into();
+            let system_stats_snapshot: SystemStatsSnapshot = (&system_stats).into();
             let snapshot = create_snapshot(
                 &battery,
                 &power,
                 &processes,
                 &system_snapshot,
+                &system_stats_snapshot,
                 &forecast_snapshot,
             );
             let refresh_duration = refresh_start.elapsed();
@@ -259,6 +272,7 @@ fn create_snapshot(
     power: &PowerData,
     processes: &ProcessData,
     system: &SystemSnapshot,
+    system_stats: &SystemStatsSnapshot,
     forecast: &ForecastSnapshot,
 ) -> DataSnapshot {
     let battery_state = match battery.state_label() {
@@ -318,6 +332,7 @@ fn create_snapshot(
         power: power_snapshot,
         processes: process_snapshots,
         system: system.clone(),
+        system_stats: system_stats.clone(),
         forecast: forecast.clone(),
     }
 }

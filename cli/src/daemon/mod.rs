@@ -10,7 +10,7 @@ pub use protocol::{
     DaemonResponse, DaemonStatus, DailyCycle, DailyStat, DailyTopProcess, DataSnapshot,
     ForecastSnapshot, ForecastSource, HourlyStat, KillProcessResult, KillSignal, PowerMode,
     PowerSnapshot, ProcessSnapshot, ProcessState, Sample, SessionType, SystemSnapshot,
-    MAX_SUBSCRIBERS, MIN_SUPPORTED_VERSION, PROTOCOL_VERSION,
+    SystemStatsSnapshot, MAX_SUBSCRIBERS, MIN_SUPPORTED_VERSION, PROTOCOL_VERSION,
 };
 pub use server::run_daemon;
 #[allow(unused_imports)]
