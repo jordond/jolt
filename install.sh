@@ -3,10 +3,12 @@ set -e
 
 # Jolt installer script
 # Usage: curl -fsSL https://raw.githubusercontent.com/jordond/jolt/main/install.sh | bash
+# Usage with prerelease: curl -fsSL https://raw.githubusercontent.com/jordond/jolt/main/install.sh | bash -s -- --prerelease
 
 REPO="jordond/jolt"
 INSTALL_DIR="${HOME}/.local/bin"
 BINARY_NAME="jolt"
+PRERELEASE=false
 
 # Colors for output
 RED='\033[0;31m'
@@ -70,15 +72,38 @@ detect_linux_variant() {
 }
 
 get_latest_version() {
-    local latest_url="https://api.github.com/repos/${REPO}/releases/latest"
+    local include_prerelease="$1"
+    local url
 
+    if [ "${include_prerelease}" = "true" ]; then
+        url="https://api.github.com/repos/${REPO}/releases"
+    else
+        url="https://api.github.com/repos/${REPO}/releases/latest"
+    fi
+
+    local response
     if command -v curl >/dev/null 2>&1; then
-        curl -sL "${latest_url}" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/' | sed 's/^v//'
+        response="$(curl -sL "${url}")"
     elif command -v wget >/dev/null 2>&1; then
-        wget -qO- "${latest_url}" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/' | sed 's/^v//'
+        response="$(wget -qO- "${url}")"
     else
         log_error "Either curl or wget is required to download jolt"
         exit 1
+    fi
+
+    if [ "${include_prerelease}" = "true" ]; then
+        # Get the first (latest) release from the list, whether prerelease or not
+        local version
+        version="$(echo "${response}" | grep '"tag_name":' | head -1 | sed -E 's/.*"([^"]+)".*/\1/' | sed 's/^v//')"
+
+        if [ -z "${version}" ]; then
+            log_info "No prerelease found, falling back to latest stable"
+            get_latest_version false
+        else
+            echo "${version}"
+        fi
+    else
+        echo "${response}" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/' | sed 's/^v//'
     fi
 }
 
@@ -154,9 +179,13 @@ install_jolt() {
 
     log_info "Detected platform: ${os}-${arch}${variant:+-${variant}}"
 
-    log_info "Fetching latest version..."
+    if [ "${PRERELEASE}" = "true" ]; then
+        log_info "Fetching latest version (including prereleases)..."
+    else
+        log_info "Fetching latest stable version..."
+    fi
     local version
-    version="$(get_latest_version)"
+    version="$(get_latest_version "${PRERELEASE}")"
     if [ -z "${version}" ]; then
         log_error "Failed to fetch latest version"
         exit 1
@@ -206,5 +235,19 @@ install_jolt() {
 
     log_info "Run 'jolt --help' to get started"
 }
+
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --prerelease)
+            PRERELEASE=true
+            shift
+            ;;
+        *)
+            log_error "Unknown option: $1"
+            log_error "Usage: $0 [--prerelease]"
+            exit 1
+            ;;
+    esac
+done
 
 install_jolt
