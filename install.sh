@@ -61,7 +61,6 @@ detect_linux_variant() {
         return
     fi
 
-    # Check if we're using musl libc
     if ldd /bin/ls 2>&1 | grep -q 'musl'; then
         echo "musl"
     elif [ -f /lib/ld-musl-x86_64.so.1 ] || [ -f /lib/ld-musl-aarch64.so.1 ]; then
@@ -71,15 +70,9 @@ detect_linux_variant() {
     fi
 }
 
-get_latest_version() {
+get_latest_version_with_assets() {
     local include_prerelease="$1"
-    local url
-
-    if [ "${include_prerelease}" = "true" ]; then
-        url="https://api.github.com/repos/${REPO}/releases"
-    else
-        url="https://api.github.com/repos/${REPO}/releases/latest"
-    fi
+    local url="https://api.github.com/repos/${REPO}/releases"
 
     local response
     if command -v curl >/dev/null 2>&1; then
@@ -91,20 +84,39 @@ get_latest_version() {
         exit 1
     fi
 
-    if [ "${include_prerelease}" = "true" ]; then
-        # Get the first (latest) release from the list, whether prerelease or not
-        local version
-        version="$(echo "${response}" | grep '"tag_name":' | head -1 | sed -E 's/.*"([^"]+)".*/\1/' | sed 's/^v//')"
+    local tags
+    tags="$(echo "${response}" | grep '"tag_name":' | sed -E 's/.*"tag_name":[[:space:]]*"([^"]+)".*/\1/')"
+    while IFS= read -r tag; do
+        [ -z "${tag}" ] && continue
 
-        if [ -z "${version}" ]; then
-            log_info "No prerelease found, falling back to latest stable"
-            get_latest_version false
-        else
-            echo "${version}"
+        local version="${tag#v}"
+        local release_section
+        release_section="$(echo "${response}" | awk "BEGIN{found=0} /\"tag_name\":[[:space:]]*\"${tag}\"/{found=1} found{print} /^[[:space:]]*\},[[:space:]]*$/{if(found) exit}")"
+
+        local is_prerelease=false
+        if echo "${release_section}" | grep -q '"prerelease":[[:space:]]*true'; then
+            is_prerelease=true
         fi
-    else
-        echo "${response}" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/' | sed 's/^v//'
-    fi
+
+        if [ "${include_prerelease}" = "false" ] && [ "${is_prerelease}" = "true" ]; then
+            continue
+        fi
+        # Check if this release has assets (not an empty array)
+        if echo "${release_section}" | grep -q '"assets":[[:space:]]*\['; then
+            if ! echo "${release_section}" | grep -q '"assets":[[:space:]]*\[\]'; then
+                echo "${version}"
+                return 0
+            fi
+        fi
+    done <<< "${tags}"
+
+    log_error "No releases with assets found"
+    return 1
+}
+
+get_latest_version() {
+    local include_prerelease="$1"
+    get_latest_version_with_assets "${include_prerelease}"
 }
 
 build_download_info() {
@@ -125,7 +137,7 @@ build_download_info() {
     fi
 
     local filename="${BINARY_NAME}-${arch}-${target}"
-    local url="https://github.com/${REPO}/releases/download/v${version}/${filename}"
+    local url="https://github.com/${REPO}/releases/download/${version}/${filename}"
     local checksum_url="${url}.sha256"
 
     echo "${url}|${filename}|${checksum_url}"
