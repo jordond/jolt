@@ -177,6 +177,8 @@ pub struct ProcessSnapshot {
     pub pid: u32,
     pub name: String,
     pub command: String,
+    #[serde(default)]
+    pub command_args: String,
     pub cpu_usage: f32,
     pub memory_mb: f64,
     pub energy_impact: f32,

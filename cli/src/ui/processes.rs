@@ -20,8 +20,9 @@ const COL_DISK: u16 = 9;
 const COL_RUNTIME: u16 = 7;
 const COL_CPUTIME: u16 = 7;
 const COL_KILL: u16 = 4;
-const COL_SPACING: u16 = 10;
-const COL_NAME_MIN: u16 = 15;
+const COL_SPACING: u16 = 12;
+const COL_NAME_MIN: u16 = 12;
+const COL_COMMAND_MIN: u16 = 15;
 
 fn energy_gradient_color(energy: f32, theme: &ThemeColors) -> Color {
     let (low_r, low_g, low_b) = extract_rgb(theme.success);
@@ -95,10 +96,14 @@ pub fn render(frame: &mut Frame, area: Rect, app: &mut App, theme: &ThemeColors)
         + COL_IMPACT
         + COL_KILL
         + COL_SPACING;
-    let name_width = inner.width.saturating_sub(fixed_width).max(COL_NAME_MIN) as usize;
+    let flex_width = inner.width.saturating_sub(fixed_width);
+    let name_width = (flex_width / 4).max(COL_NAME_MIN) as usize;
+    let command_width = flex_width
+        .saturating_sub(flex_width / 4)
+        .max(COL_COMMAND_MIN) as usize;
 
     let sort_indicator = if app.sort_ascending { "▲" } else { "▼" };
-    let header_cells: [String; 11] = [
+    let header_cells: [String; 12] = [
         "".to_string(),
         format_header("PID", SortColumn::Pid, app.sort_column, sort_indicator),
         "S".to_string(),
@@ -109,6 +114,7 @@ pub fn render(frame: &mut Frame, area: Rect, app: &mut App, theme: &ThemeColors)
             sort_indicator,
         ),
         format_header("Name", SortColumn::Name, app.sort_column, sort_indicator),
+        "Command".to_string(),
         format_header("CPU%", SortColumn::Cpu, app.sort_column, sort_indicator),
         format_header(
             "Memory",
@@ -208,6 +214,7 @@ pub fn render(frame: &mut Frame, area: Rect, app: &mut App, theme: &ThemeColors)
                 Span::styled(status_char, status_style),
                 Span::styled(format!("{:.1}", process.energy_impact), style),
                 Span::styled(truncate_name(display_name, name_width), style),
+                Span::styled(truncate_name(&process.command_args, command_width), style),
                 Span::styled(format!("{:.1}", process.cpu_usage), style),
                 Span::styled(format_memory(process.memory_mb), style),
                 Span::styled(disk_io, style),
@@ -226,6 +233,7 @@ pub fn render(frame: &mut Frame, area: Rect, app: &mut App, theme: &ThemeColors)
         Constraint::Length(COL_STATUS),
         Constraint::Length(COL_IMPACT),
         Constraint::Min(COL_NAME_MIN),
+        Constraint::Min(COL_COMMAND_MIN),
         Constraint::Length(COL_CPU),
         Constraint::Length(COL_MEMORY),
         Constraint::Length(COL_DISK),

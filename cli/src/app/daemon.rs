@@ -8,8 +8,8 @@ use std::time::Duration;
 use color_eyre::eyre::Result;
 use tracing::{debug, info};
 
-use crate::daemon::{DaemonClient, DataSnapshot};
 use super::App;
+use crate::daemon::{DaemonClient, DataSnapshot};
 
 impl App {
     /// Attempts to connect to the daemon and subscribe for real-time updates.

@@ -50,6 +50,7 @@ impl From<ProcessSnapshot> for ProcessInfo {
             pid: snapshot.pid,
             name: snapshot.name,
             command: snapshot.command,
+            command_args: snapshot.command_args,
             cpu_usage: snapshot.cpu_usage,
             memory_mb: snapshot.memory_mb,
             energy_impact: snapshot.energy_impact,
@@ -85,6 +86,7 @@ pub struct ProcessInfo {
     pub pid: u32,
     pub name: String,
     pub command: String,
+    pub command_args: String,
     pub cpu_usage: f32,
     pub memory_mb: f64,
     pub energy_impact: f32,
@@ -192,10 +194,18 @@ impl ProcessData {
             let run_time_secs = process.run_time();
             let total_cpu_time_secs = process.accumulated_cpu_time();
 
+            let command_args = process
+                .cmd()
+                .iter()
+                .map(|s| s.to_string_lossy().to_string())
+                .collect::<Vec<_>>()
+                .join(" ");
+
             let info = ProcessInfo {
                 pid: pid_u32,
                 name: display_name,
                 command: binary_name.clone(),
+                command_args,
                 cpu_usage: cpu,
                 memory_mb,
                 energy_impact,
