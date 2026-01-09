@@ -9,10 +9,6 @@ use color_eyre::eyre::Result;
 use tracing::{debug, info};
 
 use crate::daemon::{DaemonClient, DataSnapshot};
-
-/// App struct placeholder - the actual App struct will be in mod.rs
-/// once the refactoring is complete. For now, this impl block extends
-/// the App type from the parent module.
 use super::App;
 
 impl App {
@@ -245,6 +241,8 @@ impl App {
         self.battery.update_from_snapshot(&snapshot.battery);
         self.power.update_from_snapshot(&snapshot.power);
         self.system_info.update_from_snapshot(&snapshot.system);
+        self.system_stats
+            .update_from_snapshot(&snapshot.system_stats);
         self.forecast.update_from_snapshot(&snapshot.forecast);
 
         if !self.selection_mode {

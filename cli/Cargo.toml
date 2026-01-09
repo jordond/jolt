@@ -26,6 +26,7 @@ futures = { workspace = true }
 color-eyre = { workspace = true }
 thiserror = { workspace = true }
 sysinfo = { workspace = true }
+systemstat = { workspace = true }
 libc = { workspace = true }
 chrono = { workspace = true }
 serde = { workspace = true }

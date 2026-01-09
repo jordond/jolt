@@ -7,7 +7,6 @@ use ratatui::{
 };
 
 use crate::app::App;
-use crate::data::power::PowerMode;
 use crate::theme::ThemeColors;
 
 pub fn render(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) {
@@ -23,10 +22,9 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) {
     let chunks = Layout::default()
         .direction(Direction::Horizontal)
         .constraints([
-            Constraint::Percentage(25),
-            Constraint::Percentage(25),
-            Constraint::Percentage(25),
-            Constraint::Percentage(25),
+            Constraint::Ratio(1, 3),
+            Constraint::Ratio(1, 3),
+            Constraint::Ratio(1, 3),
         ])
         .split(inner);
 
@@ -39,14 +37,6 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) {
     } else {
         ("—".to_string(), "CPU: —".to_string(), "GPU: —".to_string())
     };
-
-    let mode_icon = match app.power.power_mode() {
-        PowerMode::LowPower => "🐢",
-        PowerMode::HighPerformance => "🚀",
-        PowerMode::Automatic => "⚙️",
-        PowerMode::Unknown => "",
-    };
-    let mode_text = format!("{} {}", mode_icon, app.power.power_mode_label());
 
     let power_color = if !app.power.is_warmed_up() {
         theme.muted
@@ -81,12 +71,6 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) {
     )]))
     .centered();
 
-    let mode = Paragraph::new(Line::from(vec![Span::styled(
-        mode_text,
-        Style::default().fg(theme.fg),
-    )]))
-    .centered();
-
     let v_center = |chunk: Rect| {
         Layout::default()
             .direction(Direction::Vertical)
@@ -101,5 +85,4 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) {
     frame.render_widget(total, v_center(chunks[0]));
     frame.render_widget(cpu, v_center(chunks[1]));
     frame.render_widget(gpu, v_center(chunks[2]));
-    frame.render_widget(mode, v_center(chunks[3]));
 }

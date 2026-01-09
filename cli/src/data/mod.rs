@@ -8,6 +8,7 @@ pub mod processes;
 pub mod recorder;
 pub mod session_tracker;
 pub mod system;
+pub mod system_stats;
 
 pub use battery::BatteryData;
 pub use forecast::{ForecastData, ForecastSource};
@@ -22,3 +23,4 @@ pub use processes::{ProcessData, ProcessInfo, ProcessState};
 pub use recorder::Recorder;
 pub use session_tracker::{SessionEvent, SessionTracker};
 pub use system::SystemInfo;
+pub use system_stats::SystemStatsData;

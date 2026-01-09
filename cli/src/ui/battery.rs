@@ -8,6 +8,7 @@ use ratatui::{
 
 use crate::app::App;
 use crate::data::battery::ChargeState;
+use crate::data::power::PowerMode;
 use crate::theme::ThemeColors;
 
 fn percent_to_color(
@@ -22,6 +23,16 @@ fn percent_to_color(
         theme.warning
     } else {
         theme.danger
+    }
+}
+
+/// Returns the icon for the given power mode.
+fn power_mode_icon(mode: PowerMode) -> &'static str {
+    match mode {
+        PowerMode::LowPower => "🐢",
+        PowerMode::HighPerformance => "🚀",
+        PowerMode::Automatic => "⚙️",
+        PowerMode::Unknown => "",
     }
 }
 
@@ -155,6 +166,13 @@ fn render_battery_info_card(frame: &mut Frame, area: Rect, app: &App, theme: &Th
         .cycle_count()
         .map_or("—".to_string(), |c| c.to_string());
 
+    let power_mode_text = if app.power.power_mode() != PowerMode::Unknown {
+        let icon = power_mode_icon(app.power.power_mode());
+        Some(format!("{} {}", icon, app.power.power_mode_label()))
+    } else {
+        None
+    };
+
     let single_line = build_single_line(
         state_icon,
         app.battery.state_label(),
@@ -166,6 +184,7 @@ fn render_battery_info_card(frame: &mut Frame, area: Rect, app: &App, theme: &Th
         &cycles_text,
         app.battery.max_capacity_wh(),
         app.battery.design_capacity_wh(),
+        power_mode_text.as_deref(),
         theme,
         health_color,
     );
@@ -265,6 +284,16 @@ fn render_battery_info_card(frame: &mut Frame, area: Rect, app: &App, theme: &Th
             ));
         }
 
+        if app.power.power_mode() != PowerMode::Unknown {
+            let mode_icon = power_mode_icon(app.power.power_mode());
+            row2_spans.push(Span::styled("  │  ", Style::default().fg(theme.border)));
+            row2_spans.push(Span::styled("Mode: ", Style::default().fg(theme.muted)));
+            row2_spans.push(Span::styled(
+                format!("{} {}", mode_icon, app.power.power_mode_label()),
+                Style::default().fg(theme.fg),
+            ));
+        }
+
         let row2 = Line::from(row2_spans);
 
         frame.render_widget(Paragraph::new(row1).centered(), rows[0]);
@@ -284,6 +313,7 @@ fn build_single_line<'a>(
     cycles: &'a str,
     capacity: f32,
     design_capacity: f32,
+    power_mode: Option<&'a str>,
     theme: &ThemeColors,
     health_color: ratatui::style::Color,
 ) -> Line<'a> {
@@ -330,6 +360,12 @@ fn build_single_line<'a>(
         Span::styled(cycles, Style::default().fg(theme.fg)),
         Span::styled(" cycles", Style::default().fg(theme.muted)),
     ]);
+
+    if let Some(mode) = power_mode {
+        spans.push(Span::styled("  │  ", Style::default().fg(theme.border)));
+        spans.push(Span::styled("Mode: ", Style::default().fg(theme.muted)));
+        spans.push(Span::styled(mode, Style::default().fg(theme.fg)));
+    }
 
     Line::from(spans)
 }

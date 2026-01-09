@@ -110,6 +110,18 @@ pub struct SystemSnapshot {
     pub e_cores: u32,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct SystemStatsSnapshot {
+    pub cpu_usage_percent: f32,
+    pub load_one: f32,
+    pub load_five: f32,
+    pub load_fifteen: f32,
+    pub memory_used_bytes: u64,
+    pub memory_total_bytes: u64,
+    pub uptime_secs: u64,
+    pub is_warmed_up: bool,
+}
+
 impl SystemSnapshot {
     pub fn cores_display(&self) -> String {
         if self.p_cores > 0 && self.e_cores > 0 {
@@ -186,6 +198,7 @@ pub struct DataSnapshot {
     pub power: PowerSnapshot,
     pub processes: Vec<ProcessSnapshot>,
     pub system: SystemSnapshot,
+    pub system_stats: SystemStatsSnapshot,
     pub forecast: ForecastSnapshot,
 }
 
@@ -197,6 +210,7 @@ impl Default for DataSnapshot {
             power: PowerSnapshot::default(),
             processes: Vec::new(),
             system: SystemSnapshot::default(),
+            system_stats: SystemStatsSnapshot::default(),
             forecast: ForecastSnapshot::default(),
         }
     }

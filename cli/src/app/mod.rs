@@ -22,7 +22,7 @@ use crate::daemon::CycleSummary;
 use crate::daemon::{DaemonClient, DaemonStatus, DataSnapshot, KillSignal};
 use crate::data::{
     BatteryData, ChargeSession, DailyCycle, DailyStat, DailyTopProcess, ForecastData, HistoryData,
-    HistoryMetric, HourlyStat, PowerData, ProcessData, ProcessInfo, SystemInfo,
+    HistoryMetric, HourlyStat, PowerData, ProcessData, ProcessInfo, SystemInfo, SystemStatsData,
 };
 use jolt_theme::cache::ThemeGroup;
 use jolt_theme::NamedTheme;
@@ -47,6 +47,7 @@ pub struct App {
     pub battery: BatteryData,
     pub power: PowerData,
     pub processes: ProcessData,
+    pub system_stats: SystemStatsData,
     pub history: HistoryData,
     pub forecast: ForecastData,
     pub selected_process_index: usize,
@@ -126,6 +127,7 @@ impl App {
             battery: BatteryData::new()?,
             power: PowerData::new()?,
             processes: ProcessData::with_exclusions(excluded)?,
+            system_stats: SystemStatsData::new()?,
             history: HistoryData::with_metric(graph_metric),
             forecast: ForecastData::new(),
             selected_process_index: 0,
@@ -211,6 +213,12 @@ impl App {
             self.tick_from_local()?;
             true
         };
+
+        // Only refresh system stats locally when not using daemon data
+        // (daemon provides system stats in the snapshot)
+        if !self.using_daemon_data {
+            self.system_stats.refresh()?;
+        }
 
         if data_updated {
             self.tick_count = self.tick_count.wrapping_add(1);

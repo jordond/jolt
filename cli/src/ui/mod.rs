@@ -8,6 +8,7 @@ mod power;
 mod processes;
 mod settings;
 mod status_bar;
+mod system_stats;
 mod theme_importer;
 mod theme_picker;
 
@@ -22,30 +23,28 @@ pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 struct LayoutSizes {
     battery: u16,
-    power: u16,
+    power_system: u16,
     graph: u16,
     processes_min: u16,
 }
 
 impl LayoutSizes {
     fn calculate(content_height: u16, show_graph: bool) -> Self {
-        // Height requirements: battery=10 (borders+gauge+info card), power=3, graph=8, processes=6
         const BATTERY_MIN: u16 = 10;
         const BATTERY_PREFERRED: u16 = 12;
-        const POWER_MIN: u16 = 3;
+        const POWER_SYSTEM_MIN: u16 = 3;
         const GRAPH_MIN: u16 = 8;
         const GRAPH_PREFERRED: u16 = 10;
         const PROCESSES_MIN: u16 = 6;
 
         let graph_size = if show_graph { GRAPH_MIN } else { 0 };
         let graph_preferred = if show_graph { GRAPH_PREFERRED } else { 0 };
-        let min_total = BATTERY_MIN + POWER_MIN + PROCESSES_MIN + graph_size;
+        let min_total = BATTERY_MIN + POWER_SYSTEM_MIN + PROCESSES_MIN + graph_size;
 
         if content_height < min_total {
-            // Compressed: prioritize processes > battery > power > graph
             let available = content_height;
-            let power = POWER_MIN.min(available);
-            let remaining = available.saturating_sub(power);
+            let power_system = POWER_SYSTEM_MIN.min(available);
+            let remaining = available.saturating_sub(power_system);
 
             let battery = BATTERY_MIN.min(remaining).max(5);
             let remaining = remaining.saturating_sub(battery);
@@ -59,12 +58,11 @@ impl LayoutSizes {
 
             Self {
                 battery,
-                power,
+                power_system,
                 graph,
                 processes_min: remaining.max(3),
             }
         } else {
-            // Normal: give extra to battery first, then graph
             let extra = content_height.saturating_sub(min_total);
             let battery_extra = (BATTERY_PREFERRED - BATTERY_MIN).min(extra);
             let battery = BATTERY_MIN + battery_extra;
@@ -78,7 +76,7 @@ impl LayoutSizes {
 
             Self {
                 battery,
-                power: POWER_MIN,
+                power_system: POWER_SYSTEM_MIN,
                 graph,
                 processes_min: PROCESSES_MIN,
             }
@@ -110,14 +108,14 @@ pub fn render(frame: &mut Frame, app: &mut App) {
     let constraints = if sizes.graph > 0 {
         vec![
             Constraint::Length(sizes.battery),
-            Constraint::Length(sizes.power),
+            Constraint::Length(sizes.power_system),
             Constraint::Min(sizes.processes_min),
             Constraint::Length(sizes.graph),
         ]
     } else {
         vec![
             Constraint::Length(sizes.battery),
-            Constraint::Length(sizes.power),
+            Constraint::Length(sizes.power_system),
             Constraint::Min(sizes.processes_min),
         ]
     };
@@ -128,7 +126,14 @@ pub fn render(frame: &mut Frame, app: &mut App) {
         .split(content_area);
 
     battery::render(frame, chunks[0], app, &theme);
-    power::render(frame, chunks[1], app, &theme);
+
+    let power_system_chunks = Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints([Constraint::Ratio(1, 3), Constraint::Ratio(2, 3)])
+        .split(chunks[1]);
+    power::render(frame, power_system_chunks[0], app, &theme);
+    system_stats::render(frame, power_system_chunks[1], app, &theme);
+
     processes::render(frame, chunks[2], app, &theme);
 
     if sizes.graph > 0 && chunks.len() > 3 {
