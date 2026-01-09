@@ -22,67 +22,59 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) {
     let chunks = Layout::default()
         .direction(Direction::Horizontal)
         .constraints([
-            Constraint::Percentage(25),
-            Constraint::Percentage(25),
-            Constraint::Percentage(25),
-            Constraint::Percentage(25),
+            Constraint::Ratio(1, 3),
+            Constraint::Ratio(1, 3),
+            Constraint::Ratio(1, 3),
         ])
         .split(inner);
 
-    let (cpu_text, memory_text, disk_text, uptime_text) = if app.system_stats.is_warmed_up() {
-        let cpu = app
-            .system_stats
-            .cpu_load_percent()
-            .map(|v| format!("{:.0}%", v))
-            .unwrap_or_else(|| "—".to_string());
+    let (load_text, memory_text, uptime_text) = if app.system_stats.is_warmed_up() {
         (
-            cpu,
-            format!("{:.0}%", app.system_stats.memory_used_percent()),
-            format!("{:.0}%", app.system_stats.disk_used_percent()),
+            format!("{:.2}", app.system_stats.load_one()),
+            app.system_stats.memory_formatted(),
             app.system_stats.uptime_formatted(),
         )
     } else {
-        (
-            "—".to_string(),
-            "—".to_string(),
-            "—".to_string(),
-            "—".to_string(),
-        )
+        ("—".to_string(), "—".to_string(), "—".to_string())
     };
 
-    let percent_color = |value: f32| -> ratatui::style::Color {
-        if value > 80.0 {
+    let load_color = if app.system_stats.is_warmed_up() {
+        let load = app.system_stats.load_one();
+        if load > 4.0 {
             theme.danger
-        } else if value > 60.0 {
+        } else if load > 2.0 {
             theme.warning
         } else {
             theme.success
         }
+    } else {
+        theme.muted
     };
-
-    let cpu_color = app
-        .system_stats
-        .cpu_load_percent()
-        .map(percent_color)
-        .unwrap_or(theme.muted);
 
     let memory_color = if app.system_stats.is_warmed_up() {
-        percent_color(app.system_stats.memory_used_percent())
+        let used = app.system_stats.memory_used_gb();
+        let total = app.system_stats.memory_total_gb();
+        let percent = if total > 0.0 {
+            used / total * 100.0
+        } else {
+            0.0
+        };
+        if percent > 80.0 {
+            theme.danger
+        } else if percent > 60.0 {
+            theme.warning
+        } else {
+            theme.success
+        }
     } else {
         theme.muted
     };
 
-    let disk_color = if app.system_stats.is_warmed_up() {
-        percent_color(app.system_stats.disk_used_percent())
-    } else {
-        theme.muted
-    };
-
-    let cpu = Paragraph::new(Line::from(vec![
-        Span::styled("CPU: ", Style::default().fg(theme.muted)),
+    let load = Paragraph::new(Line::from(vec![
+        Span::styled("Load: ", Style::default().fg(theme.muted)),
         Span::styled(
-            cpu_text,
-            Style::default().fg(cpu_color).add_modifier(Modifier::BOLD),
+            load_text,
+            Style::default().fg(load_color).add_modifier(Modifier::BOLD),
         ),
     ]))
     .centered();
@@ -94,15 +86,6 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) {
             Style::default()
                 .fg(memory_color)
                 .add_modifier(Modifier::BOLD),
-        ),
-    ]))
-    .centered();
-
-    let disk = Paragraph::new(Line::from(vec![
-        Span::styled("Disk: ", Style::default().fg(theme.muted)),
-        Span::styled(
-            disk_text,
-            Style::default().fg(disk_color).add_modifier(Modifier::BOLD),
         ),
     ]))
     .centered();
@@ -127,8 +110,7 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) {
             .split(chunk)[1]
     };
 
-    frame.render_widget(cpu, v_center(chunks[0]));
+    frame.render_widget(load, v_center(chunks[0]));
     frame.render_widget(memory, v_center(chunks[1]));
-    frame.render_widget(disk, v_center(chunks[2]));
-    frame.render_widget(uptime, v_center(chunks[3]));
+    frame.render_widget(uptime, v_center(chunks[2]));
 }
