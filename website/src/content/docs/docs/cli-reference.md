@@ -19,31 +19,10 @@ Complete reference for all jolt commands and options.
 Launch the interactive TUI.
 
 ```bash
-jolt [OPTIONS]
-```
-
-| Option         | Short | Default | Description                              |
-| -------------- | ----- | ------- | ---------------------------------------- |
-| `--refresh-ms` | `-r`  | 1000    | Update interval in milliseconds          |
-| `--appearance` | `-a`  | auto    | Theme mode: `auto`, `dark`, `light`      |
-| `--theme`      | `-t`  | default | Theme name                               |
-| `--low-power`  | `-L`  | false   | Reduced refresh rate for battery savings |
-
-Examples:
-
-```bash
-# Default (1s refresh)
 jolt
-
-# Faster refresh
-jolt --refresh-ms 500
-
-# Force dark theme
-jolt --appearance dark
-
-# Use specific theme
-jolt --theme dracula
 ```
+
+The TUI is the default command and can be configured via the config file. See [Configuration](/docs/configuration) for details on themes, refresh rates, and other settings.
 
 ### `jolt pipe`
 
@@ -53,12 +32,11 @@ Output metrics as JSON for scripting.
 jolt pipe [OPTIONS]
 ```
 
-| Option                | Short | Default | Description                      |
-| --------------------- | ----- | ------- | -------------------------------- |
-| `--samples`           | `-s`  | 0       | Number of samples (0 = infinite) |
-| `--interval`          | `-i`  | 1000    | Interval between samples (ms)    |
-| `--compact`           | `-c`  | false   | One-line JSON output (JSONL)     |
-| `--include-processes` | `-p`  | false   | Include process data             |
+| Option       | Short | Default | Description                      |
+| ------------ | ----- | ------- | -------------------------------- |
+| `--samples`  | `-s`  | 0       | Number of samples (0 = infinite) |
+| `--interval` | `-i`  | 1000    | Interval between samples (ms)    |
+| `--compact`  | `-c`  | false   | One-line JSON output (JSONL)     |
 
 Examples:
 
@@ -199,9 +177,9 @@ Start the background daemon.
 jolt daemon start [OPTIONS]
 ```
 
-| Option         | Description                         |
-| -------------- | ----------------------------------- |
-| `--foreground` | Run in foreground (don't daemonize) |
+| Option                   | Description                         |
+| ------------------------ | ----------------------------------- |
+| `-f`, `--foreground` | Run in foreground (don't daemonize) |
 
 #### `jolt daemon stop`
 
@@ -219,26 +197,17 @@ Show daemon status.
 jolt daemon status
 ```
 
-#### `jolt daemon logs`
-
-View daemon logs.
-
-```bash
-jolt daemon logs [OPTIONS]
-```
-
-| Option            | Description             |
-| ----------------- | ----------------------- |
-| `--follow` / `-f` | Follow log output       |
-| `--lines <N>`     | Number of lines to show |
-
 #### `jolt daemon install`
 
-Install daemon to run on login.
+Install daemon to run on login (macOS only).
 
 ```bash
-jolt daemon install
+jolt daemon install [OPTIONS]
 ```
+
+| Option           | Description                   |
+| ---------------- | ----------------------------- |
+| `-f`, `--force` | Overwrite existing LaunchAgent |
 
 #### `jolt daemon uninstall`
 
@@ -246,6 +215,32 @@ Remove daemon from login items.
 
 ```bash
 jolt daemon uninstall
+```
+
+### `jolt logs`
+
+View application logs.
+
+```bash
+jolt logs [OPTIONS]
+```
+
+| Option             | Short | Default | Description            |
+| ------------------ | ----- | ------- | ---------------------- |
+| `--lines <LINES>` | `-l`  | 50      | Number of lines to show |
+| `--follow`         | `-f`  | false   | Follow log output      |
+
+Examples:
+
+```bash
+# Show last 50 lines
+jolt logs
+
+# Show last 100 lines
+jolt logs --lines 100
+
+# Follow logs in real-time
+jolt logs --follow
 ```
 
 ### `jolt history`

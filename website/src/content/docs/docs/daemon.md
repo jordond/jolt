@@ -28,6 +28,8 @@ For debugging or testing:
 
 ```bash
 jolt daemon start --foreground
+# or use the short option
+jolt daemon start -f
 ```
 
 Press `Ctrl+C` to stop.
@@ -55,11 +57,14 @@ Shows:
 ## Viewing Logs
 
 ```bash
-# Show recent logs
-jolt daemon logs
+# Show recent logs (last 50 lines)
+jolt logs
+
+# Show specific number of lines
+jolt logs --lines 100
 
 # Follow logs in real-time
-jolt daemon logs --follow
+jolt logs --follow
 ```
 
 ## Auto-Start on Login
@@ -73,6 +78,12 @@ jolt daemon install
 ```
 
 This creates a LaunchAgent that starts the daemon automatically when you log in.
+
+If a LaunchAgent already exists, use `--force` to overwrite it:
+
+```bash
+jolt daemon install --force
+```
 
 ### Linux
 
@@ -196,7 +207,7 @@ Press `d` in the TUI to view daemon status.
 2. Check logs for errors:
 
    ```bash
-   jolt daemon logs
+   jolt logs
    ```
 
 3. Try foreground mode for debugging:

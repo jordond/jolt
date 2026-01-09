@@ -169,7 +169,7 @@ sysctl -n machdep.cpu.brand_string
 2. **Check logs:**
 
    ```bash
-   jolt daemon logs
+   jolt logs
    ```
 
 3. **Try foreground mode:**
