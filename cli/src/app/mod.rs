@@ -8,8 +8,9 @@
 // pub mod history;
 // pub mod process;
 // pub mod theme;
-// pub mod types;
+pub mod types;
 
 // Re-exports will be added as submodules are created:
 // pub use actions::*;
-// pub use types::{Action, AppView, HistoryPeriod, SortColumn};
+pub use types::{Action, AppView, HistoryPeriod, SortColumn};
+pub use types::{MAX_REFRESH_MS, MIN_REFRESH_MS, REFRESH_STEP_MS};
