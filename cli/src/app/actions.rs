@@ -12,86 +12,41 @@ use super::types::{Action, AppView, MAX_REFRESH_MS, MIN_REFRESH_MS, REFRESH_STEP
 use super::App;
 
 impl App {
-    /// Main action handler that dispatches to category-specific handlers.
-    ///
+    /// Main action handler - dispatches to category-specific handlers.
     /// Returns `false` if the application should quit, `true` otherwise.
     pub fn handle_action(&mut self, action: Action) -> bool {
+        use Action::*;
         match action {
-            Action::Quit => return false,
-            Action::None => {}
-
-            // View toggle actions
-            Action::ToggleHelp
-            | Action::ToggleAbout
-            | Action::ToggleSettings
-            | Action::ToggleHistory
-            | Action::ToggleBatteryDetails => {
-                self.handle_view_action(action);
+            Quit => return false,
+            None => {}
+            // View toggles
+            ToggleHelp | ToggleAbout | ToggleSettings | ToggleHistory | ToggleBatteryDetails => {
+                self.handle_view_action(action)
             }
-
-            // Navigation actions
-            Action::SelectNext
-            | Action::SelectPrevious
-            | Action::ExitSelectionMode
-            | Action::PageUp
-            | Action::PageDown
-            | Action::Home
-            | Action::End => {
-                self.handle_navigation_action(action);
+            // Navigation
+            SelectNext | SelectPrevious | ExitSelectionMode | PageUp | PageDown | Home | End => {
+                self.handle_navigation_action(action)
             }
-
-            // Process actions
-            Action::ToggleExpand
-            | Action::KillProcess
-            | Action::ConfirmKill
-            | Action::CancelKill
-            | Action::ToggleKillSignal
-            | Action::ToggleMerge
-            | Action::CycleSortColumn
-            | Action::ToggleSortDirection => {
-                self.handle_process_action(action);
+            // Process management
+            ToggleExpand | KillProcess | ConfirmKill | CancelKill | ToggleKillSignal
+            | ToggleMerge | CycleSortColumn | ToggleSortDirection => {
+                self.handle_process_action(action)
             }
-
-            // Theme actions
-            Action::CycleAppearance
-            | Action::OpenThemePicker
-            | Action::CloseThemePicker
-            | Action::SelectTheme
-            | Action::TogglePreviewAppearance
-            | Action::ToggleGraphView => {
-                self.handle_theme_action(action);
+            // Theme
+            CycleAppearance | OpenThemePicker | CloseThemePicker | SelectTheme
+            | TogglePreviewAppearance | ToggleGraphView => self.handle_theme_action(action),
+            // Theme importer
+            OpenThemeImporter | CloseThemeImporter | ImporterToggleSelect | ImporterPreview
+            | ImporterImport | ImporterRefresh | ImporterToggleSearch | ImporterFilterChar(_)
+            | ImporterFilterBackspace | ImporterClearFilter => self.handle_importer_action(action),
+            // History
+            HistoryPrevPeriod | HistoryNextPeriod => self.handle_history_action(action),
+            // Settings
+            SettingsToggleValue | SettingsIncrement | SettingsDecrement => {
+                self.handle_settings_action(action)
             }
-
-            // Importer actions
-            Action::OpenThemeImporter
-            | Action::CloseThemeImporter
-            | Action::ImporterToggleSelect
-            | Action::ImporterPreview
-            | Action::ImporterImport
-            | Action::ImporterRefresh
-            | Action::ImporterToggleSearch
-            | Action::ImporterFilterChar(_)
-            | Action::ImporterFilterBackspace
-            | Action::ImporterClearFilter => {
-                self.handle_importer_action(action);
-            }
-
-            // History actions
-            Action::HistoryPrevPeriod | Action::HistoryNextPeriod => {
-                self.handle_history_action(action);
-            }
-
-            // Settings actions
-            Action::SettingsToggleValue
-            | Action::SettingsIncrement
-            | Action::SettingsDecrement => {
-                self.handle_settings_action(action);
-            }
-
-            // Refresh rate actions
-            Action::IncreaseRefreshRate | Action::DecreaseRefreshRate => {
-                self.handle_refresh_action(action);
-            }
+            // Refresh rate
+            IncreaseRefreshRate | DecreaseRefreshRate => self.handle_refresh_action(action),
         }
         true
     }
@@ -483,26 +438,5 @@ impl App {
             }
             _ => {}
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn action_none_does_not_quit() {
-        // Action::None should return true (continue running)
-        // This is a basic sanity check for the action handling
-        let action = Action::None;
-        assert_eq!(action, Action::None);
-    }
-
-    #[test]
-    fn action_quit_is_distinct() {
-        // Action::Quit should be handled specially
-        let action = Action::Quit;
-        assert_eq!(action, Action::Quit);
-        assert_ne!(action, Action::None);
     }
 }
