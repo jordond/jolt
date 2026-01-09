@@ -129,7 +129,7 @@ pub fn render(frame: &mut Frame, app: &mut App) {
 
     let power_system_chunks = Layout::default()
         .direction(Direction::Horizontal)
-        .constraints([Constraint::Percentage(50), Constraint::Percentage(50)])
+        .constraints([Constraint::Ratio(1, 3), Constraint::Ratio(2, 3)])
         .split(chunks[1]);
     power::render(frame, power_system_chunks[0], app, &theme);
     system_stats::render(frame, power_system_chunks[1], app, &theme);

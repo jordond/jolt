@@ -120,7 +120,7 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) {
     .centered();
 
     let uptime = Paragraph::new(Line::from(vec![
-        Span::styled("Up: ", Style::default().fg(theme.muted)),
+        Span::styled("Uptime: ", Style::default().fg(theme.muted)),
         Span::styled(
             uptime_text,
             Style::default().fg(theme.fg).add_modifier(Modifier::BOLD),
