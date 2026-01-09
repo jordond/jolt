@@ -5,8 +5,12 @@ members = ["cli", "crates/protocol", "crates/theme", "crates/platform"]
 [workspace.package]
 version = "0.1.0"
 edition = "2021"
+authors = ["jordond"]
 license = "MIT"
+homepage = "https://getjolt.sh"
 repository = "https://github.com/jordond/jolt"
+keywords = ["tui", "battery", "energy", "monitoring"]
+categories = ["command-line-utilities", "os"]
 
 [workspace.dependencies]
 # Serialization
@@ -64,3 +68,4 @@ starship-battery = "0.10"
 lto = true
 codegen-units = 1
 strip = true
+opt-level = 3
