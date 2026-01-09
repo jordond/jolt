@@ -7,7 +7,10 @@ mod daemon;
 mod history;
 mod process;
 mod theme;
+mod tui;
 pub mod types;
+
+pub use tui::run_tui;
 
 use std::time::Duration;
 
