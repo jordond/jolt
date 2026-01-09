@@ -26,6 +26,16 @@ fn percent_to_color(
     }
 }
 
+/// Returns the icon for the given power mode.
+fn power_mode_icon(mode: PowerMode) -> &'static str {
+    match mode {
+        PowerMode::LowPower => "🐢",
+        PowerMode::HighPerformance => "🚀",
+        PowerMode::Automatic => "⚙️",
+        PowerMode::Unknown => "",
+    }
+}
+
 pub fn render(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) {
     let block = Block::default()
         .title(" Battery ")
@@ -156,11 +166,11 @@ fn render_battery_info_card(frame: &mut Frame, area: Rect, app: &App, theme: &Th
         .cycle_count()
         .map_or("—".to_string(), |c| c.to_string());
 
-    let power_mode_text = match app.power.power_mode() {
-        PowerMode::LowPower => Some("🐢 Low Power".to_string()),
-        PowerMode::HighPerformance => Some("🚀 High Performance".to_string()),
-        PowerMode::Automatic => Some("⚙️ Automatic".to_string()),
-        PowerMode::Unknown => None,
+    let power_mode_text = if app.power.power_mode() != PowerMode::Unknown {
+        let icon = power_mode_icon(app.power.power_mode());
+        Some(format!("{} {}", icon, app.power.power_mode_label()))
+    } else {
+        None
     };
 
     let single_line = build_single_line(
@@ -274,13 +284,8 @@ fn render_battery_info_card(frame: &mut Frame, area: Rect, app: &App, theme: &Th
             ));
         }
 
-        let mode_icon = match app.power.power_mode() {
-            PowerMode::LowPower => "🐢",
-            PowerMode::HighPerformance => "🚀",
-            PowerMode::Automatic => "⚙️",
-            PowerMode::Unknown => "",
-        };
         if app.power.power_mode() != PowerMode::Unknown {
+            let mode_icon = power_mode_icon(app.power.power_mode());
             row2_spans.push(Span::styled("  │  ", Style::default().fg(theme.border)));
             row2_spans.push(Span::styled("Mode: ", Style::default().fg(theme.muted)));
             row2_spans.push(Span::styled(
