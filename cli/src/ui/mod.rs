@@ -23,8 +23,7 @@ pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 struct LayoutSizes {
     battery: u16,
-    system_stats: u16,
-    power: u16,
+    power_system: u16,
     graph: u16,
     processes_min: u16,
 }
@@ -33,23 +32,19 @@ impl LayoutSizes {
     fn calculate(content_height: u16, show_graph: bool) -> Self {
         const BATTERY_MIN: u16 = 10;
         const BATTERY_PREFERRED: u16 = 12;
-        const SYSTEM_STATS_MIN: u16 = 3;
-        const POWER_MIN: u16 = 3;
+        const POWER_SYSTEM_MIN: u16 = 3;
         const GRAPH_MIN: u16 = 8;
         const GRAPH_PREFERRED: u16 = 10;
         const PROCESSES_MIN: u16 = 6;
 
         let graph_size = if show_graph { GRAPH_MIN } else { 0 };
         let graph_preferred = if show_graph { GRAPH_PREFERRED } else { 0 };
-        let min_total = BATTERY_MIN + SYSTEM_STATS_MIN + POWER_MIN + PROCESSES_MIN + graph_size;
+        let min_total = BATTERY_MIN + POWER_SYSTEM_MIN + PROCESSES_MIN + graph_size;
 
         if content_height < min_total {
             let available = content_height;
-            let system_stats = SYSTEM_STATS_MIN.min(available);
-            let remaining = available.saturating_sub(system_stats);
-
-            let power = POWER_MIN.min(remaining);
-            let remaining = remaining.saturating_sub(power);
+            let power_system = POWER_SYSTEM_MIN.min(available);
+            let remaining = available.saturating_sub(power_system);
 
             let battery = BATTERY_MIN.min(remaining).max(5);
             let remaining = remaining.saturating_sub(battery);
@@ -63,8 +58,7 @@ impl LayoutSizes {
 
             Self {
                 battery,
-                system_stats,
-                power,
+                power_system,
                 graph,
                 processes_min: remaining.max(3),
             }
@@ -82,8 +76,7 @@ impl LayoutSizes {
 
             Self {
                 battery,
-                system_stats: SYSTEM_STATS_MIN,
-                power: POWER_MIN,
+                power_system: POWER_SYSTEM_MIN,
                 graph,
                 processes_min: PROCESSES_MIN,
             }
@@ -115,16 +108,14 @@ pub fn render(frame: &mut Frame, app: &mut App) {
     let constraints = if sizes.graph > 0 {
         vec![
             Constraint::Length(sizes.battery),
-            Constraint::Length(sizes.system_stats),
-            Constraint::Length(sizes.power),
+            Constraint::Length(sizes.power_system),
             Constraint::Min(sizes.processes_min),
             Constraint::Length(sizes.graph),
         ]
     } else {
         vec![
             Constraint::Length(sizes.battery),
-            Constraint::Length(sizes.system_stats),
-            Constraint::Length(sizes.power),
+            Constraint::Length(sizes.power_system),
             Constraint::Min(sizes.processes_min),
         ]
     };
@@ -135,12 +126,18 @@ pub fn render(frame: &mut Frame, app: &mut App) {
         .split(content_area);
 
     battery::render(frame, chunks[0], app, &theme);
-    system_stats::render(frame, chunks[1], app, &theme);
-    power::render(frame, chunks[2], app, &theme);
-    processes::render(frame, chunks[3], app, &theme);
 
-    if sizes.graph > 0 && chunks.len() > 4 {
-        graphs::render(frame, chunks[4], app, &theme);
+    let power_system_chunks = Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints([Constraint::Percentage(50), Constraint::Percentage(50)])
+        .split(chunks[1]);
+    power::render(frame, power_system_chunks[0], app, &theme);
+    system_stats::render(frame, power_system_chunks[1], app, &theme);
+
+    processes::render(frame, chunks[2], app, &theme);
+
+    if sizes.graph > 0 && chunks.len() > 3 {
+        graphs::render(frame, chunks[3], app, &theme);
     }
 
     match app.view {
