@@ -158,6 +158,7 @@ jolt theme open
 ```
 
 Opens the themes directory in Finder (macOS) or default file manager (Linux):
+
 - **macOS:** `~/Library/Application Support/jolt/themes/`
 - **Linux:** `~/.config/jolt/themes/`
 
@@ -177,8 +178,8 @@ Start the background daemon.
 jolt daemon start [OPTIONS]
 ```
 
-| Option                   | Description                         |
-| ------------------------ | ----------------------------------- |
+| Option               | Description                         |
+| -------------------- | ----------------------------------- |
 | `-f`, `--foreground` | Run in foreground (don't daemonize) |
 
 #### `jolt daemon stop`
@@ -205,8 +206,8 @@ Install daemon to run on login (macOS only).
 jolt daemon install [OPTIONS]
 ```
 
-| Option           | Description                   |
-| ---------------- | ----------------------------- |
+| Option          | Description                    |
+| --------------- | ------------------------------ |
 | `-f`, `--force` | Overwrite existing LaunchAgent |
 
 #### `jolt daemon uninstall`
@@ -225,10 +226,10 @@ View application logs.
 jolt logs [OPTIONS]
 ```
 
-| Option             | Short | Default | Description            |
-| ------------------ | ----- | ------- | ---------------------- |
+| Option            | Short | Default | Description             |
+| ----------------- | ----- | ------- | ----------------------- |
 | `--lines <LINES>` | `-l`  | 50      | Number of lines to show |
-| `--follow`         | `-f`  | false   | Follow log output      |
+| `--follow`        | `-f`  | false   | Follow log output       |
 
 Examples:
 

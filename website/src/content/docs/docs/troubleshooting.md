@@ -181,11 +181,13 @@ sysctl -n machdep.cpu.brand_string
 4. **Check socket:**
 
    **macOS:**
+
    ```bash
    ls -la ~/Library/Caches/jolt/daemon.sock
    ```
 
    **Linux:**
+
    ```bash
    ls -la ~/.local/share/jolt/daemon.sock
    ```
@@ -201,11 +203,13 @@ sysctl -n machdep.cpu.brand_string
 2. **Check socket permissions:**
 
    **macOS:**
+
    ```bash
    ls -la ~/Library/Caches/jolt/daemon.sock
    ```
 
    **Linux:**
+
    ```bash
    ls -la ~/.local/share/jolt/daemon.sock
    ```
@@ -253,11 +257,13 @@ jolt config --reset
 1. **Verify syntax:**
 
    **macOS:**
+
    ```bash
    cat ~/Library/Application\ Support/jolt/config.toml
    ```
 
    **Linux:**
+
    ```bash
    cat ~/.config/jolt/config.toml
    ```

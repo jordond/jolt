@@ -10,11 +10,13 @@ jolt stores its configuration in a TOML file that persists your preferences acro
 The config file is located at:
 
 **macOS:**
+
 ```
 ~/Library/Application Support/jolt/config.toml
 ```
 
 **Linux:**
+
 ```
 ~/.config/jolt/config.toml
 ```

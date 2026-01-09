@@ -83,12 +83,14 @@ A battery at 100% charge but 80% health can only hold 80% of its original capaci
 Power metrics require platform-specific hardware support:
 
 **macOS:**
+
 1. Apple Silicon Mac (M1/M2/M3/M4)
 2. macOS 11.0 or later
 
 Intel Macs cannot report per-component power consumption.
 
 **Linux:**
+
 1. Intel or AMD CPU with RAPL support (kernel 3.13+)
 2. Proper permissions configured
 
@@ -248,11 +250,13 @@ Try:
 2. Validate config syntax:
 
    **macOS:**
+
    ```bash
    cat ~/Library/Application\ Support/jolt/config.toml
    ```
 
    **Linux:**
+
    ```bash
    cat ~/.config/jolt/config.toml
    ```

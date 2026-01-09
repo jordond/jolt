@@ -22,9 +22,10 @@ You'll see the main TUI interface with:
 
 :::tip[Platform Note]
 All features work the same on macOS and Linux. Power metrics require:
+
 - macOS: Apple Silicon (M1/M2/M3/M4)
 - Linux: RAPL permissions ([setup guide](/docs/installation/#linux-permissions))
-:::
+  :::
 
 ## Basic Navigation
 

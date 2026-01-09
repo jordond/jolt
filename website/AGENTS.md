@@ -26,20 +26,21 @@ website/
 
 Run from `website/` directory:
 
-| Task | Command |
-|------|---------|
-| Dev server | `bun dev` (localhost:4321) |
-| Build | `bun run build` |
-| Preview build | `bun preview` |
-| Lint | `bun run lint` |
-| Lint + fix | `bun run lint:fix` |
-| Format check | `bun run format:check` |
-| Format | `bun run format` |
-| Type check | `bun run check` |
+| Task          | Command                    |
+| ------------- | -------------------------- |
+| Dev server    | `bun dev` (localhost:4321) |
+| Build         | `bun run build`            |
+| Preview build | `bun preview`              |
+| Lint          | `bun run lint`             |
+| Lint + fix    | `bun run lint:fix`         |
+| Format check  | `bun run format:check`     |
+| Format        | `bun run format`           |
+| Type check    | `bun run check`            |
 
 ## Code Style
 
 ### Prettier (configured in package.json)
+
 - No semicolons
 - Single quotes
 - 2-space tabs
@@ -47,12 +48,14 @@ Run from `website/` directory:
 - 100 char line width
 
 ### TypeScript
+
 - Unused vars with `_` prefix allowed
 - ESLint + @typescript-eslint enforced
 
 ## Common Tasks
 
 ### Add Documentation Page
+
 1. Create `.md` or `.mdx` file in `src/content/docs/`
 2. Add frontmatter with `title` and optional `description`
 3. Add to sidebar in `astro.config.mjs`
@@ -67,24 +70,26 @@ Content here...
 ```
 
 ### Modify Sidebar
+
 Edit `sidebar` array in `astro.config.mjs`:
+
 ```js
 sidebar: [
   {
     label: 'Section Name',
-    items: [
-      { label: 'Page Title', slug: 'docs/page-slug' },
-    ],
+    items: [{ label: 'Page Title', slug: 'docs/page-slug' }],
   },
 ]
 ```
 
 ### Add Custom Component
+
 1. Create `.astro` file in `src/components/`
 2. Import in markdown: `import Component from '../../components/Component.astro'`
 3. Or override Starlight component in `astro.config.mjs` under `components:`
 
 ### Add Custom Styles
+
 Edit `src/styles/custom.css` - imported via `customCss` in astro.config.mjs
 
 ## Deployment

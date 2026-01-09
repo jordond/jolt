@@ -61,6 +61,7 @@ Combined power draw of all system components. This is the primary indicator of h
 | **50W+**    | Heavy workloads, gaming    |
 
 **Platform Notes:**
+
 - Intel Macs cannot report power consumption
 - Linux requires RAPL support and permissions
 

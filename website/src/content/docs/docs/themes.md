@@ -9,10 +9,10 @@ jolt supports extensive theming with 300+ importable themes from iTerm2 Color Sc
 
 jolt supports three appearance modes:
 
-| Mode      | Description                   |
-| --------- | ----------------------------- |
-| **Auto**  | Follow system appearance      |
-| **Dark**  | Always use dark theme variant |
+| Mode      | Description                    |
+| --------- | ------------------------------ |
+| **Auto**  | Follow system appearance       |
+| **Dark**  | Always use dark theme variant  |
 | **Light** | Always use light theme variant |
 
 Toggle with `t` key or set in config:
@@ -22,9 +22,10 @@ appearance = "auto"  # or "dark" or "light"
 ```
 
 :::tip[System Appearance]
+
 - **macOS:** Auto mode follows `defaults read -g AppleInterfaceStyle`
 - **Linux:** Auto mode follows environment variables or defaults to dark
-:::
+  :::
 
 ## Built-in Themes
 
@@ -89,6 +90,7 @@ jolt theme import "Dracula"
 ```
 
 Imported themes are saved to your themes directory:
+
 - **macOS:** `~/Library/Application Support/jolt/themes/`
 - **Linux:** `~/.config/jolt/themes/`
 

@@ -10,11 +10,13 @@ Create personalized themes for jolt with TOML configuration files.
 Custom themes are stored in:
 
 **macOS:**
+
 ```
 ~/Library/Application Support/jolt/themes/
 ```
 
 **Linux:**
+
 ```
 ~/.config/jolt/themes/
 ```

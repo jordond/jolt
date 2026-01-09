@@ -8,21 +8,24 @@ jolt is available for macOS and Linux through multiple installation methods.
 ## Requirements
 
 ### macOS
+
 - macOS 11.0 (Big Sur) or later
 - Apple Silicon (M1/M2/M3/M4) or Intel Mac
 - Terminal emulator with 256-color support
 
 ### Linux
+
 - Linux kernel 3.13+ (for RAPL power metrics)
 - Laptop with battery
 - Intel or AMD CPU
 - Terminal emulator with 256-color support
 
 :::note[Platform-Specific Features]
+
 - **macOS (Apple Silicon):** Full power metrics (CPU, GPU, ANE watts)
 - **macOS (Intel):** Battery data only, no power breakdown
 - **Linux:** Full power metrics via RAPL (requires permissions)
-:::
+  :::
 
 ## Install Script (Recommended)
 
@@ -33,6 +36,7 @@ curl -fsSL https://getjolt.sh/install.sh | bash
 ```
 
 This script automatically:
+
 - Detects your OS (macOS or Linux) and architecture
 - Downloads the correct binary for your platform
 - Verifies checksums
@@ -68,6 +72,7 @@ cargo build --release
 The binary will be at `./target/release/jolt`. You can copy it to your PATH:
 
 **macOS/Linux:**
+
 ```bash
 cp ./target/release/jolt /usr/local/bin/
 # or

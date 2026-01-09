@@ -113,11 +113,13 @@ systemctl --user start jolt-daemon
 ### Uninstall
 
 **macOS:**
+
 ```bash
 jolt daemon uninstall
 ```
 
 **Linux:**
+
 ```bash
 systemctl --user disable jolt-daemon
 systemctl --user stop jolt-daemon
@@ -164,11 +166,13 @@ sample_interval = 60
 The daemon stores data in SQLite:
 
 **macOS:**
+
 ```
 ~/Library/Caches/jolt/history.db
 ```
 
 **Linux:**
+
 ```
 ~/.local/share/jolt/history.db
 ```
@@ -237,11 +241,13 @@ If TUI can't connect to daemon:
 2. Check socket file exists:
 
    **macOS:**
+
    ```bash
    ls ~/Library/Caches/jolt/daemon.sock
    ```
 
    **Linux:**
+
    ```bash
    ls ~/.local/share/jolt/daemon.sock
    ```
