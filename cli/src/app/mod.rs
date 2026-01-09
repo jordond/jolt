@@ -22,7 +22,7 @@ use crate::daemon::CycleSummary;
 use crate::daemon::{DaemonClient, DaemonStatus, DataSnapshot, KillSignal};
 use crate::data::{
     BatteryData, ChargeSession, DailyCycle, DailyStat, DailyTopProcess, ForecastData, HistoryData,
-    HistoryMetric, HourlyStat, PowerData, ProcessData, ProcessInfo, SystemInfo,
+    HistoryMetric, HourlyStat, PowerData, ProcessData, ProcessInfo, SystemInfo, SystemStatsData,
 };
 use jolt_theme::cache::ThemeGroup;
 use jolt_theme::NamedTheme;
@@ -47,6 +47,7 @@ pub struct App {
     pub battery: BatteryData,
     pub power: PowerData,
     pub processes: ProcessData,
+    pub system_stats: SystemStatsData,
     pub history: HistoryData,
     pub forecast: ForecastData,
     pub selected_process_index: usize,
@@ -126,6 +127,7 @@ impl App {
             battery: BatteryData::new()?,
             power: PowerData::new()?,
             processes: ProcessData::with_exclusions(excluded)?,
+            system_stats: SystemStatsData::new()?,
             history: HistoryData::with_metric(graph_metric),
             forecast: ForecastData::new(),
             selected_process_index: 0,
@@ -250,10 +252,13 @@ impl App {
         self.power.refresh()?;
         let power_time = start.elapsed() - battery_time;
 
+        self.system_stats.refresh()?;
+        let system_stats_time = start.elapsed() - battery_time - power_time;
+
         if !self.selection_mode {
             self.processes.refresh()?;
         }
-        let process_time = start.elapsed() - battery_time - power_time;
+        let process_time = start.elapsed() - battery_time - power_time - system_stats_time;
 
         debug!(
             battery_ms = battery_time.as_millis() as u64,
