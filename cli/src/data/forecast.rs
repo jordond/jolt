@@ -5,6 +5,7 @@
 
 use std::time::Duration;
 
+use crate::daemon::ForecastSnapshot;
 use crate::data::history::DataPoint;
 use crate::data::history_store::{ChargingState, Sample};
 
@@ -203,19 +204,32 @@ impl ForecastData {
         self.source
     }
 
-    #[cfg(test)]
     pub fn has_forecast(&self) -> bool {
         self.forecast_duration.is_some()
     }
 
-    #[cfg(test)]
     pub fn sample_count(&self) -> usize {
         self.sample_count
     }
 
-    #[cfg(test)]
     pub fn duration(&self) -> Option<Duration> {
         self.forecast_duration
+    }
+
+    pub fn duration_secs(&self) -> Option<u64> {
+        self.forecast_duration.map(|d| d.as_secs())
+    }
+
+    pub fn avg_power_watts(&self) -> Option<f32> {
+        self.avg_power_watts
+    }
+
+    pub fn update_from_snapshot(&mut self, snapshot: &ForecastSnapshot) {
+        self.forecast_duration = snapshot.duration_secs.map(Duration::from_secs);
+        self.avg_power_watts = snapshot.avg_power_watts;
+        self.sample_count = snapshot.sample_count;
+        self.source = snapshot.source.into();
+        self.last_sample_timestamp = None;
     }
 }
 

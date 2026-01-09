@@ -12,13 +12,13 @@ use tracing::{debug, error, info, trace, warn};
 use crate::config::{runtime_dir, HistoryConfig, UserConfig};
 use crate::daemon::protocol::{
     BatterySnapshot, BatteryState, ChargeSession, DaemonRequest, DaemonResponse, DaemonStatus,
-    DailyCycle, DailyStat, DailyTopProcess, DataSnapshot, HourlyStat, KillProcessResult, PowerMode,
-    PowerSnapshot, ProcessSnapshot, ProcessState, Sample, SystemSnapshot, MAX_SUBSCRIBERS,
-    MIN_SUPPORTED_VERSION, PROTOCOL_VERSION,
+    DailyCycle, DailyStat, DailyTopProcess, DataSnapshot, ForecastSnapshot, HourlyStat,
+    KillProcessResult, PowerMode, PowerSnapshot, ProcessSnapshot, ProcessState, Sample,
+    SystemSnapshot, MAX_SUBSCRIBERS, MIN_SUPPORTED_VERSION, PROTOCOL_VERSION,
 };
 use crate::daemon::socket_path;
 use crate::data::aggregator::Aggregator;
-use crate::data::{BatteryData, PowerData, ProcessData, Recorder, SystemInfo};
+use crate::data::{BatteryData, ForecastData, PowerData, ProcessData, Recorder, SystemInfo};
 
 #[derive(Debug, thiserror::Error)]
 pub enum DaemonError {
@@ -50,6 +50,7 @@ struct ClientHandle {
 }
 
 const PROCESS_REFRESH_INTERVAL: Duration = Duration::from_secs(3);
+const FORECAST_WINDOW_SECS: i64 = 300;
 
 enum RefreshRequest {
     Full,
@@ -117,6 +118,7 @@ impl RefreshWorker {
         };
 
         let system_snapshot: SystemSnapshot = (&SystemInfo::new()).into();
+        let mut forecast = ForecastData::new();
 
         let mut recorder = match Recorder::new(config, excluded) {
             Ok(r) => Some(r),
@@ -186,7 +188,27 @@ impl RefreshWorker {
                 }
             }
 
-            let snapshot = create_snapshot(&battery, &power, &processes, &system_snapshot);
+            if let Some(ref rec) = recorder {
+                let now = chrono::Utc::now().timestamp();
+                let from = now - FORECAST_WINDOW_SECS;
+                if let Ok(samples) = rec.store().get_samples(from, now) {
+                    forecast.calculate_from_daemon_samples(
+                        &samples,
+                        battery.charge_percent(),
+                        battery.max_capacity_wh(),
+                        FORECAST_WINDOW_SECS,
+                    );
+                }
+            }
+
+            let forecast_snapshot: ForecastSnapshot = (&forecast).into();
+            let snapshot = create_snapshot(
+                &battery,
+                &power,
+                &processes,
+                &system_snapshot,
+                &forecast_snapshot,
+            );
             let refresh_duration = refresh_start.elapsed();
             debug!(
                 request_type,
@@ -237,6 +259,7 @@ fn create_snapshot(
     power: &PowerData,
     processes: &ProcessData,
     system: &SystemSnapshot,
+    forecast: &ForecastSnapshot,
 ) -> DataSnapshot {
     let battery_state = match battery.state_label() {
         "Charging" => BatteryState::Charging,
@@ -295,6 +318,7 @@ fn create_snapshot(
         power: power_snapshot,
         processes: process_snapshots,
         system: system.clone(),
+        forecast: forecast.clone(),
     }
 }
 

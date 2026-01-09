@@ -120,6 +120,46 @@ impl SystemSnapshot {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum ForecastSource {
+    Daemon,
+    Session,
+    #[default]
+    None,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct ForecastSnapshot {
+    pub duration_secs: Option<u64>,
+    pub avg_power_watts: Option<f32>,
+    pub sample_count: usize,
+    pub source: ForecastSource,
+}
+
+impl ForecastSnapshot {
+    pub fn formatted(&self) -> Option<String> {
+        self.duration_secs.map(|secs| {
+            let total_mins = secs / 60;
+            if total_mins == 0 {
+                return "< 1m".to_string();
+            }
+            let hours = total_mins / 60;
+            let mins = total_mins % 60;
+
+            if hours > 0 {
+                format!("{}h {}m", hours, mins)
+            } else {
+                format!("{}m", mins)
+            }
+        })
+    }
+
+    pub fn has_forecast(&self) -> bool {
+        self.duration_secs.is_some()
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ProcessSnapshot {
     pub pid: u32,
@@ -146,6 +186,7 @@ pub struct DataSnapshot {
     pub power: PowerSnapshot,
     pub processes: Vec<ProcessSnapshot>,
     pub system: SystemSnapshot,
+    pub forecast: ForecastSnapshot,
 }
 
 impl Default for DataSnapshot {
@@ -156,6 +197,7 @@ impl Default for DataSnapshot {
             power: PowerSnapshot::default(),
             processes: Vec::new(),
             system: SystemSnapshot::default(),
+            forecast: ForecastSnapshot::default(),
         }
     }
 }
