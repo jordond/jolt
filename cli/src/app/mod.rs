@@ -214,6 +214,8 @@ impl App {
             true
         };
 
+        self.system_stats.refresh()?;
+
         if data_updated {
             self.tick_count = self.tick_count.wrapping_add(1);
 
@@ -252,13 +254,10 @@ impl App {
         self.power.refresh()?;
         let power_time = start.elapsed() - battery_time;
 
-        self.system_stats.refresh()?;
-        let system_stats_time = start.elapsed() - battery_time - power_time;
-
         if !self.selection_mode {
             self.processes.refresh()?;
         }
-        let process_time = start.elapsed() - battery_time - power_time - system_stats_time;
+        let process_time = start.elapsed() - battery_time - power_time;
 
         debug!(
             battery_ms = battery_time.as_millis() as u64,
