@@ -187,13 +187,17 @@ enum DaemonCommands {
     /// Stop the running daemon
     Stop,
 
-    /// Check daemon status
+    /// Check daemon status and service installation state
     Status,
 
-    /// Install daemon to start on login (via launchd)
-    Install,
+    /// Install daemon to start on login (launchd on macOS, systemd on Linux)
+    Install {
+        /// Overwrite existing service configuration
+        #[arg(short, long)]
+        force: bool,
+    },
 
-    /// Uninstall daemon from launchd
+    /// Uninstall daemon from auto-start
     Uninstall,
 }
 
@@ -1016,108 +1020,49 @@ fn run_daemon_command(
             }
         }
         DaemonCommands::Status => {
-            if !is_daemon_running() {
-                println!("Daemon is not running.");
-                return Ok(());
-            }
+            println!("Daemon Status");
+            println!("{}", "-".repeat(40));
 
-            match DaemonClient::connect() {
-                Ok(mut client) => {
-                    let status = client
-                        .get_status()
-                        .map_err(|e| color_eyre::eyre::eyre!("{}", e))?;
-                    println!("Daemon Status");
-                    println!("{}", "-".repeat(40));
-                    println!("Running:      yes");
-                    println!("Version:      {}", status.version);
-                    println!("Uptime:       {} seconds", status.uptime_secs);
-                    println!("Samples:      {}", status.sample_count);
-                    println!("Database:     {} bytes", status.database_size_bytes);
-                    if let Some(last) = status.last_sample_time {
-                        let dt = chrono::DateTime::from_timestamp(last, 0);
-                        if let Some(dt) = dt {
-                            println!("Last sample:  {}", dt.format("%Y-%m-%d %H:%M:%S UTC"));
+            let service_status = daemon::service::get_service_status();
+            println!("{}", service_status.display());
+            println!();
+
+            if is_daemon_running() {
+                match DaemonClient::connect() {
+                    Ok(mut client) => {
+                        let status = client
+                            .get_status()
+                            .map_err(|e| color_eyre::eyre::eyre!("{}", e))?;
+                        println!("Process Status");
+                        println!("{}", "-".repeat(40));
+                        println!("Running:      yes");
+                        println!("Version:      {}", status.version);
+                        println!("Uptime:       {} seconds", status.uptime_secs);
+                        println!("Samples:      {}", status.sample_count);
+                        println!("Database:     {} bytes", status.database_size_bytes);
+                        if let Some(last) = status.last_sample_time {
+                            let dt = chrono::DateTime::from_timestamp(last, 0);
+                            if let Some(dt) = dt {
+                                println!("Last sample:  {}", dt.format("%Y-%m-%d %H:%M:%S UTC"));
+                            }
                         }
                     }
+                    Err(e) => {
+                        eprintln!("Failed to connect to daemon: {}", e);
+                        std::process::exit(1);
+                    }
                 }
-                Err(e) => {
-                    eprintln!("Failed to connect to daemon: {}", e);
-                    std::process::exit(1);
-                }
+            } else {
+                println!("Process Status");
+                println!("{}", "-".repeat(40));
+                println!("Running:      no");
             }
         }
-        DaemonCommands::Install => {
-            let plist_path = dirs::home_dir()
-                .unwrap_or_default()
-                .join("Library/LaunchAgents/com.jolt.daemon.plist");
-
-            let exe_path = std::env::current_exe()?;
-
-            let plist_content = format!(
-                r#"<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-    <key>Label</key>
-    <string>com.jolt.daemon</string>
-    <key>ProgramArguments</key>
-    <array>
-        <string>{}</string>
-        <string>daemon</string>
-        <string>start</string>
-        <string>--foreground</string>
-    </array>
-    <key>RunAtLoad</key>
-    <true/>
-    <key>KeepAlive</key>
-    <dict>
-        <key>SuccessfulExit</key>
-        <false/>
-    </dict>
-    <key>ThrottleInterval</key>
-    <integer>10</integer>
-    <key>StandardErrorPath</key>
-    <string>{}/jolt-daemon-stderr.log</string>
-    <key>StandardOutPath</key>
-    <string>{}/jolt-daemon-stdout.log</string>
-</dict>
-</plist>"#,
-                exe_path.display(),
-                config::runtime_dir().display(),
-                config::runtime_dir().display()
-            );
-
-            if let Some(parent) = plist_path.parent() {
-                std::fs::create_dir_all(parent)?;
-            }
-            std::fs::write(&plist_path, plist_content)?;
-
-            std::process::Command::new("launchctl")
-                .args(["load", "-w"])
-                .arg(&plist_path)
-                .status()?;
-
-            println!("Daemon installed and started.");
-            println!("Plist: {:?}", plist_path);
-            println!("\nTo uninstall: jolt daemon uninstall");
+        DaemonCommands::Install { force } => {
+            daemon::service::install_service(force)?;
         }
         DaemonCommands::Uninstall => {
-            let plist_path = dirs::home_dir()
-                .unwrap_or_default()
-                .join("Library/LaunchAgents/com.jolt.daemon.plist");
-
-            if !plist_path.exists() {
-                println!("Daemon is not installed.");
-                return Ok(());
-            }
-
-            std::process::Command::new("launchctl")
-                .args(["unload"])
-                .arg(&plist_path)
-                .status()?;
-
-            std::fs::remove_file(&plist_path)?;
-            println!("Daemon uninstalled.");
+            daemon::service::uninstall_service()?;
         }
     }
 
