@@ -49,7 +49,7 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) {
         let cpu = app.system_stats.cpu_usage_percent();
         if cpu > 80.0 {
             theme.danger
-        } else if cpu > 50.0 {
+        } else if cpu > 60.0 {
             theme.warning
         } else {
             theme.success
