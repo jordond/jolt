@@ -6,7 +6,7 @@
 // pub mod actions;
 mod daemon;
 mod history;
-// pub mod process;
+mod process;
 mod theme;
 pub mod types;
 
