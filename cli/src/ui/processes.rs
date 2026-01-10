@@ -97,11 +97,31 @@ pub fn render(frame: &mut Frame, area: Rect, app: &mut App, theme: &ThemeColors)
         + COL_KILL
         + COL_SPACING;
     let flex_width = inner.width.saturating_sub(fixed_width);
-    let name_width = (flex_width / 6).max(COL_NAME_MIN) as usize;
-    let command_width = flex_width
+    let name_base = (flex_width / 6).max(COL_NAME_MIN);
+    let command_base = flex_width
         .saturating_sub(flex_width / 6)
-        .max(COL_COMMAND_MIN) as usize;
+        .max(COL_COMMAND_MIN);
 
+    // Ensure the total flexible column width does not exceed the available flex_width.
+    // When space is tight, scale the Name and Command columns proportionally so that
+    // name_width + command_width <= flex_width.
+    let (name_width, command_width) = {
+        let total_flex = name_base.saturating_add(command_base);
+        if flex_width == 0 || total_flex <= flex_width {
+            (name_base as usize, command_base as usize)
+        } else {
+            // Scale proportionally using u32 to avoid overflow during multiplication.
+            let fw = flex_width as u32;
+            let total = total_flex as u32;
+            let name_scaled = ((u32::from(name_base) * fw) / total).max(1) as u16;
+            let mut command_scaled = flex_width.saturating_sub(name_scaled);
+            if command_scaled == 0 {
+                // Ensure Command also gets at least 1 cell when there is space.
+                command_scaled = 1;
+            }
+            (name_scaled as usize, command_scaled as usize)
+        }
+    };
     let sort_indicator = if app.sort_ascending { "▲" } else { "▼" };
     let header_cells: [String; 12] = [
         "".to_string(),
