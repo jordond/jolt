@@ -130,19 +130,7 @@ fn render_battery_info_card(frame: &mut Frame, area: Rect, app: &App, theme: &Th
 
     let forecast_info: Option<(String, bool)> = if app.battery.state() == ChargeState::Discharging {
         Some(match app.forecast.formatted() {
-            Some(f) => {
-                let source_hint = match app.forecast.source() {
-                    crate::data::ForecastSource::Daemon => "d",
-                    crate::data::ForecastSource::Session => "s",
-                    crate::data::ForecastSource::None => "",
-                };
-                let text = if source_hint.is_empty() {
-                    f
-                } else {
-                    format!("{} ({})", f, source_hint)
-                };
-                (text, true)
-            }
+            Some(f) => (f, true),
             None => ("Calculating...".to_string(), false),
         })
     } else {

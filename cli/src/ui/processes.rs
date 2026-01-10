@@ -97,9 +97,9 @@ pub fn render(frame: &mut Frame, area: Rect, app: &mut App, theme: &ThemeColors)
         + COL_KILL
         + COL_SPACING;
     let flex_width = inner.width.saturating_sub(fixed_width);
-    let name_width = (flex_width / 4).max(COL_NAME_MIN) as usize;
+    let name_width = (flex_width / 6).max(COL_NAME_MIN) as usize;
     let command_width = flex_width
-        .saturating_sub(flex_width / 4)
+        .saturating_sub(flex_width / 6)
         .max(COL_COMMAND_MIN) as usize;
 
     let sort_indicator = if app.sort_ascending { "▲" } else { "▼" };

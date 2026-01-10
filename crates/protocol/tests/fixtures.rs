@@ -64,6 +64,9 @@ fn sample_process_snapshot() -> ProcessSnapshot {
         pid: 1234,
         name: "Safari".to_string(),
         command: "/Applications/Safari.app/Contents/MacOS/Safari".to_string(),
+        command_args:
+            "/Applications/Safari.app/Contents/MacOS/Safari -NSDocumentRevisionsDebugMode YES"
+                .to_string(),
         cpu_usage: 15.5,
         memory_mb: 256.0,
         energy_impact: 25.0,
@@ -72,6 +75,7 @@ fn sample_process_snapshot() -> ProcessSnapshot {
             pid: 1235,
             name: "Safari Web Content".to_string(),
             command: "Safari Web Content".to_string(),
+            command_args: "Safari Web Content".to_string(),
             cpu_usage: 5.0,
             memory_mb: 128.0,
             energy_impact: 10.0,
@@ -93,12 +97,46 @@ fn sample_process_snapshot() -> ProcessSnapshot {
     }
 }
 
+fn sample_system_snapshot() -> SystemSnapshot {
+    SystemSnapshot {
+        chip: "Apple M1 Pro".to_string(),
+        os_version: "14.2.1".to_string(),
+        p_cores: 8,
+        e_cores: 2,
+    }
+}
+
+fn sample_system_stats_snapshot() -> SystemStatsSnapshot {
+    SystemStatsSnapshot {
+        cpu_usage_percent: 25.5,
+        load_one: 2.5,
+        load_five: 2.0,
+        load_fifteen: 1.5,
+        memory_used_bytes: 8_589_934_592,
+        memory_total_bytes: 17_179_869_184,
+        uptime_secs: 86400,
+        is_warmed_up: true,
+    }
+}
+
+fn sample_forecast_snapshot() -> ForecastSnapshot {
+    ForecastSnapshot {
+        duration_secs: Some(18000),
+        avg_power_watts: Some(12.5),
+        sample_count: 30,
+        source: ForecastSource::Daemon,
+    }
+}
+
 fn sample_data_snapshot() -> DataSnapshot {
     DataSnapshot {
         timestamp: 1704067200,
         battery: sample_battery_snapshot(),
         power: sample_power_snapshot(),
         processes: vec![sample_process_snapshot()],
+        system: sample_system_snapshot(),
+        system_stats: sample_system_stats_snapshot(),
+        forecast: sample_forecast_snapshot(),
     }
 }
 
