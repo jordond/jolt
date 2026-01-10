@@ -9,7 +9,7 @@ use crate::daemon::ForecastSnapshot;
 use crate::data::history::DataPoint;
 use crate::data::history_store::{ChargingState, Sample};
 
-const MIN_SAMPLES_FOR_FORECAST: usize = 3;
+const MIN_SAMPLES_FOR_FORECAST: usize = 10;
 const MIN_POWER_THRESHOLD_WATTS: f32 = 0.1;
 const MAX_FORECAST_HOURS: f32 = 24.0;
 
@@ -256,18 +256,22 @@ mod tests {
         let mut forecast = ForecastData::new();
         let now = chrono::Utc::now().timestamp();
 
-        let samples = vec![
-            make_sample(now - 10, 10.0, ChargingState::Discharging),
-            make_sample(now - 20, 12.0, ChargingState::Discharging),
-            make_sample(now - 30, 11.0, ChargingState::Discharging),
-        ];
+        let samples: Vec<_> = (0..10)
+            .map(|i| {
+                make_sample(
+                    now - (i * 10) as i64,
+                    10.0 + (i % 3) as f32,
+                    ChargingState::Discharging,
+                )
+            })
+            .collect();
 
         let result =
             forecast.calculate_from_daemon_samples(&samples, 50.0, 100.0, TEST_STALENESS_SECS);
 
         assert!(result);
         assert!(forecast.has_forecast());
-        assert_eq!(forecast.sample_count(), 3);
+        assert_eq!(forecast.sample_count(), 10);
         assert_eq!(forecast.source(), ForecastSource::Daemon);
     }
 
@@ -308,13 +312,19 @@ mod tests {
         let mut forecast = ForecastData::new();
         let now = chrono::Utc::now().timestamp();
 
-        let samples = vec![
-            make_sample(now - 10, 10.0, ChargingState::Discharging),
-            make_sample(now - 20, 12.0, ChargingState::Charging),
-            make_sample(now - 30, 11.0, ChargingState::Discharging),
-            make_sample(now - 40, 13.0, ChargingState::Full),
-            make_sample(now - 50, 9.0, ChargingState::Discharging),
-        ];
+        let mut samples = Vec::new();
+        for i in 0..15 {
+            let state = match i {
+                0 => ChargingState::Charging,
+                3 => ChargingState::Full,
+                _ => ChargingState::Discharging,
+            };
+            samples.push(make_sample(
+                now - (i * 10) as i64,
+                10.0 + (i % 3) as f32,
+                state,
+            ));
+        }
 
         let result =
             forecast.calculate_from_daemon_samples(&samples, 50.0, 100.0, TEST_STALENESS_SECS);
@@ -349,34 +359,20 @@ mod tests {
     fn test_forecast_calculation() {
         let mut forecast = ForecastData::new();
 
-        // Create test data points
-        let points = vec![
-            DataPoint {
-                battery_percent: 80.0,
-                power_watts: 10.0,
+        let points: Vec<_> = (0..10)
+            .map(|i| DataPoint {
+                battery_percent: 80.0 - i as f32,
+                power_watts: 10.0 + (i % 3) as f32,
                 temperature_c: None,
-            },
-            DataPoint {
-                battery_percent: 79.0,
-                power_watts: 12.0,
-                temperature_c: None,
-            },
-            DataPoint {
-                battery_percent: 78.0,
-                power_watts: 11.0,
-                temperature_c: None,
-            },
-        ];
+            })
+            .collect();
 
-        // 100 Wh battery at 50%
         let result = forecast.calculate_from_session_data(&points, 50.0, 100.0);
 
         assert!(result);
         assert!(forecast.has_forecast());
-        assert_eq!(forecast.sample_count(), 3);
+        assert_eq!(forecast.sample_count(), 10);
 
-        // Average power: 11W, Remaining: 50Wh
-        // Expected: 50/11 = ~4.5 hours
         let duration = forecast.duration().unwrap();
         let hours = duration.as_secs() as f32 / 3600.0;
         assert!(hours > 4.0 && hours < 5.0);
