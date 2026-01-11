@@ -2,7 +2,7 @@
 import Landing from '../layouts/Landing.astro'
 import InstallTabs from '../components/InstallTabs.astro'
 import heroImage from '../assets/hero.png'
-import logo from "../assets/logo.svg"
+import logo from '../assets/logo.svg'
 import { Image } from 'astro:assets'
 ---
 
@@ -105,21 +105,21 @@ import { Image } from 'astro:assets'
           <span class="platforms-label">Supported platforms</span>
           <div class="platform-tags">
             <span class="platform-tag">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
-              <path
-                d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.21-1.96 1.08-3.11-1.04.05-2.29.69-3.02 1.55-.65.75-1.21 1.95-1.06 3.04 1.15.09 2.33-.64 3-1.48"
-              ></path>
-            </svg>
-            macOS
-          </span>
-          <span class="platform-tag">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
-              <path
-                d="M13.15 2H11.83C6.73 2 2.5 6.2 2.5 11.27V12.7C2.5 17.77 6.73 22 11.83 22H13.15C18.27 22 22.5 17.77 22.5 12.7V11.27C22.5 6.2 18.27 2 13.15 2ZM5.5 16.7L6.87 14.88H8.87L6.8 17.7H5.5V16.7ZM19.5 16.7H18.2L15.93 13.68H18.5L19.5 15.07V16.7ZM12.5 18.7H11.5V13.7H12.5V18.7Z"
-              ></path>
-            </svg>
-            Linux
-          </span>
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                <path
+                  d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.21-1.96 1.08-3.11-1.04.05-2.29.69-3.02 1.55-.65.75-1.21 1.95-1.06 3.04 1.15.09 2.33-.64 3-1.48"
+                ></path>
+              </svg>
+              macOS
+            </span>
+            <span class="platform-tag">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                <path
+                  d="M13.15 2H11.83C6.73 2 2.5 6.2 2.5 11.27V12.7C2.5 17.77 6.73 22 11.83 22H13.15C18.27 22 22.5 17.77 22.5 12.7V11.27C22.5 6.2 18.27 2 13.15 2ZM5.5 16.7L6.87 14.88H8.87L6.8 17.7H5.5V16.7ZM19.5 16.7H18.2L15.93 13.68H18.5L19.5 15.07V16.7ZM12.5 18.7H11.5V13.7H12.5V18.7Z"
+                ></path>
+              </svg>
+              Linux
+            </span>
           </div>
         </div>
       </div>
@@ -473,11 +473,7 @@ import { Image } from 'astro:assets'
     transform: translate(-50%, -50%);
     width: 100%;
     height: 100%;
-    background: radial-gradient(
-      circle at center,
-      var(--color-accent-03) 0%,
-      transparent 60%
-    );
+    background: radial-gradient(circle at center, var(--color-accent-03) 0%, transparent 60%);
     z-index: 0;
     pointer-events: none;
   }
@@ -611,11 +607,7 @@ import { Image } from 'astro:assets'
     transform: translate(-50%, -50%);
     width: 140%;
     height: 140%;
-    background: radial-gradient(
-      circle at center,
-      var(--color-accent-10) 0%,
-      transparent 60%
-    );
+    background: radial-gradient(circle at center, var(--color-accent-10) 0%, transparent 60%);
     z-index: 0;
     pointer-events: none;
     opacity: 0.5;
@@ -721,7 +713,7 @@ import { Image } from 'astro:assets'
     background: rgba(255, 255, 255, 0.06);
     border-color: var(--color-accent-20);
     transform: translateY(-8px);
-    box-shadow: 
+    box-shadow:
       0 20px 40px -15px rgba(0, 0, 0, 0.5),
       0 0 20px var(--color-accent-10);
   }
@@ -749,7 +741,7 @@ import { Image } from 'astro:assets'
     width: 3.5rem;
     height: 3.5rem;
     border-radius: 1rem;
-    background: linear-gradient(135deg, rgba(255,255,255,0.05), rgba(255,255,255,0.01));
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.01));
     border: 1px solid rgba(255, 255, 255, 0.05);
     margin-bottom: 1.5rem;
     transition: all 0.4s ease;
@@ -771,7 +763,7 @@ import { Image } from 'astro:assets'
   .feature-card:hover .feature-icon-wrapper {
     border-color: var(--color-accent-20);
     transform: scale(1.1) rotate(3deg);
-    background: linear-gradient(135deg, var(--color-accent-10), rgba(255,255,255,0.01));
+    background: linear-gradient(135deg, var(--color-accent-10), rgba(255, 255, 255, 0.01));
   }
 
   .feature-card:hover .feature-icon-wrapper::after {
@@ -780,7 +772,7 @@ import { Image } from 'astro:assets'
 
   .feature-icon {
     font-size: 1.75rem;
-    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
   }
 
   .feature-card h3 {
