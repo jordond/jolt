@@ -154,6 +154,7 @@ jobs:
     name: Update Homebrew formula
     needs: build
     runs-on: ubuntu-latest
+    if: ${{ !github.event.release.prerelease }}
     steps:
       - name: Release to Homebrew tap
         uses: Justintime50/homebrew-releaser@v3
@@ -189,30 +190,16 @@ jobs:
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
 
-      - name: Publish jolt-protocol
-        run: cargo publish -p jolt-protocol --token ${{ secrets.CRATE_TOKEN }} || true
-
-      - name: Wait for crates.io
-        run: sleep 30
-
-      - name: Publish jolt-theme
-        run: cargo publish -p jolt-theme --token ${{ secrets.CRATE_TOKEN }} || true
-
-      - name: Wait for crates.io
-        run: sleep 30
-
-      - name: Publish jolt-platform
-        run: cargo publish -p jolt-platform --token ${{ secrets.CRATE_TOKEN }} || true
-
-      - name: Wait for crates.io
-        run: sleep 30
-
-      - name: Publish jolt-tui
-        run: cargo publish -p jolt-tui --token ${{ secrets.CRATE_TOKEN }} || true
+      - name: Publish crates
+        uses: katyo/publish-crates@v2
+        with:
+          registry-token: ${{ secrets.CRATE_TOKEN }}
+          args: --allow-dirty
 
   update-version:
     name: Update version in main
     needs: [build, publish-checksums, homebrew-releaser, publish-crates]
+    if: ${{ always() && needs.build.result == 'success' && needs.publish-checksums.result == 'success' && needs.publish-crates.result == 'success' && (needs.homebrew-releaser.result == 'success' || needs.homebrew-releaser.result == 'skipped') }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
