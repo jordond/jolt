@@ -3,7 +3,7 @@ resolver = "2"
 members = ["cli", "crates/protocol", "crates/theme", "crates/platform"]
 
 [workspace.package]
-version = "0.4.3"
+version = "1.0.0"
 edition = "2021"
 authors = ["jordond"]
 license = "MIT"
@@ -58,9 +58,9 @@ ureq = "2"
 daemonize = "0.5"
 
 # Internal crates (version required for crates.io publishing)
-jolt-protocol = { path = "crates/protocol", version = "0.4.3" }
-jolt-theme = { path = "crates/theme", version = "0.4.3" }
-jolt-platform = { path = "crates/platform", version = "0.4.3" }
+jolt-protocol = { path = "crates/protocol", version = "1.0.0" }
+jolt-theme = { path = "crates/theme", version = "1.0.0" }
+jolt-platform = { path = "crates/platform", version = "1.0.0" }
 
 # Battery (starship-battery fixes macOS issues: https://github.com/svartalf/rust-battery/issues/102)
 starship-battery = "0.10"
