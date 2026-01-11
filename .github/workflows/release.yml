@@ -55,13 +55,9 @@ jobs:
 
       - name: Update version from tag
         run: |
-          VERSION="${GITHUB_REF#refs/tags/}"
-          VERSION="${VERSION#v}"
+          VERSION="${GITHUB_REF#refs/tags/v}"
           echo "VERSION=${VERSION}" >> $GITHUB_ENV
-          echo "Updating version to ${VERSION}"
-          sed -i.bak 's/^version = ".*"/version = "'"${VERSION}"'"/' Cargo.toml
-          rm -f Cargo.toml.bak
-          grep '^version' Cargo.toml
+          ./.github/versions.sh "${VERSION}"
         shell: bash
 
       - name: Install Rust
@@ -180,12 +176,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Update version from tag
-        run: |
-          RAW_TAG="${GITHUB_REF#refs/tags/}"
-          VERSION="${RAW_TAG#v}"
-          echo "Updating version to ${VERSION}"
-          sed -i.bak 's/^version = ".*"/version = "'"${VERSION}"'"/' Cargo.toml
-          rm Cargo.toml.bak
+        run: ./.github/versions.sh "${GITHUB_REF#refs/tags/}"
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
@@ -209,12 +200,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Update version
-        run: |
-          RAW_TAG="${GITHUB_REF#refs/tags/}"
-          VERSION="${RAW_TAG#v}"
-          echo "Updating version to ${VERSION}"
-          sed -i 's/^version = ".*"/version = "'"${VERSION}"'"/' Cargo.toml
-          grep '^version' Cargo.toml
+        run: ./.github/versions.sh "${GITHUB_REF#refs/tags/}"
 
       - name: Commit and push
         run: |
