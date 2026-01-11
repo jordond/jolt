@@ -45,41 +45,45 @@ import heroImage from '../assets/hero.png'
 
   <main>
     <section class="hero">
-      <div class="hero-content">
-        <h1>jolt</h1>
-        <p class="tagline">Battery intelligence for your laptop</p>
-        <p class="description">
-          Real-time power monitoring, process energy tracking, and battery health insights — all in
-          a beautiful terminal UI. Works on macOS and Linux.
-        </p>
-        <div class="hero-buttons">
-          <a href="#install" class="button primary">Install</a>
-          <a
-            href="https://github.com/jordond/jolt"
-            target="_blank"
-            rel="noopener"
-            class="button secondary"
-          >
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
-              <path
-                d="M12 2C6.477 2 2 6.477 2 12c0 4.42 2.865 8.17 6.839 9.49.5.092.682-.217.682-.482 0-.237-.008-.866-.013-1.7-2.782.604-3.369-1.34-3.369-1.34-.454-1.156-1.11-1.463-1.11-1.463-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.831.092-.646.35-1.086.636-1.336-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.578 9.578 0 0112 6.836c.85.004 1.705.114 2.504.336 1.909-1.294 2.747-1.025 2.747-1.025.546 1.377.203 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.578.688.48C19.138 20.167 22 16.418 22 12c0-5.523-4.477-10-10-10z"
-              ></path>
-            </svg>
-            View on GitHub
-          </a>
-        </div>
-      </div>
-      <div class="hero-image">
-        <div class="terminal-window">
-          <div class="terminal-header">
-            <span class="terminal-dot red"></span>
-            <span class="terminal-dot yellow"></span>
-            <span class="terminal-dot green"></span>
+      <div class="hero-container">
+        <div class="hero-content">
+          <h1>jolt</h1>
+          <p class="tagline">Battery intelligence for your laptop</p>
+          <p class="description">
+            Real-time power monitoring, process energy tracking, and battery health insights — all
+            in a beautiful terminal UI. Works on macOS and Linux.
+          </p>
+          <div class="hero-buttons">
+            <a href="#install" class="button primary">Install</a>
+            <a
+              href="https://github.com/jordond/jolt"
+              target="_blank"
+              rel="noopener"
+              class="button secondary"
+            >
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+                <path
+                  d="M12 2C6.477 2 2 6.477 2 12c0 4.42 2.865 8.17 6.839 9.49.5.092.682-.217.682-.482 0-.237-.008-.866-.013-1.7-2.782.604-3.369-1.34-3.369-1.34-.454-1.156-1.11-1.463-1.11-1.463-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.831.092-.646.35-1.086.636-1.336-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.578 9.578 0 0112 6.836c.85.004 1.705.114 2.504.336 1.909-1.294 2.747-1.025 2.747-1.025.546 1.377.203 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.578.688.48C19.138 20.167 22 16.418 22 12c0-5.523-4.477-10-10-10z"
+                ></path>
+              </svg>
+              View on GitHub
+            </a>
           </div>
-          <img src={heroImage.src} alt="jolt terminal UI showing battery status and power metrics" />
+        </div>
+        <div class="hero-image">
+          <div class="terminal-window">
+            <div class="terminal-header">
+              <span class="terminal-dot red"></span>
+              <span class="terminal-dot yellow"></span>
+              <span class="terminal-dot green"></span>
+            </div>
+            <img
+              src={heroImage.src}
+              alt="jolt terminal UI showing battery status and power metrics"
+            />
+          </div>
         </div>
       </div>
-      <div class="hero-grid"></div>
     </section>
 
     <section id="install" class="install">
@@ -250,21 +254,26 @@ import heroImage from '../assets/hero.png'
     position: relative;
     min-height: 100vh;
     display: flex;
-    flex-direction: column;
     align-items: center;
     justify-content: center;
     padding: 6rem 2rem 4rem;
     overflow: hidden;
   }
 
-  .hero-grid {
-    display: none;
+  .hero-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4rem;
+    max-width: 1400px;
+    width: 100%;
   }
 
   .hero-content {
     position: relative;
-    text-align: center;
-    max-width: 700px;
+    text-align: left;
+    flex: 0 1 450px;
+    min-width: 300px;
   }
 
   .hero h1 {
@@ -287,21 +296,20 @@ import heroImage from '../assets/hero.png'
     font-size: 1.125rem;
     color: var(--color-text-muted);
     max-width: 500px;
-    margin: 0 auto 2rem;
+    margin: 0 0 2rem;
   }
 
   .hero-buttons {
     display: flex;
     gap: 1rem;
-    justify-content: center;
+    justify-content: flex-start;
     flex-wrap: wrap;
   }
 
   .hero-image {
-    margin-top: 3rem;
-    width: 100%;
-    max-width: 900px;
-    padding: 0 1rem;
+    flex: 1 1 600px;
+    max-width: 700px;
+    min-width: 300px;
   }
 
   .terminal-window {
@@ -603,6 +611,33 @@ import heroImage from '../assets/hero.png'
   .footer-copyright {
     color: var(--color-text-muted);
     font-size: 0.875rem;
+  }
+
+  @media (max-width: 1024px) {
+    .hero-container {
+      flex-direction: column;
+      gap: 3rem;
+    }
+
+    .hero-content {
+      text-align: center;
+      flex: none;
+      max-width: 600px;
+    }
+
+    .description {
+      margin: 0 auto 2rem;
+    }
+
+    .hero-buttons {
+      justify-content: center;
+    }
+
+    .hero-image {
+      flex: none;
+      width: 100%;
+      max-width: 700px;
+    }
   }
 
   @media (max-width: 768px) {
