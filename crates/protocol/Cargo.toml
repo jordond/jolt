@@ -1,10 +1,12 @@
 [package]
-name = "protocol"
+name = "jolt-protocol"
 description = "Protocol types for jolt daemon IPC"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
 repository.workspace = true
+keywords = ["jolt", "protocol", "ipc"]
+categories = ["data-structures"]
 
 [dependencies]
 serde = { workspace = true }

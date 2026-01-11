@@ -1,13 +1,17 @@
 [package]
-name = "jolt"
+name = "jolt-tui"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
 repository.workspace = true
-authors = ["Jordon"]
+authors = ["Jordon de Hoog"]
 description = "A beautiful TUI for monitoring battery and energy usage"
-keywords = ["tui", "battery", "energy", "monitoring"]
+keywords = ["tui", "battery", "energy", "monitoring", "cli"]
 categories = ["command-line-utilities"]
+
+[[bin]]
+name = "jolt"
+path = "src/main.rs"
 
 [features]
 default = ["macos"]
@@ -15,7 +19,7 @@ macos = ["jolt-platform/macos"]
 linux = ["jolt-platform/linux"]
 
 [dependencies]
-protocol = { workspace = true }
+jolt-protocol = { workspace = true }
 jolt-theme = { workspace = true }
 jolt-platform = { workspace = true }
 ratatui = { workspace = true }

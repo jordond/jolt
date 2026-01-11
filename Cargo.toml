@@ -58,7 +58,7 @@ ureq = "2"
 daemonize = "0.5"
 
 # Internal crates
-protocol = { path = "crates/protocol" }
+jolt-protocol = { path = "crates/protocol" }
 jolt-theme = { path = "crates/theme" }
 jolt-platform = { path = "crates/platform" }
 

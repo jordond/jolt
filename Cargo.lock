@@ -1072,38 +1072,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "92ecc6618181def0457392ccd0ee51198e065e016d1d527a7ac1b6dc7c1f09d2"
 
 [[package]]
-name = "jolt"
-version = "0.1.0"
-dependencies = [
- "chrono",
- "clap",
- "color-eyre",
- "crossterm",
- "daemonize",
- "dirs",
- "futures",
- "jolt-platform",
- "jolt-theme",
- "libc",
- "plist",
- "protocol",
- "ratatui",
- "rusqlite",
- "serde",
- "serde_json",
- "sysinfo",
- "systemstat",
- "thiserror 2.0.17",
- "tokio",
- "tokio-stream",
- "toml",
- "tracing",
- "tracing-appender",
- "tracing-subscriber",
- "ureq",
-]
-
-[[package]]
 name = "jolt-platform"
 version = "0.1.0"
 dependencies = [
@@ -1117,6 +1085,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "jolt-protocol"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "pretty_assertions",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "jolt-theme"
 version = "0.1.0"
 dependencies = [
@@ -1125,6 +1103,38 @@ dependencies = [
  "serde_json",
  "thiserror 2.0.17",
  "toml",
+ "ureq",
+]
+
+[[package]]
+name = "jolt-tui"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "clap",
+ "color-eyre",
+ "crossterm",
+ "daemonize",
+ "dirs",
+ "futures",
+ "jolt-platform",
+ "jolt-protocol",
+ "jolt-theme",
+ "libc",
+ "plist",
+ "ratatui",
+ "rusqlite",
+ "serde",
+ "serde_json",
+ "sysinfo",
+ "systemstat",
+ "thiserror 2.0.17",
+ "tokio",
+ "tokio-stream",
+ "toml",
+ "tracing",
+ "tracing-appender",
+ "tracing-subscriber",
  "ureq",
 ]
 
@@ -1670,16 +1680,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "535d180e0ecab6268a3e718bb9fd44db66bbbc256257165fc699dadf70d16fe7"
 dependencies = [
  "unicode-ident",
-]
-
-[[package]]
-name = "protocol"
-version = "0.1.0"
-dependencies = [
- "chrono",
- "pretty_assertions",
- "serde",
- "serde_json",
 ]
 
 [[package]]

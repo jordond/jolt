@@ -1,100 +1,175 @@
+<div align="center">
+
 # jolt
 
-A beautiful terminal-based battery and energy monitor for macOS and Linux.
+**A terminal-based battery and energy monitor for macOS and Linux.**
 
-Built for laptop users who want to understand what's draining their battery. Provides real-time insights into power consumption, process energy usage, and battery health - all in a clean, themeable TUI.
+[![Release](https://img.shields.io/github/v/release/jordond/jolt?style=flat-square&label=stable)](https://github.com/jordond/jolt/releases/latest)
+[![Pre-release](https://img.shields.io/github/v/release/jordond/jolt?style=flat-square&include_prereleases&label=pre-release)](https://github.com/jordond/jolt/releases)
 
-## Packages
+[![Docs](https://img.shields.io/badge/docs-getjolt.sh-blue?style=flat-square)](https://getjolt.sh/docs)
+[![CI](https://img.shields.io/github/actions/workflow/status/jordond/jolt/ci.yml?style=flat-square&label=ci)](https://github.com/jordond/jolt/actions/workflows/ci.yml)
+[![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](LICENSE)
 
-| Package | Description |
-| ------- | ----------- |
-| [cli](./cli) | Terminal UI application |
-| [website](./website) | Documentation website |
+[Features](#features) • [Installation](#installation) • [Usage](#usage) • [Contributing](#contributing)
 
-## Quick Start
+</div>
 
-```bash
-# Clone the repository
-git clone https://github.com/jordond/jolt.git
-cd jolt
+<p align="center">
+  <img src="docs/demo.gif" alt="jolt demo" width="1000">
+</p>
 
-# Build and run the CLI
-cd cli
-cargo build --release
-./target/release/jolt
-```
+## About
+
+`jolt` helps laptop users understand what's draining their battery. It provides real-time insights into power consumption, process energy usage, and battery health—all in a clean, themeable TUI.
 
 ## Features
 
-- **Battery Status** - Real-time charge percentage, charging state, time remaining, battery health, and cycle count
-- **Power Monitoring** - Total system power draw with CPU and GPU breakdown
-- **Process Energy Tracking** - Processes sorted by energy impact with color-coded severity
-- **Collapsible Process Groups** - Expand parent processes to see children consuming energy
-- **Historical Graphs** - Track battery percentage and power draw over time
-- **Theme Support** - Dark and light themes with automatic system detection
-- **Keyboard Navigation** - Full keyboard control with help dialog
-- **Process Management** - Kill energy-hungry processes with confirmation
-
-## Requirements
-
-### macOS
-- macOS 11.0 (Big Sur) or later
-- Apple Silicon (M1/M2/M3/M4) or Intel Mac
-- Rust 1.70 or newer
-
-### Linux
-- Linux kernel 3.13+ (for RAPL power metrics)
-- Laptop with battery
-- Intel or AMD CPU (for power metrics)
-- Rust 1.70 or newer
-
-See [docs/linux-setup.md](./docs/linux-setup.md) for Linux-specific setup instructions.
+- **Battery Status** — Charge percentage, time remaining, health, and cycle count
+- **Power Monitoring** — System power draw with CPU/GPU breakdown
+- **Process Tracking** — Processes sorted by energy impact with color-coded severity
+- **Historical Graphs** — Track battery and power trends over time
+- **Themes** — 10+ built-in themes with dark/light auto-detection
+- **Background Daemon** — Collect historical data even when the TUI isn't running
+- **Process Management** — Kill energy-hungry processes directly
 
 ## Installation
 
-### Install Script (Recommended)
+### Quick Install
 
-Automatically detects your platform and downloads the correct binary:
-
-```bash
+```shell
 curl -fsSL https://getjolt.sh/install.sh | bash
 ```
 
-### Homebrew (coming soon)
+### Homebrew
 
-```bash
+```shell
 brew install jordond/tap/jolt
 ```
 
 ### Cargo
 
-```bash
+```shell
 cargo install jolt-tui
 ```
 
 ### From Source
 
-See [cli/README.md](./cli/README.md) for detailed build instructions.
+```shell
+git clone https://github.com/jordond/jolt.git
+cd jolt
+cargo build --release
+./target/release/jolt
+```
 
-## Platform Notes
+See [Building from Source](#building-from-source) for detailed instructions.
 
-- **macOS**: Power metrics work on Apple Silicon. Intel Macs show battery data only.
-- **Linux**: Requires permissions for power metrics (RAPL). See [Linux setup guide](./docs/linux-setup.md).
+## Usage
+
+Start jolt's TUI:
+
+```shell
+jolt
+```
+
+```shell
+A beautiful battery and energy monitor for your terminal
+
+Usage: jolt [OPTIONS] [COMMAND]
+
+Commands:
+  ui       Launch the terminal UI (default)
+  pipe     Output metrics as JSON for scripting
+  debug    Print system and battery debug info
+  config   Manage configuration
+  theme    Manage themes
+  daemon   Control the background daemon
+  history  View and export historical data
+  logs     View daemon logs
+  help     Print this message or the help of the given subcommand(s)
+
+Options:
+      --log-level <LOG_LEVEL>  Set log level (error, warn, info, debug, trace)
+  -h, --help                   Print help
+  -V, --version                Print version
+```
+
+### Keyboard Shortcuts
+
+| Key       | Action                        |
+| --------- | ----------------------------- |
+| `j` / `k` | Navigate up/down              |
+| `Enter`   | Expand/collapse process group |
+| `K`       | Kill selected process         |
+| `g`       | Toggle graph (battery/power)  |
+| `t`       | Open theme picker             |
+| `s`       | Open settings                 |
+| `h`       | View history                  |
+| `?`       | Show help                     |
+| `q`       | Quit                          |
+
+### Daemon
+
+jolt includes a background daemon for collecting historical data:
+
+```shell
+# Start the daemon
+jolt daemon start
+
+# Check status
+jolt daemon status
+
+# Stop the daemon
+jolt daemon stop
+```
+
+## Platform Support
+
+| Platform              | Battery | Power Metrics | Notes                     |
+| --------------------- | ------- | ------------- | ------------------------- |
+| macOS (Apple Silicon) | ✅      | ✅            | Full support              |
+| macOS (Intel)         | ✅      | ❌            | Battery data only         |
+| Linux                 | ✅      | ✅            | Requires RAPL permissions |
+
+See the [Linux setup guide](docs/linux-setup.md) for configuring power metrics on Linux.
+
+## Building from Source
+
+### Prerequisites
+
+You will need to install Rust, see the [install docs](https://rust-lang.org/learn/get-started/)
+
+### Build
+
+```shell
+git clone https://github.com/jordond/jolt.git
+cd jolt
+
+# Debug build
+cargo build
+./target/debug/jolt
+
+# Release build (optimized)
+cargo build --release
+./target/release/jolt
+```
 
 ## Contributing
 
-1. Fork and clone the repo
-2. Create a branch and make your changes
-3. Ensure your code passes checks:
-   ```bash
-   cd cli
-   cargo fmt --check
-   cargo clippy -- -D warnings
-   cargo build
-   ```
-4. Commit using [conventional commits](https://www.conventionalcommits.org/) (feat, fix, docs, etc)
-5. Open a PR targeting `main`
+Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 ## License
 
-MIT
+MIT — See [LICENSE](LICENSE) for details.
+
+---
+
+<div align="center">
+
+**[Documentation](https://getjolt.sh)** • **[Report Bug](https://github.com/jordond/jolt/issues)** • **[Request Feature](https://github.com/jordond/jolt/issues)**
+
+</div>
+
+---
+
+<sub>Built with the assistance of AI tools including Claude and GitHub Copilot.</sub>

@@ -1,5 +1,6 @@
 // @ts-check
 import { defineConfig } from 'astro/config'
+import sitemap from '@astrojs/sitemap'
 import starlight from '@astrojs/starlight'
 
 // https://astro.build/config
@@ -7,11 +8,21 @@ export default defineConfig({
   site: 'https://getjolt.sh',
   base: '/',
   integrations: [
+    sitemap(),
     starlight({
       title: 'jolt',
       logo: {
         src: './src/assets/logo.svg',
       },
+      head: [
+        {
+          tag: 'link',
+          attrs: {
+            rel: 'sitemap',
+            href: '/sitemap-index.xml',
+          },
+        },
+      ],
       social: [
         {
           icon: 'github',

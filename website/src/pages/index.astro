@@ -1,6 +1,9 @@
 ---
 import Landing from '../layouts/Landing.astro'
 import InstallTabs from '../components/InstallTabs.astro'
+import heroImage from '../assets/hero.png'
+import logo from '../assets/logo.svg'
+import { Image } from 'astro:assets'
 ---
 
 <Landing
@@ -9,7 +12,7 @@ import InstallTabs from '../components/InstallTabs.astro'
 >
   <header class="header">
     <a href="/" class="logo">
-      <img src="/favicon.svg" alt="" width="28" height="28" />
+      <Image src={logo} alt="jolt logo" width="28" height="28" />
       <span>jolt</span>
     </a>
     <nav class="nav">
@@ -44,43 +47,92 @@ import InstallTabs from '../components/InstallTabs.astro'
 
   <main>
     <section class="hero">
-      <div class="hero-content">
-        <h1>jolt</h1>
-        <p class="tagline">Battery intelligence for your laptop</p>
-        <p class="description">
-          Real-time power monitoring, process energy tracking, and battery health insights — all in
-          a beautiful terminal UI. Works on macOS and Linux.
-        </p>
-        <div class="hero-buttons">
-          <a href="#install" class="button primary">Install</a>
-          <a
-            href="https://github.com/jordond/jolt"
-            target="_blank"
-            rel="noopener"
-            class="button secondary"
-          >
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
-              <path
-                d="M12 2C6.477 2 2 6.477 2 12c0 4.42 2.865 8.17 6.839 9.49.5.092.682-.217.682-.482 0-.237-.008-.866-.013-1.7-2.782.604-3.369-1.34-3.369-1.34-.454-1.156-1.11-1.463-1.11-1.463-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.831.092-.646.35-1.086.636-1.336-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.578 9.578 0 0112 6.836c.85.004 1.705.114 2.504.336 1.909-1.294 2.747-1.025 2.747-1.025.546 1.377.203 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.578.688.48C19.138 20.167 22 16.418 22 12c0-5.523-4.477-10-10-10z"
-              ></path>
-            </svg>
-            View on GitHub
-          </a>
+      <div class="hero-container">
+        <div class="hero-content">
+          <h1>jolt</h1>
+          <p class="tagline">Battery intelligence for your laptop</p>
+          <p class="description">
+            Real-time power monitoring, process energy tracking, and battery health insights — all
+            in a beautiful terminal UI. Works on macOS and Linux.
+          </p>
+          <div class="hero-buttons">
+            <a href="#install" class="button primary">Install</a>
+            <a
+              href="https://github.com/jordond/jolt"
+              target="_blank"
+              rel="noopener"
+              class="button secondary"
+            >
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+                <path
+                  d="M12 2C6.477 2 2 6.477 2 12c0 4.42 2.865 8.17 6.839 9.49.5.092.682-.217.682-.482 0-.237-.008-.866-.013-1.7-2.782.604-3.369-1.34-3.369-1.34-.454-1.156-1.11-1.463-1.11-1.463-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.831.092-.646.35-1.086.636-1.336-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.578 9.578 0 0112 6.836c.85.004 1.705.114 2.504.336 1.909-1.294 2.747-1.025 2.747-1.025.546 1.377.203 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.578.688.48C19.138 20.167 22 16.418 22 12c0-5.523-4.477-10-10-10z"
+                ></path>
+              </svg>
+              View on GitHub
+            </a>
+          </div>
+        </div>
+        <div class="hero-image">
+          <div class="terminal-window">
+            <div class="terminal-header">
+              <span class="terminal-dot red"></span>
+              <span class="terminal-dot yellow"></span>
+              <span class="terminal-dot green"></span>
+            </div>
+            <img
+              src={heroImage.src}
+              alt="jolt terminal UI showing battery status and power metrics"
+            />
+          </div>
         </div>
       </div>
-      <div class="hero-grid"></div>
     </section>
 
     <section id="install" class="install">
-      <h2>Quick Install</h2>
-      <InstallTabs />
+      <div class="install-bg-glow"></div>
+      <div class="install-content">
+        <h2>Quick Install</h2>
+        <p class="install-description">
+          Get up and running in seconds. Supports macOS, Linux, and standard package managers.
+        </p>
+
+        <div class="install-card-wrapper">
+          <div class="install-card-border"></div>
+          <InstallTabs />
+        </div>
+
+        <div class="install-platforms">
+          <span class="platforms-label">Supported platforms</span>
+          <div class="platform-tags">
+            <span class="platform-tag">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                <path
+                  d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.21-1.96 1.08-3.11-1.04.05-2.29.69-3.02 1.55-.65.75-1.21 1.95-1.06 3.04 1.15.09 2.33-.64 3-1.48"
+                ></path>
+              </svg>
+              macOS
+            </span>
+            <span class="platform-tag">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                <path
+                  d="M13.15 2H11.83C6.73 2 2.5 6.2 2.5 11.27V12.7C2.5 17.77 6.73 22 11.83 22H13.15C18.27 22 22.5 17.77 22.5 12.7V11.27C22.5 6.2 18.27 2 13.15 2ZM5.5 16.7L6.87 14.88H8.87L6.8 17.7H5.5V16.7ZM19.5 16.7H18.2L15.93 13.68H18.5L19.5 15.07V16.7ZM12.5 18.7H11.5V13.7H12.5V18.7Z"
+                ></path>
+              </svg>
+              Linux
+            </span>
+          </div>
+        </div>
+      </div>
     </section>
 
     <section id="features" class="features">
+      <div class="features-bg-glow"></div>
       <h2>Features</h2>
       <div class="feature-grid">
         <div class="feature-card">
-          <div class="feature-icon">⚡</div>
+          <div class="feature-icon-wrapper">
+            <div class="feature-icon">⚡</div>
+          </div>
           <h3>Real-time Monitoring</h3>
           <p>
             Track battery percentage, charging state, time remaining, and power draw updated every
@@ -88,27 +140,37 @@ import InstallTabs from '../components/InstallTabs.astro'
           </p>
         </div>
         <div class="feature-card">
-          <div class="feature-icon">📊</div>
+          <div class="feature-icon-wrapper">
+            <div class="feature-icon">📊</div>
+          </div>
           <h3>Power Breakdown</h3>
           <p>See exactly how much power your CPU, GPU, and ANE are consuming in watts.</p>
         </div>
         <div class="feature-card">
-          <div class="feature-icon">🔍</div>
+          <div class="feature-icon-wrapper">
+            <div class="feature-icon">🔍</div>
+          </div>
           <h3>Process Tracking</h3>
           <p>Identify energy-hungry processes with color-coded severity and collapsible groups.</p>
         </div>
         <div class="feature-card">
-          <div class="feature-icon">🎨</div>
+          <div class="feature-icon-wrapper">
+            <div class="feature-icon">🎨</div>
+          </div>
           <h3>300+ Themes</h3>
           <p>Import from iTerm2 Color Schemes or create your own. Light, dark, and auto modes.</p>
         </div>
         <div class="feature-card">
-          <div class="feature-icon">📈</div>
+          <div class="feature-icon-wrapper">
+            <div class="feature-icon">📈</div>
+          </div>
           <h3>Historical Data</h3>
           <p>Track battery and power trends over time with built-in graphs and data export.</p>
         </div>
         <div class="feature-card">
-          <div class="feature-icon">👻</div>
+          <div class="feature-icon-wrapper">
+            <div class="feature-icon">👻</div>
+          </div>
           <h3>Background Daemon</h3>
           <p>Run a daemon to collect historical data even when the TUI isn't running.</p>
         </div>
@@ -127,7 +189,7 @@ import InstallTabs from '../components/InstallTabs.astro'
         <a href="https://github.com/jordond/jolt">GitHub</a>
         <a href="https://github.com/jordond/jolt/issues">Issues</a>
       </div>
-      <p class="footer-copyright">MIT License © 2024 Jordon</p>
+      <p class="footer-copyright">MIT License © 2026 Jordon</p>
     </div>
   </footer>
 
@@ -241,18 +303,25 @@ import InstallTabs from '../components/InstallTabs.astro'
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 6rem 2rem 4rem;
+    padding: 6rem 1rem 4rem;
     overflow: hidden;
   }
 
-  .hero-grid {
-    display: none;
+  .hero-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4rem;
+    max-width: 1600px;
+    width: 100%;
+    padding: 0 1rem;
   }
 
   .hero-content {
     position: relative;
-    text-align: center;
-    max-width: 700px;
+    text-align: left;
+    flex: 0 1 450px;
+    min-width: 300px;
   }
 
   .hero h1 {
@@ -275,14 +344,63 @@ import InstallTabs from '../components/InstallTabs.astro'
     font-size: 1.125rem;
     color: var(--color-text-muted);
     max-width: 500px;
-    margin: 0 auto 2rem;
+    margin: 0 0 2rem;
   }
 
   .hero-buttons {
     display: flex;
     gap: 1rem;
-    justify-content: center;
+    justify-content: flex-start;
     flex-wrap: wrap;
+  }
+
+  .hero-image {
+    flex: 1 1 700px;
+    max-width: 900px;
+    min-width: 300px;
+  }
+
+  .terminal-window {
+    position: relative;
+    border-radius: 12px;
+    overflow: hidden;
+    background: #1a1a1a;
+    border: 1px solid var(--color-border);
+    box-shadow:
+      0 0 40px var(--color-accent-glow),
+      0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  }
+
+  .terminal-header {
+    display: flex;
+    gap: 6px;
+    padding: 8px 12px;
+    background: #2d2d2d;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .terminal-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+  }
+
+  .terminal-dot.red {
+    background: #ff5f57;
+  }
+
+  .terminal-dot.yellow {
+    background: #febc2e;
+  }
+
+  .terminal-dot.green {
+    background: #28c840;
+  }
+
+  .terminal-window img {
+    display: block;
+    width: 100%;
+    height: auto;
   }
 
   .button {
@@ -338,26 +456,136 @@ import InstallTabs from '../components/InstallTabs.astro'
 
   .install {
     position: relative;
-    min-height: 100vh;
+    min-height: 80vh; /* Slightly reduced to keep it tight */
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     max-width: 100%;
-    padding: 4rem 2rem;
+    padding: 6rem 2rem;
+    overflow: hidden;
+  }
+
+  .install-bg-glow {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(circle at center, var(--color-accent-03) 0%, transparent 60%);
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  .install-content {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    max-width: 800px;
   }
 
   .install h2 {
+    margin-bottom: 1rem;
+  }
+
+  .install-description {
+    text-align: center;
+    color: var(--color-text-muted);
+    font-size: 1.125rem;
+    margin-bottom: 3rem;
+    max-width: 500px;
+  }
+
+  .install-card-wrapper {
+    position: relative;
+    width: 100%;
+    max-width: 650px;
     margin-bottom: 2rem;
   }
 
+  /* Decorative glowing border behind the card */
+  .install-card-border {
+    position: absolute;
+    inset: -1px;
+    border-radius: 1rem;
+    padding: 1px;
+    background: linear-gradient(
+      180deg,
+      var(--color-accent-20),
+      rgba(255, 255, 255, 0.05) 40%,
+      transparent
+    );
+    -webkit-mask:
+      linear-gradient(#fff 0 0) content-box,
+      linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+
+  .install-card-wrapper::before {
+    content: '';
+    position: absolute;
+    inset: -20px;
+    background: var(--color-accent-10);
+    filter: blur(40px);
+    z-index: -1;
+    opacity: 0.5;
+    border-radius: 2rem;
+  }
+
   .install :global(.install-tabs) {
-    background: var(--color-surface);
+    background: rgba(18, 18, 26, 0.6);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--color-border);
     border-radius: 1rem;
     padding: 2rem;
     width: 100%;
-    max-width: 600px;
     margin: 0;
+    box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.3);
+  }
+
+  .install-platforms {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    align-items: center;
+    color: var(--color-text-muted);
+    font-size: 0.9rem;
+  }
+
+  .platforms-label {
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.1em;
+    color: var(--color-text-muted);
+  }
+
+  .platform-tags {
+    display: flex;
+    gap: 1rem;
+  }
+
+  .platform-tag {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 2rem;
+    transition: all 0.2s;
+  }
+
+  .platform-tag:hover {
+    border-color: var(--color-accent);
+    color: var(--color-text);
+    transform: translateY(-2px);
   }
 
   .features {
@@ -367,8 +595,22 @@ import InstallTabs from '../components/InstallTabs.astro'
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    max-width: 1200px;
-    padding: 4rem 2rem;
+    max-width: 1400px;
+    padding: 6rem 2rem;
+    margin: 0 auto;
+  }
+
+  .features-bg-glow {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 140%;
+    height: 140%;
+    background: radial-gradient(circle at center, var(--color-accent-10) 0%, transparent 60%);
+    z-index: 0;
+    pointer-events: none;
+    opacity: 0.5;
   }
 
   .scroll-nav {
@@ -434,50 +676,122 @@ import InstallTabs from '../components/InstallTabs.astro'
   .feature-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 1.5rem;
+    gap: 2rem;
     width: 100%;
+    position: relative;
+    z-index: 1;
   }
 
-  @media (max-width: 900px) {
+  @media (max-width: 1024px) {
     .feature-grid {
       grid-template-columns: repeat(2, 1fr);
     }
   }
 
-  @media (max-width: 600px) {
+  @media (max-width: 640px) {
     .feature-grid {
       grid-template-columns: 1fr;
     }
   }
 
   .feature-card {
-    background: var(--color-surface);
-    border: 1px solid var(--color-border);
-    border-radius: 0.75rem;
-    padding: 1.5rem;
-    transition: all 0.3s;
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 1.25rem;
+    padding: 2rem;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
   }
 
   .feature-card:hover {
-    border-color: var(--color-accent);
-    box-shadow: 0 0 20px var(--color-accent-10);
-    transform: translateY(-4px);
+    background: rgba(255, 255, 255, 0.06);
+    border-color: var(--color-accent-20);
+    transform: translateY(-8px);
+    box-shadow:
+      0 20px 40px -15px rgba(0, 0, 0, 0.5),
+      0 0 20px var(--color-accent-10);
+  }
+
+  .feature-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--color-accent), transparent);
+    opacity: 0;
+    transition: opacity 0.4s ease;
+  }
+
+  .feature-card:hover::before {
+    opacity: 0.5;
+  }
+
+  .feature-icon-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 3.5rem;
+    height: 3.5rem;
+    border-radius: 1rem;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.01));
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    margin-bottom: 1.5rem;
+    transition: all 0.4s ease;
+    position: relative;
+  }
+
+  .feature-icon-wrapper::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 1rem;
+    background: var(--color-accent);
+    opacity: 0;
+    filter: blur(15px);
+    transition: opacity 0.4s ease;
+    z-index: -1;
+  }
+
+  .feature-card:hover .feature-icon-wrapper {
+    border-color: var(--color-accent-20);
+    transform: scale(1.1) rotate(3deg);
+    background: linear-gradient(135deg, var(--color-accent-10), rgba(255, 255, 255, 0.01));
+  }
+
+  .feature-card:hover .feature-icon-wrapper::after {
+    opacity: 0.2;
   }
 
   .feature-icon {
-    font-size: 2rem;
-    margin-bottom: 0.75rem;
+    font-size: 1.75rem;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
   }
 
   .feature-card h3 {
-    font-size: 1.125rem;
-    margin-bottom: 0.5rem;
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 0.75rem;
     color: var(--color-text);
+    transition: color 0.3s;
+  }
+
+  .feature-card:hover h3 {
+    color: var(--color-accent);
   }
 
   .feature-card p {
     color: var(--color-text-muted);
-    font-size: 0.9375rem;
+    font-size: 1rem;
+    line-height: 1.6;
+    margin: 0;
   }
 
   .why-grid {
@@ -541,6 +855,33 @@ import InstallTabs from '../components/InstallTabs.astro'
   .footer-copyright {
     color: var(--color-text-muted);
     font-size: 0.875rem;
+  }
+
+  @media (max-width: 1024px) {
+    .hero-container {
+      flex-direction: column;
+      gap: 3rem;
+    }
+
+    .hero-content {
+      text-align: center;
+      flex: none;
+      max-width: 600px;
+    }
+
+    .description {
+      margin: 0 auto 2rem;
+    }
+
+    .hero-buttons {
+      justify-content: center;
+    }
+
+    .hero-image {
+      flex: none;
+      width: 100%;
+      max-width: 900px;
+    }
   }
 
   @media (max-width: 768px) {

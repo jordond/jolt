@@ -15,6 +15,15 @@
     </button>
     <button
       class="tab-btn"
+      data-tab="brew"
+      role="tab"
+      aria-selected="false"
+      aria-controls="panel-brew"
+    >
+      Homebrew
+    </button>
+    <button
+      class="tab-btn"
       data-tab="cargo"
       role="tab"
       aria-selected="false"
@@ -31,141 +40,126 @@
     >
       Source
     </button>
-    <button
-      class="tab-btn"
-      data-tab="brew"
-      role="tab"
-      aria-selected="false"
-      aria-controls="panel-brew"
-    >
-      Homebrew
-    </button>
   </div>
 
   <div class="tab-panels">
     <div class="tab-content active" id="panel-install" role="tabpanel" aria-labelledby="install">
-      <div class="code-block">
-        <pre><code>curl -fsSL https://getjolt.sh/install.sh | bash</code></pre>
-        <button
-          class="copy-btn"
-          data-code="curl -fsSL https://getjolt.sh/install.sh | bash"
-          aria-label="Copy to clipboard"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
+      <div class="tab-inner">
+        <div class="code-block">
+          <pre><code>curl -fsSL https://getjolt.sh/install.sh | bash</code></pre>
+          <button
+            class="copy-btn"
+            data-code="curl -fsSL https://getjolt.sh/install.sh | bash"
+            aria-label="Copy to clipboard"
           >
-            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-          </svg>
-        </button>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+            </svg>
+          </button>
+        </div>
       </div>
     </div>
 
     <div class="tab-content" id="panel-cargo" role="tabpanel" aria-labelledby="cargo">
-      <div class="code-block">
-        <pre><code>cargo install jolt-tui</code></pre>
-        <button class="copy-btn" data-code="cargo install jolt-tui" aria-label="Copy to clipboard">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
+      <div class="tab-inner">
+        <div class="code-block">
+          <pre><code>cargo install jolt-tui</code></pre>
+          <button
+            class="copy-btn"
+            data-code="cargo install jolt-tui"
+            aria-label="Copy to clipboard"
           >
-            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-          </svg>
-        </button>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+            </svg>
+          </button>
+        </div>
       </div>
     </div>
 
     <div class="tab-content" id="panel-source" role="tabpanel" aria-labelledby="source">
-      <div class="code-block">
-        <pre><code>git clone https://github.com/jordond/jolt.git
+      <div class="tab-inner">
+        <div class="code-block">
+          <pre><code>git clone https://github.com/jordond/jolt.git
 cd jolt && cargo build --release
 ./target/release/jolt</code></pre>
-        <button
-          class="copy-btn"
-          data-code="git clone https://github.com/jordond/jolt.git && cd jolt && cargo build --release && ./target/release/jolt"
-          aria-label="Copy to clipboard"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
+          <button
+            class="copy-btn"
+            data-code="git clone https://github.com/jordond/jolt.git && cd jolt && cargo build --release && ./target/release/jolt"
+            aria-label="Copy to clipboard"
           >
-            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-          </svg>
-        </button>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+            </svg>
+          </button>
+        </div>
       </div>
     </div>
 
     <div class="tab-content" id="panel-brew" role="tabpanel" aria-labelledby="brew">
-      <div class="coming-soon-notice">
-        <p>🚧 Homebrew support coming soon</p>
-      </div>
-      <div class="code-block">
-        <pre><code>brew install jordond/tap/jolt</code></pre>
-        <button
-          class="copy-btn"
-          data-code="brew install jordond/tap/jolt"
-          aria-label="Copy to clipboard"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
+      <div class="tab-inner">
+        <div class="code-block">
+          <pre><code>brew install jordond/tap/jolt</code></pre>
+          <button
+            class="copy-btn"
+            data-code="brew install jordond/tap/jolt"
+            aria-label="Copy to clipboard"
           >
-            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-          </svg>
-        </button>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+            </svg>
+          </button>
+        </div>
       </div>
     </div>
   </div>
 </div>
 
 <script>
-  const panels = document.querySelector('.tab-panels') as HTMLElement | null
-  const contents = document.querySelectorAll('.tab-content')
-
-  function updateHeight() {
-    const active = document.querySelector('.tab-content.active') as HTMLElement | null
-    if (active && panels) {
-      panels.style.height = active.scrollHeight + 'px'
-    }
-  }
-
-  updateHeight()
-
-  // Recalculate on window resize
-  window.addEventListener('resize', updateHeight)
-
   document.querySelectorAll('.tab-btn').forEach((btn) => {
     btn.addEventListener('click', () => {
       const tab = (btn as HTMLElement).dataset.tab
@@ -174,12 +168,11 @@ cd jolt && cargo build --release
         b.classList.remove('active')
         b.setAttribute('aria-selected', 'false')
       })
-      contents.forEach((c) => c.classList.remove('active'))
+      document.querySelectorAll('.tab-content').forEach((c) => c.classList.remove('active'))
 
       btn.classList.add('active')
       btn.setAttribute('aria-selected', 'true')
       document.getElementById(`panel-${tab}`)?.classList.add('active')
-      setTimeout(updateHeight, 10)
     })
   })
 
@@ -232,28 +225,30 @@ cd jolt && cargo build --release
   }
 
   .tab-panels {
-    position: relative;
     background: var(--sl-color-bg-sidebar, #12121a);
     border: 1px solid rgba(229, 255, 0, 0.2);
     border-radius: 0 0 0.5rem 0.5rem;
     overflow: hidden;
-    transition: height 0.25s ease-out;
   }
 
   .tab-content {
-    position: absolute;
-    inset: 0;
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 0.25s ease-out;
+  }
+
+  .tab-inner {
+    overflow: hidden;
     opacity: 0;
     transition: opacity 0.2s ease-out;
-    pointer-events: none;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
   }
 
   .tab-content.active {
+    grid-template-rows: 1fr;
+  }
+
+  .tab-content.active .tab-inner {
     opacity: 1;
-    pointer-events: auto;
   }
 
   .code-block {
@@ -262,7 +257,7 @@ cd jolt && cargo build --release
 
   .code-block pre {
     margin: 0;
-    padding: 1rem 1.25rem;
+    padding: 1.5rem 1.75rem;
     padding-right: 3.5rem;
     overflow-x: auto;
     background: transparent !important;
@@ -319,7 +314,7 @@ cd jolt && cargo build --release
     border: 1px solid rgba(229, 255, 0, 0.2);
     border-radius: 0.375rem;
     padding: 0.5rem;
-    margin: 0.75rem 1.25rem 0.5rem;
+    margin: 1rem 1.75rem 0.5rem;
     text-align: center;
   }
 

@@ -2,7 +2,7 @@ name: Release
 
 on:
   release:
-    types: [created]
+    types: [published]
 
 permissions:
   contents: write
@@ -18,25 +18,28 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # macOS targets
           - target: x86_64-apple-darwin
             os: macos-latest
             features: macos
+            homebrew_os: darwin
+            homebrew_arch: amd64
           - target: aarch64-apple-darwin
             os: macos-latest
             features: macos
-
-          # Linux GNU targets
+            homebrew_os: darwin
+            homebrew_arch: arm64
           - target: x86_64-unknown-linux-gnu
             os: ubuntu-latest
             features: linux
             use-cross: true
+            homebrew_os: linux
+            homebrew_arch: amd64
           - target: aarch64-unknown-linux-gnu
             os: ubuntu-latest
             features: linux
             use-cross: true
-
-          # Linux musl targets (static binaries)
+            homebrew_os: linux
+            homebrew_arch: arm64
           - target: x86_64-unknown-linux-musl
             os: ubuntu-latest
             features: linux
@@ -49,6 +52,17 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Update version from tag
+        run: |
+          VERSION="${GITHUB_REF#refs/tags/}"
+          VERSION="${VERSION#v}"
+          echo "VERSION=${VERSION}" >> $GITHUB_ENV
+          echo "Updating version to ${VERSION}"
+          sed -i.bak 's/^version = ".*"/version = "'"${VERSION}"'"/' Cargo.toml
+          rm -f Cargo.toml.bak
+          grep '^version' Cargo.toml
+        shell: bash
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
@@ -74,11 +88,20 @@ jobs:
           fi
         shell: bash
 
-      - name: Prepare binary
+      - name: Prepare release artifacts
         run: |
           cd target/${{ matrix.target }}/release
-          BINARY_NAME="jolt-${{ matrix.target }}"
-          mv jolt "${BINARY_NAME}"
+          
+          if [ -n "${{ matrix.homebrew_os }}" ]; then
+            ARCHIVE_NAME="jolt-${{ env.VERSION }}-${{ matrix.homebrew_os }}-${{ matrix.homebrew_arch }}"
+            mkdir -p "${ARCHIVE_NAME}"
+            cp jolt "${ARCHIVE_NAME}/"
+            tar -czvf "${ARCHIVE_NAME}.tar.gz" "${ARCHIVE_NAME}"
+            shasum -a 256 "${ARCHIVE_NAME}.tar.gz" > "${ARCHIVE_NAME}.tar.gz.sha256"
+          fi
+          
+          BINARY_NAME="jolt-${{ env.VERSION }}-${{ matrix.target }}"
+          cp jolt "${BINARY_NAME}"
           shasum -a 256 "${BINARY_NAME}" > "${BINARY_NAME}.sha256"
         shell: bash
 
@@ -86,8 +109,18 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            target/${{ matrix.target }}/release/jolt-${{ matrix.target }}
-            target/${{ matrix.target }}/release/jolt-${{ matrix.target }}.sha256
+            target/${{ matrix.target }}/release/jolt-${{ env.VERSION }}-${{ matrix.target }}
+            target/${{ matrix.target }}/release/jolt-${{ env.VERSION }}-${{ matrix.target }}.sha256
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Homebrew archive to release
+        if: matrix.homebrew_os != ''
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            target/${{ matrix.target }}/release/jolt-${{ env.VERSION }}-${{ matrix.homebrew_os }}-${{ matrix.homebrew_arch }}.tar.gz
+            target/${{ matrix.target }}/release/jolt-${{ env.VERSION }}-${{ matrix.homebrew_os }}-${{ matrix.homebrew_arch }}.tar.gz.sha256
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -101,7 +134,7 @@ jobs:
         with:
           tag: ${{ github.event.release.tag_name }}
           fileName: "*.sha256"
-          out-file-path: "checksums"
+          out-file-path: checksums
 
       - name: Create checksums manifest
         run: |
@@ -116,3 +149,90 @@ jobs:
           files: checksums.txt
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  homebrew-releaser:
+    name: Update Homebrew formula
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Release to Homebrew tap
+        uses: Justintime50/homebrew-releaser@v3
+        with:
+          homebrew_owner: jordond
+          homebrew_tap: homebrew-tap
+          github_token: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          commit_owner: github-actions[bot]
+          commit_email: github-actions[bot]@users.noreply.github.com
+          install: 'bin.install "jolt"'
+          test: 'assert_match version.to_s, shell_output("#{bin}/jolt --version")'
+          target_darwin_amd64: true
+          target_darwin_arm64: true
+          target_linux_amd64: true
+          target_linux_arm64: true
+
+  publish-crates:
+    name: Publish to crates.io
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Update version from tag
+        run: |
+          RAW_TAG="${GITHUB_REF#refs/tags/}"
+          VERSION="${RAW_TAG#v}"
+          echo "Updating version to ${VERSION}"
+          sed -i.bak 's/^version = ".*"/version = "'"${VERSION}"'"/' Cargo.toml
+          rm Cargo.toml.bak
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Publish jolt-protocol
+        run: cargo publish -p jolt-protocol --token ${{ secrets.CRATE_TOKEN }} || true
+
+      - name: Wait for crates.io
+        run: sleep 30
+
+      - name: Publish jolt-theme
+        run: cargo publish -p jolt-theme --token ${{ secrets.CRATE_TOKEN }} || true
+
+      - name: Wait for crates.io
+        run: sleep 30
+
+      - name: Publish jolt-platform
+        run: cargo publish -p jolt-platform --token ${{ secrets.CRATE_TOKEN }} || true
+
+      - name: Wait for crates.io
+        run: sleep 30
+
+      - name: Publish jolt-tui
+        run: cargo publish -p jolt-tui --token ${{ secrets.CRATE_TOKEN }} || true
+
+  update-version:
+    name: Update version in main
+    needs: [build, publish-checksums, homebrew-releaser, publish-crates]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update version
+        run: |
+          RAW_TAG="${GITHUB_REF#refs/tags/}"
+          VERSION="${RAW_TAG#v}"
+          echo "Updating version to ${VERSION}"
+          sed -i 's/^version = ".*"/version = "'"${VERSION}"'"/' Cargo.toml
+          grep '^version' Cargo.toml
+
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add Cargo.toml
+          git diff --staged --quiet || git commit -m "chore: bump version to ${{ github.event.release.tag_name }}"
+          git push

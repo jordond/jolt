@@ -1,4 +1,4 @@
-pub use protocol::{
+pub use jolt_protocol::{
     BatterySnapshot, BatteryState, ChargeSession, ChargingState, CycleSummary, DaemonRequest,
     DaemonResponse, DaemonStatus, DailyCycle, DailyStat, DailyTopProcess, DataSnapshot,
     ForecastSnapshot, ForecastSource, HourlyStat, KillProcessResult, KillSignal, PowerMode,
