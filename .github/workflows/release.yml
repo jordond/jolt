@@ -166,9 +166,13 @@ jobs:
           install: 'bin.install "jolt"'
           test: 'assert_match version.to_s, shell_output("#{bin}/jolt --version")'
           target_darwin_amd64: true
+          target_darwin_amd64_asset: 'jolt-{{ .Tag }}-darwin-amd64.tar.gz'
           target_darwin_arm64: true
+          target_darwin_arm64_asset: 'jolt-{{ .Tag }}-darwin-arm64.tar.gz'
           target_linux_amd64: true
+          target_linux_amd64_asset: 'jolt-{{ .Tag }}-linux-amd64.tar.gz'
           target_linux_arm64: true
+          target_linux_arm64_asset: 'jolt-{{ .Tag }}-linux-arm64.tar.gz'
 
   publish-crates:
     name: Publish to crates.io
