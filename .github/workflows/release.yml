@@ -55,9 +55,10 @@ jobs:
 
       - name: Update version from tag
         run: |
-          VERSION="${GITHUB_REF#refs/tags/v}"
+          VERSION="${GITHUB_REF#refs/tags/}"
+          VERSION="${VERSION#v}"
           echo "VERSION=${VERSION}" >> $GITHUB_ENV
-          ./.github/versions.sh "${VERSION}"
+          ./.github/versions.sh "${GITHUB_REF#refs/tags/}"
         shell: bash
 
       - name: Install Rust
