@@ -183,7 +183,8 @@ jobs:
           RAW_TAG="${GITHUB_REF#refs/tags/}"
           VERSION="${RAW_TAG#v}"
           echo "Updating version to ${VERSION}"
-          sed -i 's/^version = ".*"/version = "'"${VERSION}"'"/' Cargo.toml
+          sed -i.bak 's/^version = ".*"/version = "'"${VERSION}"'"/' Cargo.toml
+          rm Cargo.toml.bak
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
