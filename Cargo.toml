@@ -35,9 +35,9 @@ crossterm = "0.29"
 clap = { version = "4.5.54", features = ["derive"] }
 
 # Logging
-tracing = "0.1"
-tracing-subscriber = { version = "0.3", features = ["env-filter", "time"] }
-tracing-appender = "0.2"
+tracing = "0.1.44"
+tracing-subscriber = { version = "0.3.22", features = ["env-filter", "time"] }
+tracing-appender = "0.2.4"
 
 # System
 sysinfo = "0.37"
