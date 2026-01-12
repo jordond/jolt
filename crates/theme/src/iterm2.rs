@@ -1,5 +1,4 @@
 use std::fmt;
-use std::io::Read;
 use std::path::{Path, PathBuf};
 
 const ITERM2_REPO_URL: &str =
@@ -484,8 +483,7 @@ fn try_fetch_scheme(name: &str) -> Option<Iterm2Scheme> {
 
     let response = ureq::get(&url).call().ok()?;
 
-    let mut bytes = Vec::new();
-    response.into_reader().read_to_end(&mut bytes).ok()?;
+    let bytes = response.into_body().read_to_vec().ok()?;
 
     parse_scheme(&bytes).ok()
 }
@@ -493,18 +491,20 @@ fn try_fetch_scheme(name: &str) -> Option<Iterm2Scheme> {
 pub fn fetch_scheme(name: &str) -> Result<Iterm2Scheme, Iterm2Error> {
     let url = format!("{}/{}.itermcolors", ITERM2_REPO_URL, name);
 
-    let response = ureq::get(&url).call().map_err(|e| match e {
-        ureq::Error::Status(404, _) => Iterm2Error::NotFound(format!(
+    let response = ureq::get(&url)
+        .call()
+        .map_err(|e| Iterm2Error::NetworkError(e.to_string()))?;
+
+    if response.status() == 404 {
+        return Err(Iterm2Error::NotFound(format!(
             "Scheme '{}' not found. Browse available themes at: {}",
             name, ITERM2_GALLERY_URL
-        )),
-        _ => Iterm2Error::NetworkError(e.to_string()),
-    })?;
+        )));
+    }
 
-    let mut bytes = Vec::new();
-    response
-        .into_reader()
-        .read_to_end(&mut bytes)
+    let bytes = response
+        .into_body()
+        .read_to_vec()
         .map_err(|e| Iterm2Error::NetworkError(e.to_string()))?;
 
     parse_scheme(&bytes)
@@ -519,13 +519,14 @@ struct GitHubFile {
 
 pub fn list_available_schemes() -> Result<Vec<String>, Iterm2Error> {
     let response = ureq::get(ITERM2_API_URL)
-        .set("User-Agent", "jolt-theme-importer")
+        .header("User-Agent", "jolt-theme-importer")
         .call()
-        .map_err(|e| Iterm2Error::NetworkError(e.to_string()))?;
+        .map_err(|e: ureq::Error| Iterm2Error::NetworkError(e.to_string()))?;
 
     let body = response
-        .into_string()
-        .map_err(|e| Iterm2Error::NetworkError(e.to_string()))?;
+        .into_body()
+        .read_to_string()
+        .map_err(|e: ureq::Error| Iterm2Error::NetworkError(e.to_string()))?;
 
     let files: Vec<GitHubFile> =
         serde_json::from_str(&body).map_err(|e| Iterm2Error::ParseError(e.to_string()))?;
