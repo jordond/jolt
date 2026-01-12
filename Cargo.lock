@@ -1073,7 +1073,7 @@ checksum = "92ecc6618181def0457392ccd0ee51198e065e016d1d527a7ac1b6dc7c1f09d2"
 
 [[package]]
 name = "jolt-platform"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "color-eyre",
  "core-foundation",
@@ -1086,7 +1086,7 @@ dependencies = [
 
 [[package]]
 name = "jolt-protocol"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "chrono",
  "pretty_assertions",
@@ -1096,7 +1096,7 @@ dependencies = [
 
 [[package]]
 name = "jolt-theme"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "plist",
  "serde",
@@ -1108,7 +1108,7 @@ dependencies = [
 
 [[package]]
 name = "jolt-tui"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "chrono",
  "clap",
