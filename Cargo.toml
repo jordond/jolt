@@ -50,7 +50,7 @@ mach2 = "0.6"
 # Config/Storage
 toml = "0.9.8"
 dirs = "6"
-rusqlite = { version = "0.32", features = ["bundled"] }
+rusqlite = { version = "0.38.0", features = ["bundled"] }
 plist = "1.8.0"
 
 # Network/Other
