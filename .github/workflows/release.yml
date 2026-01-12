@@ -103,7 +103,7 @@ jobs:
         shell: bash
 
       - name: Upload binary to release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           files: |
             target/${{ matrix.target }}/release/jolt-${{ env.VERSION }}-${{ matrix.target }}
@@ -113,7 +113,7 @@ jobs:
 
       - name: Upload Homebrew archive to release
         if: matrix.homebrew_os != ''
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           files: |
             target/${{ matrix.target }}/release/jolt-${{ env.VERSION }}-${{ matrix.homebrew_os }}-${{ matrix.homebrew_arch }}.tar.gz
@@ -141,7 +141,7 @@ jobs:
           cat checksums.txt
 
       - name: Upload checksums manifest
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           files: checksums.txt
         env:
