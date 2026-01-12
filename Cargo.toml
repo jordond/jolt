@@ -63,7 +63,7 @@ jolt-theme = { path = "crates/theme", version = "1.0.0" }
 jolt-platform = { path = "crates/platform", version = "1.0.0" }
 
 # Battery (starship-battery fixes macOS issues: https://github.com/svartalf/rust-battery/issues/102)
-starship-battery = "0.10"
+starship-battery = "0.10.3"
 
 [profile.release]
 lto = true
