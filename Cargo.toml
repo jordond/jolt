@@ -21,7 +21,7 @@ chrono = { version = "0.4", features = ["serde"] }
 # Async
 tokio = { version = "1", features = ["full"] }
 tokio-stream = "0.1"
-futures = "0.3"
+futures = "0.3.31"
 
 # Error handling
 color-eyre = "0.6"
