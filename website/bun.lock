@@ -10,7 +10,7 @@
         "@fontsource/inter": "^5.2.8",
         "@fontsource/jetbrains-mono": "^5.2.8",
         "astro": "^5.16.9",
-        "sharp": "^0.34.2",
+        "sharp": "^0.34.5",
       },
       "devDependencies": {
         "@typescript-eslint/eslint-plugin": "^8.52.0",
