@@ -25,7 +25,7 @@ futures = "0.3.31"
 
 # Error handling
 color-eyre = "0.6.5"
-thiserror = "2"
+thiserror = "2.0.17"
 
 # TUI
 ratatui = { version = "0.30", features = ["crossterm"] }
