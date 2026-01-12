@@ -54,7 +54,7 @@ rusqlite = { version = "0.38.0", features = ["bundled"] }
 plist = "1.8.0"
 
 # Network/Other
-ureq = "2.12.1"
+ureq = "3.1.4"
 daemonize = "0.5"
 
 # Internal crates (version required for crates.io publishing)
