@@ -39,7 +39,7 @@ jobs:
         run: cp ../install.sh dist/install.sh
 
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v4
         with:
           path: ./website/dist
 
