@@ -51,7 +51,7 @@ mach2 = "0.6"
 toml = "0.9.8"
 dirs = "6"
 rusqlite = { version = "0.32", features = ["bundled"] }
-plist = "1"
+plist = "1.8.0"
 
 # Network/Other
 ureq = "2"
