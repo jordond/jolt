@@ -7,9 +7,10 @@ use ratatui::{
 };
 
 use crate::app::App;
+use crate::config::DataSizeUnit;
 use crate::theme::ThemeColors;
 
-use super::utils::color_for_value;
+use super::utils::{color_for_value, format_data_size};
 
 pub fn render(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) {
     let load_color = if app.system_stats.is_warmed_up() {
@@ -38,10 +39,16 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) {
         .split(inner);
 
     let (cpu_text, load_text, memory_text, uptime_text) = if app.system_stats.is_warmed_up() {
+        let data_size_unit = app.config.user_config.units.data_size;
+        let memory_text = format_memory(
+            app.system_stats.memory_used_bytes(),
+            app.system_stats.memory_total_bytes(),
+            data_size_unit,
+        );
         (
             format!("{:.0}%", app.system_stats.cpu_usage_percent()),
             app.system_stats.load_formatted(),
-            app.system_stats.memory_formatted(),
+            memory_text,
             app.system_stats.uptime_formatted(),
         )
     } else {
@@ -122,4 +129,10 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) {
     frame.render_widget(load, v_center(chunks[1]));
     frame.render_widget(memory, v_center(chunks[2]));
     frame.render_widget(uptime, v_center(chunks[3]));
+}
+
+fn format_memory(used_bytes: u64, total_bytes: u64, unit: DataSizeUnit) -> String {
+    let used = format_data_size(used_bytes, unit);
+    let total = format_data_size(total_bytes, unit);
+    format!("{}/{}", used, total)
 }
