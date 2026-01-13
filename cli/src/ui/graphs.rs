@@ -11,6 +11,8 @@ use crate::app::App;
 use crate::data::history::HistoryMetric;
 use crate::theme::ThemeColors;
 
+use super::utils::{color_for_percent, color_for_value};
+
 const MIN_WIDTH_FOR_SIDE_BY_SIDE: u16 = 80;
 const BATTERY_WARNING_THRESHOLD: f64 = 20.0;
 
@@ -79,8 +81,13 @@ fn render_temperature_chart(frame: &mut Frame, area: Rect, app: &App, theme: &Th
     let temp_data = app.history.temperature_values();
     let current_temp = app.history.latest_temperature();
 
+    let temp_color = current_temp.map_or(theme.muted, |t| color_for_value(t, 35.0, 45.0, theme));
+
     let title_line = Line::from(vec![
-        Span::styled(" Temp ", theme.warning_style().add_modifier(Modifier::BOLD)),
+        Span::styled(
+            " Temp ",
+            Style::default().fg(temp_color).add_modifier(Modifier::BOLD),
+        ),
         Span::styled(
             current_temp.map_or("--".to_string(), |t| format!("{:.1}°C", t)),
             theme.fg_style(),
@@ -90,7 +97,7 @@ fn render_temperature_chart(frame: &mut Frame, area: Rect, app: &App, theme: &Th
     let block = Block::default()
         .title(title_line)
         .borders(Borders::ALL)
-        .border_style(theme.border_style())
+        .border_style(Style::default().fg(temp_color))
         .style(Style::default().bg(theme.bg));
 
     if temp_data.is_empty() {
@@ -114,13 +121,49 @@ fn render_temperature_chart(frame: &mut Frame, area: Rect, app: &App, theme: &Th
             .data(Box::leak(grid_data.into_boxed_slice())),
     );
 
-    datasets.push(
-        Dataset::default()
-            .marker(Marker::Braille)
-            .graph_type(GraphType::Line)
-            .style(theme.warning_style())
-            .data(&temp_data),
-    );
+    let cool_points: Vec<(f64, f64)> = temp_data
+        .iter()
+        .filter(|(_, y)| *y <= 35.0)
+        .copied()
+        .collect();
+    let warm_points: Vec<(f64, f64)> = temp_data
+        .iter()
+        .filter(|(_, y)| *y > 35.0 && *y <= 45.0)
+        .copied()
+        .collect();
+    let hot_points: Vec<(f64, f64)> = temp_data
+        .iter()
+        .filter(|(_, y)| *y > 45.0)
+        .copied()
+        .collect();
+
+    if !cool_points.is_empty() {
+        datasets.push(
+            Dataset::default()
+                .marker(Marker::Braille)
+                .graph_type(GraphType::Scatter)
+                .style(theme.success_style())
+                .data(Box::leak(cool_points.into_boxed_slice())),
+        );
+    }
+    if !warm_points.is_empty() {
+        datasets.push(
+            Dataset::default()
+                .marker(Marker::Braille)
+                .graph_type(GraphType::Scatter)
+                .style(theme.warning_style())
+                .data(Box::leak(warm_points.into_boxed_slice())),
+        );
+    }
+    if !hot_points.is_empty() {
+        datasets.push(
+            Dataset::default()
+                .marker(Marker::Braille)
+                .graph_type(GraphType::Scatter)
+                .style(theme.danger_style())
+                .data(Box::leak(hot_points.into_boxed_slice())),
+        );
+    }
 
     let x_labels = x_axis_time_labels(temp_data.len(), theme);
 
@@ -152,16 +195,14 @@ fn render_temperature_chart(frame: &mut Frame, area: Rect, app: &App, theme: &Th
 fn render_single(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) {
     let is_battery = app.history.current_metric == HistoryMetric::Battery;
 
-    let current_value = if is_battery {
-        app.history
-            .points
-            .back()
-            .map(|p| format!("{:.0}%", p.battery_percent))
+    let (current_value, graph_color) = if is_battery {
+        let value = app.history.points.back().map(|p| p.battery_percent);
+        let color = value.map_or(theme.muted, |v| color_for_percent(v, 50.0, 20.0, theme));
+        (value.map(|v| format!("{:.0}%", v)), color)
     } else {
-        app.history
-            .points
-            .back()
-            .map(|p| format!("{:.1}W", p.power_watts))
+        let value = app.history.points.back().map(|p| p.power_watts);
+        let color = value.map_or(theme.muted, |v| color_for_value(v, 8.0, 15.0, theme));
+        (value.map(|v| format!("{:.1}W", v)), color)
     };
 
     let avg_value = if is_battery {
@@ -189,7 +230,9 @@ fn render_single(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) 
     let title_line = Line::from(vec![
         Span::styled(
             format!(" {} ", app.history.metric_label()),
-            theme.accent_style().add_modifier(Modifier::BOLD),
+            Style::default()
+                .fg(graph_color)
+                .add_modifier(Modifier::BOLD),
         ),
         Span::styled(current_value.unwrap_or_default(), theme.fg_style()),
         Span::styled(" ", Style::default()),
@@ -200,7 +243,7 @@ fn render_single(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) 
     let block = Block::default()
         .title(title_line)
         .borders(Borders::ALL)
-        .border_style(theme.border_style())
+        .border_style(Style::default().fg(graph_color))
         .style(Style::default().bg(theme.bg));
 
     let data = app.history.current_values();
@@ -328,10 +371,14 @@ fn render_merged(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) 
         .map(|p| p.battery_percent)
         .unwrap_or(0.0);
 
+    let graph_color = color_for_value(power_val, 8.0, 15.0, theme);
+
     let title_line = Line::from(vec![
         Span::styled(
             " Combined ",
-            theme.accent_style().add_modifier(Modifier::BOLD),
+            Style::default()
+                .fg(graph_color)
+                .add_modifier(Modifier::BOLD),
         ),
         Span::styled(format!("{:.1}W", power_val), theme.graph_style()),
         Span::styled(" │ ", theme.border_style()),
@@ -345,7 +392,7 @@ fn render_merged(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) 
     let block = Block::default()
         .title(title_line)
         .borders(Borders::ALL)
-        .border_style(theme.border_style())
+        .border_style(Style::default().fg(graph_color))
         .style(Style::default().bg(theme.bg));
 
     let power_data = app.history.power_values();
@@ -465,9 +512,9 @@ fn render_mini_chart(
     line_color: Color,
 ) {
     let block = Block::default()
-        .title(title)
+        .title(Span::styled(title, Style::default().fg(line_color)))
         .borders(Borders::ALL)
-        .border_style(theme.border_style())
+        .border_style(Style::default().fg(line_color))
         .style(Style::default().bg(theme.bg));
 
     if data.is_empty() {

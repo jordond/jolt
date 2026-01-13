@@ -9,11 +9,19 @@ use ratatui::{
 use crate::app::App;
 use crate::theme::ThemeColors;
 
+use super::utils::color_for_value;
+
 pub fn render(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) {
+    let power_color = if app.power.is_warmed_up() {
+        color_for_value(app.power.total_power_watts(), 8.0, 15.0, theme)
+    } else {
+        theme.muted
+    };
+
     let block = Block::default()
-        .title(" Power ")
+        .title(Span::styled(" Power ", Style::default().fg(power_color)))
         .borders(Borders::ALL)
-        .border_style(theme.border_style())
+        .border_style(Style::default().fg(power_color))
         .style(Style::default().bg(theme.bg));
 
     let inner = block.inner(area);
@@ -36,16 +44,6 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) {
         )
     } else {
         ("—".to_string(), "—".to_string(), "—".to_string())
-    };
-
-    let power_color = if !app.power.is_warmed_up() {
-        theme.muted
-    } else if app.power.total_power_watts() > 15.0 {
-        theme.danger
-    } else if app.power.total_power_watts() > 8.0 {
-        theme.warning
-    } else {
-        theme.success
     };
 
     let total = Paragraph::new(Line::from(vec![

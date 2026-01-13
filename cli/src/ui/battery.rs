@@ -24,10 +24,15 @@ fn power_mode_icon(mode: PowerMode) -> &'static str {
 }
 
 pub fn render(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) {
+    let battery_color = color_for_percent(app.battery.charge_percent(), 50.0, 20.0, theme);
+
     let block = Block::default()
-        .title(" Battery ")
+        .title(Span::styled(
+            " Battery ",
+            Style::default().fg(battery_color),
+        ))
         .borders(Borders::ALL)
-        .border_style(theme.border_style())
+        .border_style(Style::default().fg(battery_color))
         .style(Style::default().bg(theme.bg));
 
     let inner = block.inner(area);
@@ -107,20 +112,31 @@ fn render_battery_info_card(frame: &mut Frame, area: Rect, app: &App, theme: &Th
             .split(chunk)[1]
     };
 
+    let status_color = match app.battery.state() {
+        ChargeState::Charging => theme.accent,
+        ChargeState::Full => theme.success,
+        ChargeState::Discharging => {
+            color_for_percent(app.battery.charge_percent(), 50.0, 20.0, theme)
+        }
+        ChargeState::NotCharging | ChargeState::Unknown => theme.muted,
+    };
+
+    let health_color = color_for_percent(app.battery.health_percent(), 79.0, 49.0, theme);
+
     let left_block = Block::default()
-        .title(" Status ")
+        .title(Span::styled(" Status ", Style::default().fg(status_color)))
         .title_alignment(Alignment::Right)
         .borders(Borders::ALL)
-        .border_style(theme.border_style())
+        .border_style(Style::default().fg(status_color))
         .padding(Padding::horizontal(1))
         .style(Style::default().bg(theme.bg));
     let left_inner = left_block.inner(chunks[0]);
     frame.render_widget(left_block, chunks[0]);
 
     let right_block = Block::default()
-        .title(" Health ")
+        .title(Span::styled(" Details ", Style::default().fg(health_color)))
         .borders(Borders::ALL)
-        .border_style(theme.border_style())
+        .border_style(Style::default().fg(health_color))
         .padding(Padding::horizontal(1))
         .style(Style::default().bg(theme.bg));
     let right_inner = right_block.inner(chunks[1]);
@@ -187,7 +203,7 @@ fn render_battery_info_card(frame: &mut Frame, area: Rect, app: &App, theme: &Th
         app.battery.discharge_watts().map(|w| format!("{:.1}W", w))
     } {
         left_spans.push(Span::styled("  ", Style::default()));
-        left_spans.push(Span::styled("Power: ", theme.muted_style()));
+        left_spans.push(Span::styled("Input Power: ", theme.muted_style()));
         left_spans.push(Span::styled(power, theme.accent_style()));
     }
 
@@ -225,7 +241,11 @@ fn render_battery_info_card(frame: &mut Frame, area: Rect, app: &App, theme: &Th
     right_spans.push(Span::styled("  ", Style::default()));
     right_spans.push(Span::styled("Energy: ", theme.muted_style()));
     right_spans.push(Span::styled(
-        format!("{:.1}Wh", app.battery.energy_wh()),
+        format!(
+            "{:.1}/{:.1}Wh",
+            app.battery.energy_wh(),
+            app.battery.max_capacity_wh()
+        ),
         theme.fg_style(),
     ));
 

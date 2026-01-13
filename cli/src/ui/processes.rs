@@ -75,11 +75,11 @@ pub fn render(frame: &mut Frame, area: Rect, app: &mut App, theme: &ThemeColors)
     let border_color = if app.selection_mode {
         theme.accent
     } else {
-        theme.border
+        theme.muted
     };
 
     let block = Block::default()
-        .title(title)
+        .title(Span::styled(title, Style::default().fg(border_color)))
         .borders(Borders::ALL)
         .border_style(Style::default().fg(border_color))
         .style(Style::default().bg(theme.bg));

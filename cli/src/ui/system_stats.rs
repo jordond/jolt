@@ -9,11 +9,19 @@ use ratatui::{
 use crate::app::App;
 use crate::theme::ThemeColors;
 
+use super::utils::color_for_value;
+
 pub fn render(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) {
+    let load_color = if app.system_stats.is_warmed_up() {
+        color_for_value(app.system_stats.load_one(), 2.0, 4.0, theme)
+    } else {
+        theme.muted
+    };
+
     let block = Block::default()
-        .title(" System ")
+        .title(Span::styled(" System ", Style::default().fg(load_color)))
         .borders(Borders::ALL)
-        .border_style(theme.border_style())
+        .border_style(Style::default().fg(load_color))
         .style(Style::default().bg(theme.bg));
 
     let inner = block.inner(area);
@@ -46,27 +54,7 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) {
     };
 
     let cpu_color = if app.system_stats.is_warmed_up() {
-        let cpu = app.system_stats.cpu_usage_percent();
-        if cpu > 80.0 {
-            theme.danger
-        } else if cpu > 60.0 {
-            theme.warning
-        } else {
-            theme.success
-        }
-    } else {
-        theme.muted
-    };
-
-    let load_color = if app.system_stats.is_warmed_up() {
-        let load = app.system_stats.load_one();
-        if load > 4.0 {
-            theme.danger
-        } else if load > 2.0 {
-            theme.warning
-        } else {
-            theme.success
-        }
+        color_for_value(app.system_stats.cpu_usage_percent(), 60.0, 80.0, theme)
     } else {
         theme.muted
     };
@@ -75,17 +63,11 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) {
         let used = app.system_stats.memory_used_gb();
         let total = app.system_stats.memory_total_gb();
         let percent = if total > 0.0 {
-            used / total * 100.0
+            (used / total * 100.0) as f32
         } else {
             0.0
         };
-        if percent > 80.0 {
-            theme.danger
-        } else if percent > 60.0 {
-            theme.warning
-        } else {
-            theme.success
-        }
+        color_for_value(percent, 60.0, 80.0, theme)
     } else {
         theme.muted
     };

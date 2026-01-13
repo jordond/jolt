@@ -10,7 +10,7 @@ use ratatui::{
 use crate::app::App;
 use crate::theme::ThemeColors;
 
-use super::utils::{centered_rect, color_for_percent};
+use super::utils::{centered_rect, color_for_percent, color_for_value};
 
 fn text_gauge(percent: f32, width: usize, color: Color) -> Span<'static> {
     let filled = ((percent / 100.0) * width as f32) as usize;
@@ -215,10 +215,15 @@ fn render_daily_soc(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColor
 }
 
 fn render_temperature_chart(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) {
+    let border_color = app
+        .battery
+        .temperature_c()
+        .map_or(theme.border, |t| color_for_value(t, 35.0, 45.0, theme));
+
     let block = Block::default()
         .title(" Temperature ")
         .borders(Borders::ALL)
-        .border_style(theme.border_style())
+        .border_style(Style::default().fg(border_color))
         .style(Style::default().bg(theme.dialog_bg));
 
     let data = app.history.temperature_values();
@@ -231,11 +236,42 @@ fn render_temperature_chart(frame: &mut Frame, area: Rect, app: &App, theme: &Th
     let (min_y, max_y) = app.history.temperature_range();
     let max_x = data.len().max(60) as f64;
 
-    let dataset = Dataset::default()
-        .marker(Marker::Braille)
-        .graph_type(GraphType::Line)
-        .style(theme.warning_style())
-        .data(&data);
+    let cool_points: Vec<(f64, f64)> = data.iter().filter(|(_, y)| *y <= 35.0).copied().collect();
+    let warm_points: Vec<(f64, f64)> = data
+        .iter()
+        .filter(|(_, y)| *y > 35.0 && *y <= 45.0)
+        .copied()
+        .collect();
+    let hot_points: Vec<(f64, f64)> = data.iter().filter(|(_, y)| *y > 45.0).copied().collect();
+
+    let mut datasets = Vec::new();
+    if !cool_points.is_empty() {
+        datasets.push(
+            Dataset::default()
+                .marker(Marker::Braille)
+                .graph_type(GraphType::Scatter)
+                .style(theme.success_style())
+                .data(Box::leak(cool_points.into_boxed_slice())),
+        );
+    }
+    if !warm_points.is_empty() {
+        datasets.push(
+            Dataset::default()
+                .marker(Marker::Braille)
+                .graph_type(GraphType::Scatter)
+                .style(theme.warning_style())
+                .data(Box::leak(warm_points.into_boxed_slice())),
+        );
+    }
+    if !hot_points.is_empty() {
+        datasets.push(
+            Dataset::default()
+                .marker(Marker::Braille)
+                .graph_type(GraphType::Scatter)
+                .style(theme.danger_style())
+                .data(Box::leak(hot_points.into_boxed_slice())),
+        );
+    }
 
     let y_labels = vec![
         Span::styled(format!("{:.0}°", min_y), theme.muted_style()),
@@ -251,7 +287,7 @@ fn render_temperature_chart(frame: &mut Frame, area: Rect, app: &App, theme: &Th
         .bounds([min_y, max_y])
         .labels(y_labels);
 
-    let chart = Chart::new(vec![dataset])
+    let chart = Chart::new(datasets)
         .block(block)
         .x_axis(x_axis)
         .y_axis(y_axis)

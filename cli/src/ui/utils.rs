@@ -23,11 +23,22 @@ pub fn centered_rect_percent(area: Rect, width_percent: u16, height_percent: u16
     Rect::new(x, y, width, height)
 }
 
-/// Returns success/warning/danger color based on percent vs thresholds.
+/// Returns success/warning/danger color based on percent vs thresholds (higher is better).
 pub fn color_for_percent(percent: f32, high: f32, low: f32, theme: &ThemeColors) -> Color {
     if percent > high {
         theme.success
     } else if percent > low {
+        theme.warning
+    } else {
+        theme.danger
+    }
+}
+
+/// Returns success/warning/danger color based on value vs thresholds (lower is better).
+pub fn color_for_value(value: f32, low: f32, high: f32, theme: &ThemeColors) -> Color {
+    if value <= low {
+        theme.success
+    } else if value <= high {
         theme.warning
     } else {
         theme.danger
