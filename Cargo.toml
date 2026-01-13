@@ -58,7 +58,7 @@ ureq = "3.1.4"
 daemonize = "0.5"
 
 # Formatting
-bytesize = "2.3"
+bytesize = "2.3.1"
 humantime = "2.1"
 
 # Internal crates (version required for crates.io publishing)
