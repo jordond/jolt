@@ -31,11 +31,11 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) {
     let (total_power, cpu_power, gpu_power) = if app.power.is_warmed_up() {
         (
             format!("{:.1}W", app.power.total_power_watts()),
-            format!("CPU: {:.1}W", app.power.cpu_power_watts()),
-            format!("GPU: {:.1}W", app.power.gpu_power_watts()),
+            format!("{:.1}W", app.power.cpu_power_watts()),
+            format!("{:.1}W", app.power.gpu_power_watts()),
         )
     } else {
-        ("—".to_string(), "CPU: —".to_string(), "GPU: —".to_string())
+        ("—".to_string(), "—".to_string(), "—".to_string())
     };
 
     let power_color = if !app.power.is_warmed_up() {
@@ -59,16 +59,16 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) {
     ]))
     .centered();
 
-    let cpu = Paragraph::new(Line::from(vec![Span::styled(
-        cpu_power,
-        theme.accent_style(),
-    )]))
+    let cpu = Paragraph::new(Line::from(vec![
+        Span::styled("CPU: ", theme.muted_style()),
+        Span::styled(cpu_power, theme.accent_style()),
+    ]))
     .centered();
 
-    let gpu = Paragraph::new(Line::from(vec![Span::styled(
-        gpu_power,
-        theme.accent_secondary_style(),
-    )]))
+    let gpu = Paragraph::new(Line::from(vec![
+        Span::styled("GPU: ", theme.muted_style()),
+        Span::styled(gpu_power, theme.accent_secondary_style()),
+    ]))
     .centered();
 
     let v_center = |chunk: Rect| {

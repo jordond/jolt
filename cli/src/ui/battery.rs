@@ -1,8 +1,8 @@
 use ratatui::{
-    layout::{Constraint, Direction, Layout, Rect},
+    layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
     text::{Line, Span},
-    widgets::{Block, Borders, Gauge, Paragraph},
+    widgets::{Block, Borders, Gauge, Padding, Paragraph},
     Frame,
 };
 
@@ -37,14 +37,18 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) {
         return;
     }
 
-    let info_card_height = if inner.height >= 4 { 4 } else { 0 };
-    let gauge_height = inner.height.saturating_sub(info_card_height);
+    let spacer_height = 1;
+    let info_card_height = if inner.height >= 5 { 3 } else { 0 };
+    let gauge_height = inner
+        .height
+        .saturating_sub(spacer_height + info_card_height);
 
     if gauge_height > 0 {
         let chunks = Layout::default()
             .direction(Direction::Vertical)
             .constraints([
                 Constraint::Length(gauge_height),
+                Constraint::Length(spacer_height),
                 Constraint::Length(info_card_height),
             ])
             .split(inner);
@@ -52,7 +56,7 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) {
         render_battery_gauge(frame, chunks[0], app, theme);
 
         if info_card_height > 0 {
-            render_battery_info_card(frame, chunks[1], app, theme);
+            render_battery_info_card(frame, chunks[2], app, theme);
         }
     }
 }
@@ -87,7 +91,40 @@ fn render_battery_info_card(frame: &mut Frame, area: Rect, app: &App, theme: &Th
         return;
     }
 
-    let inner = area;
+    let chunks = Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints([Constraint::Ratio(1, 2), Constraint::Ratio(1, 2)])
+        .split(area);
+
+    let v_center = |chunk: Rect| {
+        Layout::default()
+            .direction(Direction::Vertical)
+            .constraints([
+                Constraint::Min(0),
+                Constraint::Length(1),
+                Constraint::Min(0),
+            ])
+            .split(chunk)[1]
+    };
+
+    let left_block = Block::default()
+        .title(" Status ")
+        .title_alignment(Alignment::Right)
+        .borders(Borders::ALL)
+        .border_style(theme.border_style())
+        .padding(Padding::horizontal(1))
+        .style(Style::default().bg(theme.bg));
+    let left_inner = left_block.inner(chunks[0]);
+    frame.render_widget(left_block, chunks[0]);
+
+    let right_block = Block::default()
+        .title(" Health ")
+        .borders(Borders::ALL)
+        .border_style(theme.border_style())
+        .padding(Padding::horizontal(1))
+        .style(Style::default().bg(theme.bg));
+    let right_inner = right_block.inner(chunks[1]);
+    frame.render_widget(right_block, chunks[1]);
 
     let state_icon = match app.battery.state() {
         ChargeState::Charging => "⚡",
@@ -99,32 +136,48 @@ fn render_battery_info_card(frame: &mut Frame, area: Rect, app: &App, theme: &Th
 
     let (time_label, time_value) = match app.battery.state() {
         ChargeState::Charging => (
-            "Time to full:",
+            "Full in",
             app.battery
                 .time_remaining_formatted()
-                .unwrap_or_else(|| "Calculating...".to_string()),
+                .unwrap_or_else(|| "—".to_string()),
         ),
         ChargeState::Discharging => (
-            "Runtime:",
+            "Runtime",
             app.battery
                 .time_remaining_formatted()
-                .unwrap_or_else(|| "Calculating...".to_string()),
+                .unwrap_or_else(|| "—".to_string()),
         ),
-        ChargeState::Full => ("Status:", "Charged".to_string()),
-        ChargeState::NotCharging => ("Status:", "Not charging".to_string()),
-        ChargeState::Unknown => ("Status:", "—".to_string()),
+        ChargeState::Full => ("", "Charged".to_string()),
+        ChargeState::NotCharging => ("", "Not charging".to_string()),
+        ChargeState::Unknown => ("", "—".to_string()),
     };
 
-    let forecast_info: Option<(String, bool)> = if app.battery.state() == ChargeState::Discharging {
-        Some(match app.forecast.formatted() {
-            Some(f) => (f, true),
-            None => ("Calculating...".to_string(), false),
-        })
-    } else {
-        None
-    };
+    let mut left_spans = vec![
+        Span::styled(format!("{} ", state_icon), theme.accent_style()),
+        Span::styled(
+            app.battery.state_label(),
+            theme.fg_style().add_modifier(Modifier::BOLD),
+        ),
+    ];
 
-    let power_text = if app.battery.is_charging() {
+    if !time_label.is_empty() {
+        left_spans.push(Span::styled("  ", Style::default()));
+        left_spans.push(Span::styled(
+            format!("{}: ", time_label),
+            theme.muted_style(),
+        ));
+        left_spans.push(Span::styled(&time_value, theme.fg_style()));
+    }
+
+    if app.battery.state() == ChargeState::Discharging {
+        if let Some(forecast) = app.forecast.formatted() {
+            left_spans.push(Span::styled("  ", Style::default()));
+            left_spans.push(Span::styled("Forecast: ", theme.muted_style()));
+            left_spans.push(Span::styled(forecast, theme.success_style()));
+        }
+    }
+
+    if let Some(power) = if app.battery.is_charging() {
         app.battery.charging_watts().map(|w| {
             app.battery
                 .charger_watts()
@@ -132,207 +185,60 @@ fn render_battery_info_card(frame: &mut Frame, area: Rect, app: &App, theme: &Th
         })
     } else {
         app.battery.discharge_watts().map(|w| format!("{:.1}W", w))
-    };
+    } {
+        left_spans.push(Span::styled("  ", Style::default()));
+        left_spans.push(Span::styled("Power: ", theme.muted_style()));
+        left_spans.push(Span::styled(power, theme.accent_style()));
+    }
+
+    let left = Paragraph::new(Line::from(left_spans)).alignment(Alignment::Right);
+    frame.render_widget(left, v_center(left_inner));
 
     let health_color = color_for_percent(app.battery.health_percent(), 79.0, 49.0, theme);
-
     let cycles_text = app
         .battery
         .cycle_count()
         .map_or("—".to_string(), |c| c.to_string());
 
-    let power_mode_text = if app.power.power_mode() != PowerMode::Unknown {
-        let icon = power_mode_icon(app.power.power_mode());
-        Some(format!("{} {}", icon, app.power.power_mode_label()))
-    } else {
-        None
-    };
-
-    let single_line = build_single_line(
-        state_icon,
-        app.battery.state_label(),
-        time_label,
-        &time_value,
-        forecast_info.as_ref().map(|(t, v)| (t.as_str(), *v)),
-        power_text.as_deref(),
-        app.battery.health_percent(),
-        &cycles_text,
-        app.battery.max_capacity_wh(),
-        app.battery.design_capacity_wh(),
-        power_mode_text.as_deref(),
-        theme,
-        health_color,
-    );
-
-    let single_line_width: usize = single_line.spans.iter().map(|s| s.width()).sum();
-
-    if inner.width as usize >= single_line_width || inner.height < 3 {
-        let centered = Layout::default()
-            .direction(Direction::Vertical)
-            .constraints([
-                Constraint::Min(0),
-                Constraint::Length(1),
-                Constraint::Min(0),
-            ])
-            .split(inner)[1];
-        frame.render_widget(Paragraph::new(single_line).centered(), centered);
-    } else {
-        let rows = Layout::default()
-            .direction(Direction::Vertical)
-            .constraints([
-                Constraint::Length(1),
-                Constraint::Length(1),
-                Constraint::Length(1),
-            ])
-            .split(inner);
-
-        let mut row1_spans = vec![
-            Span::styled(format!("{} ", state_icon), theme.accent_style()),
-            Span::styled(
-                app.battery.state_label(),
-                theme.fg_style().add_modifier(Modifier::BOLD),
-            ),
-            Span::styled("  │  ", theme.border_style()),
-            Span::styled(format!("{} ", time_label), theme.muted_style()),
-            Span::styled(&time_value, theme.fg_style()),
-        ];
-
-        if let Some((ref text, has_value)) = forecast_info {
-            row1_spans.push(Span::styled("  │  ", theme.border_style()));
-            row1_spans.push(Span::styled("Forecast: ", theme.muted_style()));
-            let color = if has_value {
-                theme.success
-            } else {
-                theme.muted
-            };
-            row1_spans.push(Span::styled(text, Style::default().fg(color)));
-        }
-
-        row1_spans.push(Span::styled(
-            power_text.map_or(String::new(), |p| format!("  │  {}", p)),
-            theme.accent_style(),
-        ));
-
-        let row1 = Line::from(row1_spans);
-
-        let mut row2_spans = vec![
-            Span::styled("Health: ", theme.muted_style()),
-            Span::styled(
-                format!("{:.0}%", app.battery.health_percent()),
-                Style::default().fg(health_color),
-            ),
-            Span::styled(
-                format!(
-                    " ({:.1}/{:.1}Wh)",
-                    app.battery.max_capacity_wh(),
-                    app.battery.design_capacity_wh()
-                ),
-                theme.muted_style(),
-            ),
-            Span::styled("  │  ", theme.border_style()),
-            Span::styled("Cycles: ", theme.muted_style()),
-            Span::styled(&cycles_text, theme.fg_style()),
-        ];
-
-        if let Some(temp) = app.battery.temperature_c() {
-            row2_spans.push(Span::styled("  │  ", theme.border_style()));
-            row2_spans.push(Span::styled(
-                format!("{:.1}°C", temp),
-                theme.warning_style(),
-            ));
-        }
-
-        row2_spans.push(Span::styled("  │  ", theme.border_style()));
-        row2_spans.push(Span::styled(
-            format!("{:.1}Wh", app.battery.energy_wh()),
-            theme.fg_style(),
-        ));
-
-        if let (Some(min), Some(max)) = (app.battery.daily_min_soc(), app.battery.daily_max_soc()) {
-            row2_spans.push(Span::styled("  │  ", theme.border_style()));
-            row2_spans.push(Span::styled(
-                format!("{:.0}-{:.0}%", min, max),
-                theme.muted_style(),
-            ));
-        }
-
-        if app.power.power_mode() != PowerMode::Unknown {
-            let mode_icon = power_mode_icon(app.power.power_mode());
-            row2_spans.push(Span::styled("  │  ", theme.border_style()));
-            row2_spans.push(Span::styled("Mode: ", theme.muted_style()));
-            row2_spans.push(Span::styled(
-                format!("{} {}", mode_icon, app.power.power_mode_label()),
-                theme.fg_style(),
-            ));
-        }
-
-        let row2 = Line::from(row2_spans);
-
-        frame.render_widget(Paragraph::new(row1).centered(), rows[0]);
-        frame.render_widget(Paragraph::new(Line::default()), rows[1]);
-        frame.render_widget(Paragraph::new(row2).centered(), rows[2]);
-    }
-}
-
-#[allow(clippy::too_many_arguments)]
-fn build_single_line<'a>(
-    icon: &'a str,
-    state: &'a str,
-    time_label: &'a str,
-    time_value: &'a str,
-    forecast: Option<(&'a str, bool)>,
-    power: Option<&'a str>,
-    health: f32,
-    cycles: &'a str,
-    capacity: f32,
-    design_capacity: f32,
-    power_mode: Option<&'a str>,
-    theme: &ThemeColors,
-    health_color: ratatui::style::Color,
-) -> Line<'a> {
-    let mut spans = vec![
-        Span::styled(format!("{} ", icon), theme.accent_style()),
-        Span::styled(state, theme.fg_style().add_modifier(Modifier::BOLD)),
-        Span::styled("  │  ", theme.border_style()),
-        Span::styled(format!("{} ", time_label), theme.muted_style()),
-        Span::styled(time_value, theme.fg_style()),
+    let mut right_spans = vec![
+        Span::styled("Health: ", theme.muted_style()),
+        Span::styled(
+            format!("{:.0}%", app.battery.health_percent()),
+            Style::default()
+                .fg(health_color)
+                .add_modifier(Modifier::BOLD),
+        ),
+        Span::styled("  ", Style::default()),
+        Span::styled("Cycles: ", theme.muted_style()),
+        Span::styled(cycles_text, theme.fg_style()),
     ];
 
-    if let Some((text, has_value)) = forecast {
-        spans.push(Span::styled("  │  ", theme.border_style()));
-        spans.push(Span::styled("Forecast: ", theme.muted_style()));
-        let color = if has_value {
-            theme.success
-        } else {
-            theme.muted
-        };
-        spans.push(Span::styled(text, Style::default().fg(color)));
+    if let Some(temp) = app.battery.temperature_c() {
+        right_spans.push(Span::styled("  ", Style::default()));
+        right_spans.push(Span::styled("Temp: ", theme.muted_style()));
+        right_spans.push(Span::styled(
+            format!("{:.1}°C", temp),
+            theme.warning_style(),
+        ));
     }
 
-    if let Some(p) = power {
-        spans.push(Span::styled(format!("  │  {}", p), theme.accent_style()));
+    right_spans.push(Span::styled("  ", Style::default()));
+    right_spans.push(Span::styled("Energy: ", theme.muted_style()));
+    right_spans.push(Span::styled(
+        format!("{:.1}Wh", app.battery.energy_wh()),
+        theme.fg_style(),
+    ));
+
+    if app.power.power_mode() != PowerMode::Unknown {
+        let mode_icon = power_mode_icon(app.power.power_mode());
+        right_spans.push(Span::styled("  ", Style::default()));
+        right_spans.push(Span::styled("Mode: ", theme.muted_style()));
+        right_spans.push(Span::styled(
+            format!("{} {}", mode_icon, app.power.power_mode_label()),
+            theme.fg_style(),
+        ));
     }
 
-    spans.extend([
-        Span::styled("  │  ", theme.border_style()),
-        Span::styled(
-            format!("health {:.0}%", health),
-            Style::default().fg(health_color),
-        ),
-        Span::styled(
-            format!(" ({:.0}/{:.0}Wh)", capacity, design_capacity),
-            theme.muted_style(),
-        ),
-        Span::styled("  │  ", theme.border_style()),
-        Span::styled(cycles, theme.fg_style()),
-        Span::styled(" cycles", theme.muted_style()),
-    ]);
-
-    if let Some(mode) = power_mode {
-        spans.push(Span::styled("  │  ", theme.border_style()));
-        spans.push(Span::styled("Mode: ", theme.muted_style()));
-        spans.push(Span::styled(mode, theme.fg_style()));
-    }
-
-    Line::from(spans)
+    let right = Paragraph::new(Line::from(right_spans)).alignment(Alignment::Left);
+    frame.render_widget(right, v_center(right_inner));
 }

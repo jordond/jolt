@@ -24,7 +24,7 @@ pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 struct LayoutSizes {
     battery: u16,
-    power_system: u16,
+    system: u16,
     graph: u16,
     processes_min: u16,
 }
@@ -33,19 +33,19 @@ impl LayoutSizes {
     fn calculate(content_height: u16, show_graph: bool) -> Self {
         const BATTERY_MIN: u16 = 10;
         const BATTERY_PREFERRED: u16 = 12;
-        const POWER_SYSTEM_MIN: u16 = 3;
+        const SYSTEM_MIN: u16 = 3;
         const GRAPH_MIN: u16 = 8;
         const GRAPH_PREFERRED: u16 = 10;
         const PROCESSES_MIN: u16 = 6;
 
         let graph_size = if show_graph { GRAPH_MIN } else { 0 };
         let graph_preferred = if show_graph { GRAPH_PREFERRED } else { 0 };
-        let min_total = BATTERY_MIN + POWER_SYSTEM_MIN + PROCESSES_MIN + graph_size;
+        let min_total = BATTERY_MIN + SYSTEM_MIN + PROCESSES_MIN + graph_size;
 
         if content_height < min_total {
             let available = content_height;
-            let power_system = POWER_SYSTEM_MIN.min(available);
-            let remaining = available.saturating_sub(power_system);
+            let system = SYSTEM_MIN.min(available);
+            let remaining = available.saturating_sub(system);
 
             let battery = BATTERY_MIN.min(remaining).max(5);
             let remaining = remaining.saturating_sub(battery);
@@ -59,7 +59,7 @@ impl LayoutSizes {
 
             Self {
                 battery,
-                power_system,
+                system,
                 graph,
                 processes_min: remaining.max(3),
             }
@@ -77,7 +77,7 @@ impl LayoutSizes {
 
             Self {
                 battery,
-                power_system: POWER_SYSTEM_MIN,
+                system: SYSTEM_MIN,
                 graph,
                 processes_min: PROCESSES_MIN,
             }
@@ -109,14 +109,14 @@ pub fn render(frame: &mut Frame, app: &mut App) {
     let constraints = if sizes.graph > 0 {
         vec![
             Constraint::Length(sizes.battery),
-            Constraint::Length(sizes.power_system),
+            Constraint::Length(sizes.system),
             Constraint::Min(sizes.processes_min),
             Constraint::Length(sizes.graph),
         ]
     } else {
         vec![
             Constraint::Length(sizes.battery),
-            Constraint::Length(sizes.power_system),
+            Constraint::Length(sizes.system),
             Constraint::Min(sizes.processes_min),
         ]
     };
@@ -130,7 +130,7 @@ pub fn render(frame: &mut Frame, app: &mut App) {
 
     let power_system_chunks = Layout::default()
         .direction(Direction::Horizontal)
-        .constraints([Constraint::Ratio(1, 3), Constraint::Ratio(2, 3)])
+        .constraints([Constraint::Ratio(1, 2), Constraint::Ratio(1, 2)])
         .split(chunks[1]);
     power::render(frame, power_system_chunks[0], app, &theme);
     system_stats::render(frame, power_system_chunks[1], app, &theme);
