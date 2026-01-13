@@ -14,7 +14,9 @@ use crate::app::{App, HistoryPeriod};
 use crate::input::keys;
 use crate::theme::ThemeColors;
 
-use super::utils::centered_rect_percent;
+use super::utils::{
+    centered_rect_percent, energy_unit_label, format_energy, format_energy_compact,
+};
 
 pub fn render(frame: &mut Frame, app: &App, theme: &ThemeColors) {
     let area = centered_rect_percent(frame.area(), 90, 85);
@@ -289,10 +291,11 @@ fn render_sparklines(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColo
 
     frame.render_widget(power_sparkline, chunks[0]);
 
+    let energy_unit = app.config.user_config.units.energy;
     let energy_label = if app.history_period == HistoryPeriod::Today {
-        " Battery % "
+        " Battery % ".to_string()
     } else {
-        " Energy (Wh) "
+        format!(" Energy ({}) ", energy_unit_label(energy_unit))
     };
 
     let energy_block = Block::default()
@@ -355,10 +358,14 @@ fn render_summary_stats(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeC
         .map(|d| d.charging_hours)
         .sum();
 
+    let energy_unit = app.config.user_config.units.energy;
     let stats = vec![
         Line::from(vec![
             Span::styled("Total Energy:  ", theme.muted_style()),
-            Span::styled(format!("{:.1} Wh", total_energy), theme.accent_style()),
+            Span::styled(
+                format_energy(total_energy, energy_unit),
+                theme.accent_style(),
+            ),
         ]),
         Line::from(vec![
             Span::styled("Avg Power:     ", theme.muted_style()),
@@ -422,7 +429,9 @@ fn render_top_processes(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeC
         .saturating_sub(fixed_width)
         .max(HISTORY_COL_NAME_MIN) as usize;
 
-    let header = Row::new(vec!["Process", "Avg W", "Total Wh", "CPU%"])
+    let energy_unit = app.config.user_config.units.energy;
+    let energy_header = format!("Total {}", energy_unit_label(energy_unit));
+    let header = Row::new(vec!["Process", "Avg W", &energy_header, "CPU%"])
         .style(
             Style::default()
                 .fg(theme.accent)
@@ -446,7 +455,7 @@ fn render_top_processes(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeC
             Row::new(vec![
                 truncate_name(&p.process_name, name_width),
                 format!("{:.1}", p.avg_power),
-                format!("{:.1}", p.total_energy_wh),
+                format_energy_compact(p.total_energy_wh, energy_unit),
                 format!("{:.0}", p.avg_cpu),
             ])
             .style(Style::default().fg(power_color))

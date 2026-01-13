@@ -11,7 +11,7 @@ use crate::data::battery::ChargeState;
 use crate::data::power::PowerMode;
 use crate::theme::ThemeColors;
 
-use super::utils::color_for_percent;
+use super::utils::{color_for_percent, format_energy_ratio, format_temperature};
 
 /// Returns the icon for the given power mode.
 fn power_mode_icon(mode: PowerMode) -> &'static str {
@@ -230,21 +230,23 @@ fn render_battery_info_card(frame: &mut Frame, area: Rect, app: &App, theme: &Th
     ];
 
     if let Some(temp) = app.battery.temperature_c() {
+        let temp_unit = app.config.user_config.units.temperature;
         right_spans.push(Span::styled("  ", Style::default()));
         right_spans.push(Span::styled("Temp: ", theme.muted_style()));
         right_spans.push(Span::styled(
-            format!("{:.1}°C", temp),
+            format_temperature(temp, temp_unit),
             theme.warning_style(),
         ));
     }
 
+    let energy_unit = app.config.user_config.units.energy;
     right_spans.push(Span::styled("  ", Style::default()));
     right_spans.push(Span::styled("Energy: ", theme.muted_style()));
     right_spans.push(Span::styled(
-        format!(
-            "{:.1}/{:.1}Wh",
+        format_energy_ratio(
             app.battery.energy_wh(),
-            app.battery.max_capacity_wh()
+            app.battery.max_capacity_wh(),
+            energy_unit,
         ),
         theme.fg_style(),
     ));

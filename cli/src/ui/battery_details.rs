@@ -10,7 +10,10 @@ use ratatui::{
 use crate::app::App;
 use crate::theme::ThemeColors;
 
-use super::utils::{centered_rect, color_for_percent, color_for_value};
+use super::utils::{
+    centered_rect, color_for_percent, color_for_value, convert_temperature, format_energy,
+    format_temperature, format_temperature_short,
+};
 
 fn text_gauge(percent: f32, width: usize, color: Color) -> Span<'static> {
     let filled = ((percent / 100.0) * width as f32) as usize;
@@ -97,6 +100,7 @@ fn render_charge_info(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeCol
     let energy = app.battery.energy_wh();
     let max_capacity = app.battery.max_capacity_wh();
     let state = app.battery.state_label();
+    let energy_unit = app.config.user_config.units.energy;
 
     let percent_color = color_for_percent(percent, 50.0, 20.0, theme);
 
@@ -111,13 +115,19 @@ fn render_charge_info(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeCol
             ),
             Span::styled("  ", Style::default()),
             text_gauge(percent, 20, percent_color),
-            Span::styled(format!("  ({:.1} Wh)", energy), theme.muted_style()),
+            Span::styled(
+                format!("  ({})", format_energy(energy, energy_unit)),
+                theme.muted_style(),
+            ),
         ]),
         Line::from(vec![
             Span::styled("Status:     ", theme.muted_style()),
             Span::styled(state, theme.fg_style()),
             Span::styled(
-                format!("          Capacity: {:.1} Wh", max_capacity),
+                format!(
+                    "          Capacity: {}",
+                    format_energy(max_capacity, energy_unit)
+                ),
                 theme.muted_style(),
             ),
         ]),
@@ -132,6 +142,7 @@ fn render_health_info(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeCol
     let cycles = app.battery.cycle_count();
     let design_capacity = app.battery.design_capacity_wh();
     let max_capacity = app.battery.max_capacity_wh();
+    let energy_unit = app.config.user_config.units.energy;
 
     let health_color = color_for_percent(health, 80.0, 50.0, theme);
 
@@ -147,7 +158,11 @@ fn render_health_info(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeCol
                     .add_modifier(Modifier::BOLD),
             ),
             Span::styled(
-                format!("  ({:.1} / {:.1} Wh)", max_capacity, design_capacity),
+                format!(
+                    "  ({} / {})",
+                    format_energy(max_capacity, energy_unit),
+                    format_energy(design_capacity, energy_unit)
+                ),
                 theme.muted_style(),
             ),
         ]),
@@ -166,8 +181,9 @@ fn render_electrical_info(frame: &mut Frame, area: Rect, app: &App, theme: &Them
     let voltage = app.battery.voltage_mv();
     let amperage = app.battery.amperage_ma();
     let energy_rate = app.battery.energy_rate_watts();
+    let temp_unit = app.config.user_config.units.temperature;
 
-    let temp_str = temp.map_or("N/A".to_string(), |t| format!("{:.1}°C", t));
+    let temp_str = temp.map_or("N/A".to_string(), |t| format_temperature(t, temp_unit));
     let voltage_str = format!("{:.2} V", voltage as f32 / 1000.0);
     let amperage_str = format!("{} mA", amperage);
     let rate_str = format!("{:.2} W", energy_rate.abs());
@@ -215,6 +231,7 @@ fn render_daily_soc(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColor
 }
 
 fn render_temperature_chart(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) {
+    let temp_unit = app.config.user_config.units.temperature;
     let border_color = app
         .battery
         .temperature_c()
@@ -233,16 +250,34 @@ fn render_temperature_chart(frame: &mut Frame, area: Rect, app: &App, theme: &Th
         return;
     }
 
-    let (min_y, max_y) = app.history.temperature_range();
+    let (min_y_c, max_y_c) = app.history.temperature_range();
+    let min_y = convert_temperature(min_y_c as f32, temp_unit) as f64;
+    let max_y = convert_temperature(max_y_c as f32, temp_unit) as f64;
     let max_x = data.len().max(60) as f64;
 
-    let cool_points: Vec<(f64, f64)> = data.iter().filter(|(_, y)| *y <= 35.0).copied().collect();
-    let warm_points: Vec<(f64, f64)> = data
+    let converted_data: Vec<(f64, f64)> = data
         .iter()
-        .filter(|(_, y)| *y > 35.0 && *y <= 45.0)
+        .map(|(x, y)| (*x, convert_temperature(*y as f32, temp_unit) as f64))
+        .collect();
+
+    let cool_threshold = convert_temperature(35.0, temp_unit) as f64;
+    let hot_threshold = convert_temperature(45.0, temp_unit) as f64;
+
+    let cool_points: Vec<(f64, f64)> = converted_data
+        .iter()
+        .filter(|(_, y)| *y <= cool_threshold)
         .copied()
         .collect();
-    let hot_points: Vec<(f64, f64)> = data.iter().filter(|(_, y)| *y > 45.0).copied().collect();
+    let warm_points: Vec<(f64, f64)> = converted_data
+        .iter()
+        .filter(|(_, y)| *y > cool_threshold && *y <= hot_threshold)
+        .copied()
+        .collect();
+    let hot_points: Vec<(f64, f64)> = converted_data
+        .iter()
+        .filter(|(_, y)| *y > hot_threshold)
+        .copied()
+        .collect();
 
     let mut datasets = Vec::new();
     if !cool_points.is_empty() {
@@ -274,8 +309,14 @@ fn render_temperature_chart(frame: &mut Frame, area: Rect, app: &App, theme: &Th
     }
 
     let y_labels = vec![
-        Span::styled(format!("{:.0}°", min_y), theme.muted_style()),
-        Span::styled(format!("{:.0}°", max_y), theme.muted_style()),
+        Span::styled(
+            format_temperature_short(min_y_c as f32, temp_unit),
+            theme.muted_style(),
+        ),
+        Span::styled(
+            format_temperature_short(max_y_c as f32, temp_unit),
+            theme.muted_style(),
+        ),
     ];
 
     let x_axis = Axis::default()

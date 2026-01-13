@@ -119,6 +119,8 @@ pub struct UserConfig {
     #[serde(default)]
     pub history: HistoryConfig,
     #[serde(default)]
+    pub units: UnitsConfig,
+    #[serde(default)]
     pub log_level: LogLevel,
 }
 
@@ -136,6 +138,7 @@ impl Default for UserConfig {
             forecast_window_secs: 300,
             excluded_processes: Vec::new(),
             history: HistoryConfig::default(),
+            units: UnitsConfig::default(),
             log_level: LogLevel::Info,
         }
     }
@@ -149,6 +152,96 @@ pub enum GraphMetric {
     Split,
     #[default]
     Merged,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "lowercase")]
+pub enum EnergyUnit {
+    #[default]
+    Wh,
+    MAh,
+}
+
+impl EnergyUnit {
+    pub fn label(&self) -> &'static str {
+        match self {
+            EnergyUnit::Wh => "Wh",
+            EnergyUnit::MAh => "mAh",
+        }
+    }
+
+    pub fn next(&self) -> Self {
+        match self {
+            EnergyUnit::Wh => EnergyUnit::MAh,
+            EnergyUnit::MAh => EnergyUnit::Wh,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "lowercase")]
+pub enum TemperatureUnit {
+    #[default]
+    Celsius,
+    Fahrenheit,
+}
+
+impl TemperatureUnit {
+    pub fn label(&self) -> &'static str {
+        match self {
+            TemperatureUnit::Celsius => "Celsius",
+            TemperatureUnit::Fahrenheit => "Fahrenheit",
+        }
+    }
+
+    pub fn next(&self) -> Self {
+        match self {
+            TemperatureUnit::Celsius => TemperatureUnit::Fahrenheit,
+            TemperatureUnit::Fahrenheit => TemperatureUnit::Celsius,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "lowercase")]
+pub enum DataSizeUnit {
+    #[default]
+    Si,
+    Binary,
+}
+
+impl DataSizeUnit {
+    pub fn label(&self) -> &'static str {
+        match self {
+            DataSizeUnit::Si => "SI (KB, MB)",
+            DataSizeUnit::Binary => "Binary (KiB, MiB)",
+        }
+    }
+
+    pub fn next(&self) -> Self {
+        match self {
+            DataSizeUnit::Si => DataSizeUnit::Binary,
+            DataSizeUnit::Binary => DataSizeUnit::Si,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[serde(default)]
+pub struct UnitsConfig {
+    pub energy: EnergyUnit,
+    pub temperature: TemperatureUnit,
+    pub data_size: DataSizeUnit,
+}
+
+impl Default for UnitsConfig {
+    fn default() -> Self {
+        Self {
+            energy: EnergyUnit::Wh,
+            temperature: TemperatureUnit::Celsius,
+            data_size: DataSizeUnit::Si,
+        }
+    }
 }
 
 pub fn config_dir() -> PathBuf {
