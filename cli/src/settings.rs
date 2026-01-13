@@ -5,7 +5,6 @@
 
 use crate::app::App;
 
-/// Unique identifier for each setting. Used for type-safe matching instead of strings.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum SettingId {
     // General
@@ -17,6 +16,10 @@ pub enum SettingId {
     MergeMode,
     ProcessCount,
     EnergyThreshold,
+    // Units
+    EnergyUnit,
+    TemperatureUnit,
+    DataSizeUnit,
     // Recording
     BackgroundRecording,
     SampleInterval,
@@ -103,7 +106,19 @@ pub const SETTINGS_LAYOUT: &[SettingsRow] = &[
         id: SettingId::EnergyThreshold,
         label: "Energy Threshold",
     },
-    // Recording section
+    SettingsRow::Section("Units"),
+    SettingsRow::Item {
+        id: SettingId::EnergyUnit,
+        label: "Energy",
+    },
+    SettingsRow::Item {
+        id: SettingId::TemperatureUnit,
+        label: "Temperature",
+    },
+    SettingsRow::Item {
+        id: SettingId::DataSizeUnit,
+        label: "Data Size",
+    },
     SettingsRow::Section("Recording"),
     SettingsRow::Item {
         id: SettingId::BackgroundRecording,
@@ -145,6 +160,9 @@ pub fn setting_value(app: &App, id: SettingId) -> String {
         SettingId::MergeMode => bool_label(app.merge_mode),
         SettingId::ProcessCount => app.config.user_config.process_count.to_string(),
         SettingId::EnergyThreshold => format!("{:.1}", app.config.user_config.energy_threshold),
+        SettingId::EnergyUnit => app.config.user_config.units.energy.label().to_string(),
+        SettingId::TemperatureUnit => app.config.user_config.units.temperature.label().to_string(),
+        SettingId::DataSizeUnit => app.config.user_config.units.data_size.label().to_string(),
         SettingId::BackgroundRecording => {
             bool_label(app.config.user_config.history.background_recording)
         }
@@ -241,6 +259,24 @@ pub fn setting_apply(app: &mut App, id: SettingId, input: SettingInput) -> Setti
             0.0,
             10.0,
             0.5,
+        ),
+        SettingId::EnergyUnit => apply_cycle(
+            app,
+            input,
+            |a| a.config.user_config.units.energy,
+            |a, v| a.config.user_config.units.energy = v,
+        ),
+        SettingId::TemperatureUnit => apply_cycle(
+            app,
+            input,
+            |a| a.config.user_config.units.temperature,
+            |a, v| a.config.user_config.units.temperature = v,
+        ),
+        SettingId::DataSizeUnit => apply_cycle(
+            app,
+            input,
+            |a| a.config.user_config.units.data_size,
+            |a, v| a.config.user_config.units.data_size = v,
         ),
         SettingId::BackgroundRecording => apply_bool(
             app,
@@ -399,12 +435,65 @@ where
         SettingInput::Activate => return SettingOutcome::default(),
     };
 
-    // Use epsilon comparison for floats
     if (new_val - current).abs() > f64::EPSILON {
         set(app, new_val);
         let _ = app.config.user_config.save();
         SettingOutcome { open_modal: false }
     } else {
         SettingOutcome::default()
+    }
+}
+
+trait Cyclable: Copy {
+    fn next(&self) -> Self;
+    fn prev(&self) -> Self;
+}
+
+impl Cyclable for crate::config::EnergyUnit {
+    fn next(&self) -> Self {
+        crate::config::EnergyUnit::next(self)
+    }
+    fn prev(&self) -> Self {
+        crate::config::EnergyUnit::prev(self)
+    }
+}
+
+impl Cyclable for crate::config::TemperatureUnit {
+    fn next(&self) -> Self {
+        crate::config::TemperatureUnit::next(self)
+    }
+    fn prev(&self) -> Self {
+        crate::config::TemperatureUnit::prev(self)
+    }
+}
+
+impl Cyclable for crate::config::DataSizeUnit {
+    fn next(&self) -> Self {
+        crate::config::DataSizeUnit::next(self)
+    }
+    fn prev(&self) -> Self {
+        crate::config::DataSizeUnit::prev(self)
+    }
+}
+
+fn apply_cycle<T, G, S>(app: &mut App, input: SettingInput, get: G, set: S) -> SettingOutcome
+where
+    T: Cyclable,
+    G: Fn(&App) -> T,
+    S: Fn(&mut App, T),
+{
+    match input {
+        SettingInput::Activate | SettingInput::Increment => {
+            let new_val = get(app).next();
+            set(app, new_val);
+            let _ = app.config.user_config.save();
+            SettingOutcome { open_modal: false }
+        }
+        SettingInput::Decrement => {
+            let new_val = get(app).prev();
+            set(app, new_val);
+            let _ = app.config.user_config.save();
+            SettingOutcome { open_modal: false }
+        }
     }
 }

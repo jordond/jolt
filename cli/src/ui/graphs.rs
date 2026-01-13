@@ -11,7 +11,10 @@ use crate::app::App;
 use crate::data::history::HistoryMetric;
 use crate::theme::ThemeColors;
 
-use super::utils::{color_for_percent, color_for_value};
+use super::utils::{
+    color_for_percent, color_for_value, convert_temperature, format_temperature,
+    format_temperature_short,
+};
 
 const MIN_WIDTH_FOR_SIDE_BY_SIDE: u16 = 80;
 const BATTERY_WARNING_THRESHOLD: f64 = 20.0;
@@ -78,6 +81,7 @@ fn render_with_temp_stacked(frame: &mut Frame, area: Rect, app: &App, theme: &Th
 }
 
 fn render_temperature_chart(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) {
+    let temp_unit = app.config.user_config.units.temperature;
     let temp_data = app.history.temperature_values();
     let current_temp = app.history.latest_temperature();
 
@@ -89,7 +93,7 @@ fn render_temperature_chart(frame: &mut Frame, area: Rect, app: &App, theme: &Th
             Style::default().fg(temp_color).add_modifier(Modifier::BOLD),
         ),
         Span::styled(
-            current_temp.map_or("--".to_string(), |t| format!("{:.1}°C", t)),
+            current_temp.map_or("--".to_string(), |t| format_temperature(t, temp_unit)),
             theme.fg_style(),
         ),
     ]);
@@ -105,26 +109,36 @@ fn render_temperature_chart(frame: &mut Frame, area: Rect, app: &App, theme: &Th
         return;
     }
 
-    let (min_y, max_y) = app.history.temperature_range();
+    let (min_y_c, max_y_c) = app.history.temperature_range();
+    let min_y = convert_temperature(min_y_c as f32, temp_unit) as f64;
+    let max_y = convert_temperature(max_y_c as f32, temp_unit) as f64;
     let max_x = temp_data.len().max(60) as f64;
+
+    let converted_data: Vec<(f64, f64)> = temp_data
+        .iter()
+        .map(|(x, y)| (*x, convert_temperature(*y as f32, temp_unit) as f64))
+        .collect();
+
+    let cool_threshold = convert_temperature(35.0, temp_unit) as f64;
+    let hot_threshold = convert_temperature(45.0, temp_unit) as f64;
 
     let grid_color = Color::Rgb(60, 60, 60);
     let mid_y = (min_y + max_y) / 2.0;
     let grid_data: Vec<(f64, f64)> = horizontal_line_points(mid_y, max_x);
 
-    let cool_points: Vec<(f64, f64)> = temp_data
+    let cool_points: Vec<(f64, f64)> = converted_data
         .iter()
-        .filter(|(_, y)| *y <= 35.0)
+        .filter(|(_, y)| *y <= cool_threshold)
         .copied()
         .collect();
-    let warm_points: Vec<(f64, f64)> = temp_data
+    let warm_points: Vec<(f64, f64)> = converted_data
         .iter()
-        .filter(|(_, y)| *y > 35.0 && *y <= 45.0)
+        .filter(|(_, y)| *y > cool_threshold && *y <= hot_threshold)
         .copied()
         .collect();
-    let hot_points: Vec<(f64, f64)> = temp_data
+    let hot_points: Vec<(f64, f64)> = converted_data
         .iter()
-        .filter(|(_, y)| *y > 45.0)
+        .filter(|(_, y)| *y > hot_threshold)
         .copied()
         .collect();
 
@@ -168,9 +182,18 @@ fn render_temperature_chart(frame: &mut Frame, area: Rect, app: &App, theme: &Th
     let x_labels = x_axis_time_labels(temp_data.len(), theme);
 
     let y_labels = vec![
-        Span::styled(format!("{:.0}°", min_y), theme.muted_style()),
-        Span::styled(format!("{:.0}°", mid_y), theme.muted_style()),
-        Span::styled(format!("{:.0}°", max_y), theme.muted_style()),
+        Span::styled(
+            format_temperature_short(min_y_c as f32, temp_unit),
+            theme.muted_style(),
+        ),
+        Span::styled(
+            format_temperature_short((min_y_c + max_y_c) as f32 / 2.0, temp_unit),
+            theme.muted_style(),
+        ),
+        Span::styled(
+            format_temperature_short(max_y_c as f32, temp_unit),
+            theme.muted_style(),
+        ),
     ];
 
     let x_axis = Axis::default()
@@ -256,31 +279,42 @@ fn render_single(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) 
     let (min_y, max_y) = app.history.value_range();
     let max_x = data.len().max(60) as f64;
 
-    let mut datasets = Vec::new();
-
     let quarter = (max_y - min_y) / 4.0;
     let grid_color = Color::Rgb(60, 60, 60);
-    for i in 1..4 {
-        let grid_y = min_y + quarter * i as f64;
-        let grid_data: Vec<(f64, f64)> = horizontal_line_points(grid_y, max_x);
+
+    let grid_lines: Vec<Vec<(f64, f64)>> = (1..4)
+        .map(|i| {
+            let grid_y = min_y + quarter * i as f64;
+            horizontal_line_points(grid_y, max_x)
+        })
+        .collect();
+
+    let threshold_line: Vec<(f64, f64)> =
+        if is_battery && min_y < BATTERY_WARNING_THRESHOLD && max_y > BATTERY_WARNING_THRESHOLD {
+            horizontal_line_points(BATTERY_WARNING_THRESHOLD, max_x)
+        } else {
+            Vec::new()
+        };
+
+    let mut datasets = Vec::new();
+
+    for grid_line in &grid_lines {
         datasets.push(
             Dataset::default()
                 .marker(Marker::Dot)
                 .graph_type(GraphType::Scatter)
                 .style(Style::default().fg(grid_color))
-                .data(Box::leak(grid_data.into_boxed_slice())),
+                .data(grid_line),
         );
     }
 
-    if is_battery && min_y < BATTERY_WARNING_THRESHOLD && max_y > BATTERY_WARNING_THRESHOLD {
-        let threshold_data: Vec<(f64, f64)> =
-            horizontal_line_points(BATTERY_WARNING_THRESHOLD, max_x);
+    if !threshold_line.is_empty() {
         datasets.push(
             Dataset::default()
                 .marker(Marker::Braille)
                 .graph_type(GraphType::Line)
                 .style(theme.danger_style())
-                .data(Box::leak(threshold_data.into_boxed_slice())),
+                .data(&threshold_line),
         );
     }
 
@@ -411,19 +445,25 @@ fn render_merged(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) 
     let (min_y, max_y) = app.history.power_range();
     let max_x = power_data.len().max(60) as f64;
 
-    let mut datasets = Vec::new();
-
     let quarter = (max_y - min_y) / 4.0;
     let grid_color = Color::Rgb(60, 60, 60);
-    for i in 1..3 {
-        let grid_y = min_y + quarter * (i * 2) as f64;
-        let grid_data: Vec<(f64, f64)> = horizontal_line_points(grid_y, max_x);
+
+    let grid_lines: Vec<Vec<(f64, f64)>> = (1..3)
+        .map(|i| {
+            let grid_y = min_y + quarter * (i * 2) as f64;
+            horizontal_line_points(grid_y, max_x)
+        })
+        .collect();
+
+    let mut datasets = Vec::new();
+
+    for grid_line in &grid_lines {
         datasets.push(
             Dataset::default()
                 .marker(Marker::Dot)
                 .graph_type(GraphType::Scatter)
                 .style(Style::default().fg(grid_color))
-                .data(Box::leak(grid_data.into_boxed_slice())),
+                .data(grid_line),
         );
     }
 
@@ -524,26 +564,22 @@ fn render_mini_chart(
 
     let max_x = data.len().max(60) as f64;
 
-    let mut datasets = Vec::new();
-
     let mid_y = (min_y + max_y) / 2.0;
     let grid_color = Color::Rgb(60, 60, 60);
     let grid_data: Vec<(f64, f64)> = horizontal_line_points(mid_y, max_x);
-    datasets.push(
+
+    let datasets = vec![
         Dataset::default()
             .marker(Marker::Dot)
             .graph_type(GraphType::Scatter)
             .style(Style::default().fg(grid_color))
-            .data(Box::leak(grid_data.into_boxed_slice())),
-    );
-
-    datasets.push(
+            .data(&grid_data),
         Dataset::default()
             .marker(Marker::Braille)
             .graph_type(GraphType::Line)
             .style(Style::default().fg(line_color))
             .data(data),
-    );
+    ];
 
     let y_labels = vec![
         Span::styled(format!("{:.0}", min_y), theme.muted_style()),

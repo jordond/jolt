@@ -11,7 +11,7 @@ use crate::input::keys;
 use crate::settings::{self, SettingsRow, SETTINGS_LAYOUT};
 use crate::theme::ThemeColors;
 
-use super::utils::format_bytes;
+use super::utils::format_data_size;
 
 const CONTENT_WIDTH: u16 = 44;
 
@@ -78,7 +78,8 @@ fn render_status_section(frame: &mut Frame, area: Rect, app: &App, theme: &Theme
 
     let lines = if let Some(ref status) = app.daemon_status {
         let uptime_str = format_uptime(status.uptime_secs);
-        let size_str = format_bytes(status.database_size_bytes);
+        let data_size_unit = app.config.user_config.units.data_size;
+        let size_str = format_data_size(status.database_size_bytes, data_size_unit);
 
         const LEFT_COL_WIDTH: usize = 24;
 

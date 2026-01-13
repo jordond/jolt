@@ -7,8 +7,11 @@ use ratatui::{
 };
 
 use crate::app::App;
+use crate::config::EnergyUnit;
 use crate::data::{ChargeSession, SessionType};
 use crate::theme::ThemeColors;
+
+use super::utils::format_energy_compact;
 
 pub fn render_cycle_summary(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) {
     let block = Block::default()
@@ -112,6 +115,7 @@ pub fn render_recent_sessions(frame: &mut Frame, area: Rect, app: &App, theme: &
         return;
     }
 
+    let energy_unit = app.config.user_config.units.energy;
     let header = Row::new(vec!["Type", "Start", "Duration", "Range", "Energy"])
         .style(
             Style::default()
@@ -125,7 +129,7 @@ pub fn render_recent_sessions(frame: &mut Frame, area: Rect, app: &App, theme: &
         .iter()
         .rev()
         .take(5)
-        .map(|s| session_to_row(s, theme))
+        .map(|s| session_to_row(s, theme, energy_unit))
         .collect();
 
     let table = Table::new(
@@ -144,7 +148,11 @@ pub fn render_recent_sessions(frame: &mut Frame, area: Rect, app: &App, theme: &
     frame.render_widget(table, inner);
 }
 
-fn session_to_row(session: &ChargeSession, theme: &ThemeColors) -> Row<'static> {
+fn session_to_row(
+    session: &ChargeSession,
+    theme: &ThemeColors,
+    energy_unit: EnergyUnit,
+) -> Row<'static> {
     let type_label = match session.session_type {
         SessionType::Charge => "Charge",
         SessionType::Discharge => "Discharge",
@@ -169,7 +177,7 @@ fn session_to_row(session: &ChargeSession, theme: &ThemeColors) -> Row<'static> 
 
     let energy = session
         .energy_wh
-        .map(|e| format!("{:.1}Wh", e))
+        .map(|e| format_energy_compact(e, energy_unit))
         .unwrap_or_else(|| "-".to_string());
 
     Row::new(vec![
