@@ -446,11 +446,15 @@ where
 
 trait Cyclable: Copy {
     fn next(&self) -> Self;
+    fn prev(&self) -> Self;
 }
 
 impl Cyclable for crate::config::EnergyUnit {
     fn next(&self) -> Self {
         crate::config::EnergyUnit::next(self)
+    }
+    fn prev(&self) -> Self {
+        crate::config::EnergyUnit::prev(self)
     }
 }
 
@@ -458,11 +462,17 @@ impl Cyclable for crate::config::TemperatureUnit {
     fn next(&self) -> Self {
         crate::config::TemperatureUnit::next(self)
     }
+    fn prev(&self) -> Self {
+        crate::config::TemperatureUnit::prev(self)
+    }
 }
 
 impl Cyclable for crate::config::DataSizeUnit {
     fn next(&self) -> Self {
         crate::config::DataSizeUnit::next(self)
+    }
+    fn prev(&self) -> Self {
+        crate::config::DataSizeUnit::prev(self)
     }
 }
 
@@ -480,7 +490,7 @@ where
             SettingOutcome { open_modal: false }
         }
         SettingInput::Decrement => {
-            let new_val = get(app).next();
+            let new_val = get(app).prev();
             set(app, new_val);
             let _ = app.config.user_config.save();
             SettingOutcome { open_modal: false }

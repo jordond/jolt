@@ -176,6 +176,13 @@ impl EnergyUnit {
             EnergyUnit::MAh => EnergyUnit::Wh,
         }
     }
+
+    pub fn prev(&self) -> Self {
+        match self {
+            EnergyUnit::Wh => EnergyUnit::MAh,
+            EnergyUnit::MAh => EnergyUnit::Wh,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
@@ -200,6 +207,13 @@ impl TemperatureUnit {
             TemperatureUnit::Fahrenheit => TemperatureUnit::Celsius,
         }
     }
+
+    pub fn prev(&self) -> Self {
+        match self {
+            TemperatureUnit::Celsius => TemperatureUnit::Fahrenheit,
+            TemperatureUnit::Fahrenheit => TemperatureUnit::Celsius,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
@@ -219,6 +233,13 @@ impl DataSizeUnit {
     }
 
     pub fn next(&self) -> Self {
+        match self {
+            DataSizeUnit::Si => DataSizeUnit::Binary,
+            DataSizeUnit::Binary => DataSizeUnit::Si,
+        }
+    }
+
+    pub fn prev(&self) -> Self {
         match self {
             DataSizeUnit::Si => DataSizeUnit::Binary,
             DataSizeUnit::Binary => DataSizeUnit::Si,

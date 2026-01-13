@@ -568,22 +568,18 @@ fn render_mini_chart(
     let grid_color = Color::Rgb(60, 60, 60);
     let grid_data: Vec<(f64, f64)> = horizontal_line_points(mid_y, max_x);
 
-    let mut datasets = Vec::new();
-    datasets.push(
+    let datasets = vec![
         Dataset::default()
             .marker(Marker::Dot)
             .graph_type(GraphType::Scatter)
             .style(Style::default().fg(grid_color))
             .data(&grid_data),
-    );
-
-    datasets.push(
         Dataset::default()
             .marker(Marker::Braille)
             .graph_type(GraphType::Line)
             .style(Style::default().fg(line_color))
             .data(data),
-    );
+    ];
 
     let y_labels = vec![
         Span::styled(format!("{:.0}", min_y), theme.muted_style()),
