@@ -122,18 +122,9 @@ fn render_temperature_chart(frame: &mut Frame, area: Rect, app: &App, theme: &Th
     let cool_threshold = convert_temperature(35.0, temp_unit) as f64;
     let hot_threshold = convert_temperature(45.0, temp_unit) as f64;
 
-    let mut datasets = Vec::new();
-
     let grid_color = Color::Rgb(60, 60, 60);
     let mid_y = (min_y + max_y) / 2.0;
     let grid_data: Vec<(f64, f64)> = horizontal_line_points(mid_y, max_x);
-    datasets.push(
-        Dataset::default()
-            .marker(Marker::Dot)
-            .graph_type(GraphType::Scatter)
-            .style(Style::default().fg(grid_color))
-            .data(Box::leak(grid_data.into_boxed_slice())),
-    );
 
     let cool_points: Vec<(f64, f64)> = converted_data
         .iter()
@@ -151,13 +142,22 @@ fn render_temperature_chart(frame: &mut Frame, area: Rect, app: &App, theme: &Th
         .copied()
         .collect();
 
+    let mut datasets = Vec::new();
+    datasets.push(
+        Dataset::default()
+            .marker(Marker::Dot)
+            .graph_type(GraphType::Scatter)
+            .style(Style::default().fg(grid_color))
+            .data(&grid_data),
+    );
+
     if !cool_points.is_empty() {
         datasets.push(
             Dataset::default()
                 .marker(Marker::Braille)
                 .graph_type(GraphType::Scatter)
                 .style(theme.success_style())
-                .data(Box::leak(cool_points.into_boxed_slice())),
+                .data(&cool_points),
         );
     }
     if !warm_points.is_empty() {
@@ -166,7 +166,7 @@ fn render_temperature_chart(frame: &mut Frame, area: Rect, app: &App, theme: &Th
                 .marker(Marker::Braille)
                 .graph_type(GraphType::Scatter)
                 .style(theme.warning_style())
-                .data(Box::leak(warm_points.into_boxed_slice())),
+                .data(&warm_points),
         );
     }
     if !hot_points.is_empty() {
@@ -175,7 +175,7 @@ fn render_temperature_chart(frame: &mut Frame, area: Rect, app: &App, theme: &Th
                 .marker(Marker::Braille)
                 .graph_type(GraphType::Scatter)
                 .style(theme.danger_style())
-                .data(Box::leak(hot_points.into_boxed_slice())),
+                .data(&hot_points),
         );
     }
 
@@ -279,31 +279,42 @@ fn render_single(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) 
     let (min_y, max_y) = app.history.value_range();
     let max_x = data.len().max(60) as f64;
 
-    let mut datasets = Vec::new();
-
     let quarter = (max_y - min_y) / 4.0;
     let grid_color = Color::Rgb(60, 60, 60);
-    for i in 1..4 {
-        let grid_y = min_y + quarter * i as f64;
-        let grid_data: Vec<(f64, f64)> = horizontal_line_points(grid_y, max_x);
+
+    let grid_lines: Vec<Vec<(f64, f64)>> = (1..4)
+        .map(|i| {
+            let grid_y = min_y + quarter * i as f64;
+            horizontal_line_points(grid_y, max_x)
+        })
+        .collect();
+
+    let threshold_line: Vec<(f64, f64)> =
+        if is_battery && min_y < BATTERY_WARNING_THRESHOLD && max_y > BATTERY_WARNING_THRESHOLD {
+            horizontal_line_points(BATTERY_WARNING_THRESHOLD, max_x)
+        } else {
+            Vec::new()
+        };
+
+    let mut datasets = Vec::new();
+
+    for grid_line in &grid_lines {
         datasets.push(
             Dataset::default()
                 .marker(Marker::Dot)
                 .graph_type(GraphType::Scatter)
                 .style(Style::default().fg(grid_color))
-                .data(Box::leak(grid_data.into_boxed_slice())),
+                .data(grid_line),
         );
     }
 
-    if is_battery && min_y < BATTERY_WARNING_THRESHOLD && max_y > BATTERY_WARNING_THRESHOLD {
-        let threshold_data: Vec<(f64, f64)> =
-            horizontal_line_points(BATTERY_WARNING_THRESHOLD, max_x);
+    if !threshold_line.is_empty() {
         datasets.push(
             Dataset::default()
                 .marker(Marker::Braille)
                 .graph_type(GraphType::Line)
                 .style(theme.danger_style())
-                .data(Box::leak(threshold_data.into_boxed_slice())),
+                .data(&threshold_line),
         );
     }
 
@@ -434,19 +445,25 @@ fn render_merged(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) 
     let (min_y, max_y) = app.history.power_range();
     let max_x = power_data.len().max(60) as f64;
 
-    let mut datasets = Vec::new();
-
     let quarter = (max_y - min_y) / 4.0;
     let grid_color = Color::Rgb(60, 60, 60);
-    for i in 1..3 {
-        let grid_y = min_y + quarter * (i * 2) as f64;
-        let grid_data: Vec<(f64, f64)> = horizontal_line_points(grid_y, max_x);
+
+    let grid_lines: Vec<Vec<(f64, f64)>> = (1..3)
+        .map(|i| {
+            let grid_y = min_y + quarter * (i * 2) as f64;
+            horizontal_line_points(grid_y, max_x)
+        })
+        .collect();
+
+    let mut datasets = Vec::new();
+
+    for grid_line in &grid_lines {
         datasets.push(
             Dataset::default()
                 .marker(Marker::Dot)
                 .graph_type(GraphType::Scatter)
                 .style(Style::default().fg(grid_color))
-                .data(Box::leak(grid_data.into_boxed_slice())),
+                .data(grid_line),
         );
     }
 
@@ -547,17 +564,17 @@ fn render_mini_chart(
 
     let max_x = data.len().max(60) as f64;
 
-    let mut datasets = Vec::new();
-
     let mid_y = (min_y + max_y) / 2.0;
     let grid_color = Color::Rgb(60, 60, 60);
     let grid_data: Vec<(f64, f64)> = horizontal_line_points(mid_y, max_x);
+
+    let mut datasets = Vec::new();
     datasets.push(
         Dataset::default()
             .marker(Marker::Dot)
             .graph_type(GraphType::Scatter)
             .style(Style::default().fg(grid_color))
-            .data(Box::leak(grid_data.into_boxed_slice())),
+            .data(&grid_data),
     );
 
     datasets.push(
