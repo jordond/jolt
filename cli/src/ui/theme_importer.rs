@@ -30,7 +30,7 @@ pub fn render(frame: &mut Frame, app: &App, theme: &ThemeColors) {
     let block = Block::default()
         .title(status)
         .borders(Borders::ALL)
-        .border_style(Style::default().fg(theme.accent))
+        .border_style(theme.accent_style())
         .style(Style::default().bg(theme.dialog_bg));
 
     let inner = block.inner(area);
@@ -65,15 +65,15 @@ fn render_search_bar(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColo
     };
 
     let style = if app.importer_filter.is_empty() && !is_focused {
-        Style::default().fg(theme.muted)
+        theme.muted_style()
     } else {
-        Style::default().fg(theme.fg)
+        theme.fg_style()
     };
 
     let border_style = if is_focused {
-        Style::default().fg(theme.accent)
+        theme.accent_style()
     } else {
-        Style::default().fg(theme.border)
+        theme.border_style()
     };
 
     let title = if is_focused {
@@ -130,27 +130,27 @@ fn render_theme_list(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColo
                     .bg(theme.selection_bg)
                     .add_modifier(Modifier::BOLD)
             } else if is_checked {
-                Style::default().fg(theme.accent)
+                theme.accent_style()
             } else {
-                Style::default().fg(theme.fg)
+                theme.fg_style()
             };
 
             let checkbox_style = if is_selected {
                 style
             } else if is_checked {
-                Style::default().fg(theme.success)
+                theme.success_style()
             } else {
-                Style::default().fg(theme.muted)
+                theme.muted_style()
             };
 
             let variant_style = if is_selected {
                 style
             } else {
                 match (&group.dark, &group.light) {
-                    (Some(_), Some(_)) => Style::default().fg(theme.accent),
-                    (Some(_), None) => Style::default().fg(theme.muted),
-                    (None, Some(_)) => Style::default().fg(theme.highlight),
-                    _ => Style::default().fg(theme.muted),
+                    (Some(_), Some(_)) => theme.accent_style(),
+                    (Some(_), None) => theme.muted_style(),
+                    (None, Some(_)) => theme.highlight_style(),
+                    _ => theme.muted_style(),
                 }
             };
 
@@ -166,7 +166,7 @@ fn render_theme_list(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColo
     let list_block = Block::default()
         .title(format!(" {} themes ", groups.len()))
         .borders(Borders::ALL)
-        .border_style(Style::default().fg(theme.border));
+        .border_style(theme.border_style());
 
     let list_inner = list_block.inner(area);
     frame.render_widget(list_block, area);
@@ -208,21 +208,18 @@ fn render_footer(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) 
     };
 
     let footer = Paragraph::new(vec![
-        Line::from(vec![Span::styled(
-            &left_text,
-            Style::default().fg(theme.muted),
-        )]),
+        Line::from(vec![Span::styled(&left_text, theme.muted_style())]),
         Line::from(vec![
-            Span::styled("/", Style::default().fg(theme.accent)),
-            Span::styled(" search  ", Style::default().fg(theme.muted)),
-            Span::styled("Space", Style::default().fg(theme.accent)),
-            Span::styled(" select  ", Style::default().fg(theme.muted)),
-            Span::styled("p", Style::default().fg(theme.accent)),
-            Span::styled(" preview  ", Style::default().fg(theme.muted)),
-            Span::styled("i", Style::default().fg(theme.accent)),
-            Span::styled(" import  ", Style::default().fg(theme.muted)),
-            Span::styled("r", Style::default().fg(theme.accent)),
-            Span::styled(" refresh", Style::default().fg(theme.muted)),
+            Span::styled("/", theme.accent_style()),
+            Span::styled(" search  ", theme.muted_style()),
+            Span::styled("Space", theme.accent_style()),
+            Span::styled(" select  ", theme.muted_style()),
+            Span::styled("p", theme.accent_style()),
+            Span::styled(" preview  ", theme.muted_style()),
+            Span::styled("i", theme.accent_style()),
+            Span::styled(" import  ", theme.muted_style()),
+            Span::styled("r", theme.accent_style()),
+            Span::styled(" refresh", theme.muted_style()),
         ]),
     ]);
 

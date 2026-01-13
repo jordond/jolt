@@ -30,7 +30,7 @@ pub fn render(frame: &mut Frame, app: &App, theme: &ThemeColors) {
     let block = Block::default()
         .title(" Select Theme ")
         .borders(Borders::ALL)
-        .border_style(Style::default().fg(theme.accent))
+        .border_style(theme.accent_style())
         .style(Style::default().bg(theme.dialog_bg));
 
     let inner = block.inner(area);
@@ -48,7 +48,7 @@ pub fn render(frame: &mut Frame, app: &App, theme: &ThemeColors) {
 
     let header = Paragraph::new(Line::from(vec![Span::styled(
         "↑↓ navigate  Enter select  Esc cancel",
-        Style::default().fg(theme.muted),
+        theme.muted_style(),
     )]))
     .centered();
     frame.render_widget(header, chunks[0]);
@@ -79,13 +79,13 @@ pub fn render(frame: &mut Frame, app: &App, theme: &ThemeColors) {
                     .bg(theme.selection_bg)
                     .add_modifier(Modifier::BOLD)
             } else {
-                Style::default().fg(theme.fg)
+                theme.fg_style()
             };
 
             let name_style = if is_selected {
                 style
             } else if !theme_item.is_builtin {
-                Style::default().fg(theme.accent_secondary)
+                theme.accent_secondary_style()
             } else {
                 style
             };
@@ -96,7 +96,7 @@ pub fn render(frame: &mut Frame, app: &App, theme: &ThemeColors) {
                     if is_selected {
                         style
                     } else {
-                        Style::default().fg(theme.accent)
+                        theme.accent_style()
                     },
                 ),
                 Span::styled(&theme_item.name, name_style),
@@ -120,17 +120,17 @@ pub fn render(frame: &mut Frame, app: &App, theme: &ThemeColors) {
 
     let footer = Paragraph::new(vec![
         Line::from(vec![
-            Span::styled("Preview: ", Style::default().fg(theme.muted)),
-            Span::styled(preview_mode, Style::default().fg(theme.accent)),
-            Span::styled("  Variants: ", Style::default().fg(theme.muted)),
-            Span::styled(variants_info, Style::default().fg(theme.accent)),
+            Span::styled("Preview: ", theme.muted_style()),
+            Span::styled(preview_mode, theme.accent_style()),
+            Span::styled("  Variants: ", theme.muted_style()),
+            Span::styled(variants_info, theme.accent_style()),
         ]),
         Line::default(),
         Line::from(vec![
-            Span::styled("a/←→", Style::default().fg(theme.accent)),
-            Span::styled(" toggle preview  ", Style::default().fg(theme.muted)),
-            Span::styled("i", Style::default().fg(theme.accent)),
-            Span::styled(" import themes", Style::default().fg(theme.muted)),
+            Span::styled("a/←→", theme.accent_style()),
+            Span::styled(" toggle preview  ", theme.muted_style()),
+            Span::styled("i", theme.accent_style()),
+            Span::styled(" import themes", theme.muted_style()),
         ]),
     ])
     .centered();

@@ -14,7 +14,7 @@ pub fn render_cycle_summary(frame: &mut Frame, area: Rect, app: &App, theme: &Th
     let block = Block::default()
         .title(" Battery Cycles ")
         .borders(Borders::ALL)
-        .border_style(Style::default().fg(theme.border));
+        .border_style(theme.border_style());
 
     let inner = block.inner(area);
     frame.render_widget(block, area);
@@ -22,7 +22,7 @@ pub fn render_cycle_summary(frame: &mut Frame, area: Rect, app: &App, theme: &Th
     let Some(ref summary) = app.cycle_summary else {
         let no_data = Paragraph::new(vec![Line::from(vec![Span::styled(
             "No cycle data",
-            Style::default().fg(theme.muted),
+            theme.muted_style(),
         )])])
         .centered();
         frame.render_widget(no_data, inner);
@@ -36,7 +36,7 @@ pub fn render_cycle_summary(frame: &mut Frame, area: Rect, app: &App, theme: &Th
 
     let left_stats = vec![
         Line::from(vec![
-            Span::styled("macOS Cycles:   ", Style::default().fg(theme.muted)),
+            Span::styled("macOS Cycles:   ", theme.muted_style()),
             Span::styled(
                 format!("{}", summary.total_cycles_macos),
                 Style::default()
@@ -45,14 +45,14 @@ pub fn render_cycle_summary(frame: &mut Frame, area: Rect, app: &App, theme: &Th
             ),
         ]),
         Line::from(vec![
-            Span::styled("Partial Cycles: ", Style::default().fg(theme.muted)),
+            Span::styled("Partial Cycles: ", theme.muted_style()),
             Span::styled(
                 format!("{:.2}", summary.partial_cycles_calculated),
-                Style::default().fg(theme.fg),
+                theme.fg_style(),
             ),
         ]),
         Line::from(vec![
-            Span::styled("Avg Daily:      ", Style::default().fg(theme.muted)),
+            Span::styled("Avg Daily:      ", theme.muted_style()),
             Span::styled(
                 format!("{:.2}/day", summary.avg_daily_cycles),
                 Style::default().fg(cycle_rate_color(summary.avg_daily_cycles, theme)),
@@ -62,21 +62,21 @@ pub fn render_cycle_summary(frame: &mut Frame, area: Rect, app: &App, theme: &Th
 
     let right_stats = vec![
         Line::from(vec![
-            Span::styled("Avg DoD:        ", Style::default().fg(theme.muted)),
+            Span::styled("Avg DoD:        ", theme.muted_style()),
             Span::styled(
                 format!("{:.0}%", summary.avg_depth_of_discharge),
                 Style::default().fg(dod_color(summary.avg_depth_of_discharge, theme)),
             ),
         ]),
         Line::from(vec![
-            Span::styled("Charges/Day:    ", Style::default().fg(theme.muted)),
+            Span::styled("Charges/Day:    ", theme.muted_style()),
             Span::styled(
                 format!("{:.1}", summary.avg_charge_sessions_per_day),
-                Style::default().fg(theme.fg),
+                theme.fg_style(),
             ),
         ]),
         Line::from(vec![
-            Span::styled("Time >80%:      ", Style::default().fg(theme.muted)),
+            Span::styled("Time >80%:      ", theme.muted_style()),
             Span::styled(
                 format!("{:.0}%", summary.time_at_high_soc_percent),
                 Style::default().fg(high_soc_color(summary.time_at_high_soc_percent, theme)),
@@ -97,7 +97,7 @@ pub fn render_recent_sessions(frame: &mut Frame, area: Rect, app: &App, theme: &
     let block = Block::default()
         .title(" Recent Charge Sessions ")
         .borders(Borders::ALL)
-        .border_style(Style::default().fg(theme.border));
+        .border_style(theme.border_style());
 
     let inner = block.inner(area);
     frame.render_widget(block, area);
@@ -105,7 +105,7 @@ pub fn render_recent_sessions(frame: &mut Frame, area: Rect, app: &App, theme: &
     if app.recent_charge_sessions.is_empty() {
         let no_data = Paragraph::new(vec![Line::from(vec![Span::styled(
             "No sessions recorded",
-            Style::default().fg(theme.muted),
+            theme.muted_style(),
         )])])
         .centered();
         frame.render_widget(no_data, inner);

@@ -20,8 +20,8 @@ pub fn render_title_bar(
     let version = super::VERSION;
 
     let left_spans = vec![
-        Span::styled("⚡️jolt ", Style::default().fg(theme.accent)),
-        Span::styled(format!("v{}", version), Style::default().fg(theme.muted)),
+        Span::styled("⚡️jolt ", theme.accent_style()),
+        Span::styled(format!("v{}", version), theme.muted_style()),
     ];
 
     let right_text = format!(
@@ -37,7 +37,7 @@ pub fn render_title_bar(
 
     let mut spans = left_spans;
     spans.push(Span::raw(" ".repeat(padding)));
-    spans.push(Span::styled(right_text, Style::default().fg(theme.muted)));
+    spans.push(Span::styled(right_text, theme.muted_style()));
 
     let bar = Paragraph::new(Line::from(spans)).style(Style::default().bg(theme.bg));
     frame.render_widget(bar, area);
@@ -66,13 +66,10 @@ pub fn render_status_bar(frame: &mut Frame, area: Rect, app: &App, theme: &Theme
     let mut left_spans: Vec<Span> = vec![Span::raw(" ")];
     for (i, (key, desc)) in left_hints.iter().enumerate() {
         if i > 0 {
-            left_spans.push(Span::styled(" │ ", Style::default().fg(theme.border)));
+            left_spans.push(Span::styled(" │ ", theme.border_style()));
         }
-        left_spans.push(Span::styled(*key, Style::default().fg(theme.accent)));
-        left_spans.push(Span::styled(
-            format!(" {}", desc),
-            Style::default().fg(theme.muted),
-        ));
+        left_spans.push(Span::styled(*key, theme.accent_style()));
+        left_spans.push(Span::styled(format!(" {}", desc), theme.muted_style()));
     }
 
     let background_recording = app.config.user_config.history.background_recording;
@@ -80,21 +77,18 @@ pub fn render_status_bar(frame: &mut Frame, area: Rect, app: &App, theme: &Theme
     let mut right_spans: Vec<Span> = Vec::new();
 
     if app.is_reconnecting() {
-        right_spans.push(Span::styled(
-            "⟳ reconnecting ",
-            Style::default().fg(theme.warning),
-        ));
-        right_spans.push(Span::styled("│ ", Style::default().fg(theme.border)));
+        right_spans.push(Span::styled("⟳ reconnecting ", theme.warning_style()));
+        right_spans.push(Span::styled("│ ", theme.border_style()));
     } else if app.is_data_stale() {
-        right_spans.push(Span::styled("⚠ stale ", Style::default().fg(theme.warning)));
-        right_spans.push(Span::styled("│ ", Style::default().fg(theme.border)));
+        right_spans.push(Span::styled("⚠ stale ", theme.warning_style()));
+        right_spans.push(Span::styled("│ ", theme.border_style()));
     }
 
     if background_recording {
         right_spans.extend(vec![
-            Span::styled("background: ", Style::default().fg(theme.muted)),
-            Span::styled("on", Style::default().fg(theme.success)),
-            Span::styled(" │ ", Style::default().fg(theme.border)),
+            Span::styled("background: ", theme.muted_style()),
+            Span::styled("on", theme.success_style()),
+            Span::styled(" │ ", theme.border_style()),
         ]);
     }
 
@@ -104,16 +98,16 @@ pub fn render_status_bar(frame: &mut Frame, area: Rect, app: &App, theme: &Theme
         format!("{}ms", app.refresh_ms)
     };
     right_spans.extend(vec![
-        Span::styled("refresh: ", Style::default().fg(theme.muted)),
-        Span::styled(refresh_display, Style::default().fg(theme.fg)),
-        Span::styled(" │ ", Style::default().fg(theme.border)),
+        Span::styled("refresh: ", theme.muted_style()),
+        Span::styled(refresh_display, theme.fg_style()),
+        Span::styled(" │ ", theme.border_style()),
     ]);
 
     right_spans.extend(vec![
-        Span::styled(keys::HISTORY, Style::default().fg(theme.accent)),
-        Span::styled(" history ", Style::default().fg(theme.muted)),
-        Span::styled(keys::SETTINGS, Style::default().fg(theme.accent)),
-        Span::styled(" settings ", Style::default().fg(theme.muted)),
+        Span::styled(keys::HISTORY, theme.accent_style()),
+        Span::styled(" history ", theme.muted_style()),
+        Span::styled(keys::SETTINGS, theme.accent_style()),
+        Span::styled(" settings ", theme.muted_style()),
     ]);
 
     let left_width: usize = left_spans.iter().map(|s| s.width()).sum();

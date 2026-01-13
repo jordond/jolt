@@ -31,7 +31,7 @@ pub fn render_help(frame: &mut Frame, app: &App, theme: &ThemeColors) {
     let block = Block::default()
         .title(" Help ")
         .borders(Borders::ALL)
-        .border_style(Style::default().fg(theme.accent))
+        .border_style(theme.accent_style())
         .style(Style::default().bg(theme.dialog_bg));
 
     let inner = block.inner(area);
@@ -60,7 +60,7 @@ pub fn render_help(frame: &mut Frame, app: &App, theme: &ThemeColors) {
                 app.config.theme_name(),
                 app.config.appearance_label()
             ),
-            Style::default().fg(theme.muted),
+            theme.muted_style(),
         )]),
     ])
     .centered();
@@ -77,7 +77,7 @@ pub fn render_help(frame: &mut Frame, app: &App, theme: &ThemeColors) {
                         .fg(theme.highlight)
                         .add_modifier(Modifier::BOLD),
                 ),
-                Span::styled(binding.description, Style::default().fg(theme.fg)),
+                Span::styled(binding.description, theme.fg_style()),
             ])
         })
         .collect();
@@ -93,38 +93,35 @@ pub fn render_help(frame: &mut Frame, app: &App, theme: &ThemeColors) {
                 .add_modifier(Modifier::BOLD),
         )]),
         Line::from(vec![
-            Span::styled("S      ", Style::default().fg(theme.highlight)),
+            Span::styled("S      ", theme.highlight_style()),
             Span::styled(
                 "Status: R=Run S=Sleep I=Idle T=Stop Z=Zombie",
-                Style::default().fg(theme.fg),
+                theme.fg_style(),
             ),
         ]),
         Line::from(vec![
-            Span::styled("Impact ", Style::default().fg(theme.highlight)),
+            Span::styled("Impact ", theme.highlight_style()),
             Span::styled(
                 "Energy impact score (higher = more drain)",
-                Style::default().fg(theme.fg),
+                theme.fg_style(),
             ),
         ]),
         Line::from(vec![
-            Span::styled("Disk   ", Style::default().fg(theme.highlight)),
-            Span::styled(
-                "Disk I/O since last refresh (read+write)",
-                Style::default().fg(theme.fg),
-            ),
+            Span::styled("Disk   ", theme.highlight_style()),
+            Span::styled("Disk I/O since last refresh (read+write)", theme.fg_style()),
         ]),
         Line::from(vec![
-            Span::styled("Run    ", Style::default().fg(theme.highlight)),
+            Span::styled("Run    ", theme.highlight_style()),
             Span::styled(
                 "Process runtime (how long it's been running)",
-                Style::default().fg(theme.fg),
+                theme.fg_style(),
             ),
         ]),
         Line::from(vec![
-            Span::styled("CPU    ", Style::default().fg(theme.highlight)),
+            Span::styled("CPU    ", theme.highlight_style()),
             Span::styled(
                 "CPU Time: accumulated CPU time consumed by process",
-                Style::default().fg(theme.fg),
+                theme.fg_style(),
             ),
         ]),
     ];
@@ -141,7 +138,7 @@ pub fn render_kill_confirm(frame: &mut Frame, app: &App, theme: &ThemeColors) {
     let block = Block::default()
         .title(" Kill Process? ")
         .borders(Borders::ALL)
-        .border_style(Style::default().fg(theme.danger))
+        .border_style(theme.danger_style())
         .style(Style::default().bg(theme.dialog_bg));
 
     let inner = block.inner(area);
@@ -159,11 +156,11 @@ pub fn render_kill_confirm(frame: &mut Frame, app: &App, theme: &ThemeColors) {
                 Style::default()
                     .fg(theme.success)
                     .add_modifier(Modifier::BOLD),
-                Style::default().fg(theme.muted),
+                theme.muted_style(),
                 "Process will be asked to terminate gracefully.",
             ),
             KillSignal::Force => (
-                Style::default().fg(theme.muted),
+                theme.muted_style(),
                 Style::default()
                     .fg(theme.danger)
                     .add_modifier(Modifier::BOLD),
@@ -174,43 +171,31 @@ pub fn render_kill_confirm(frame: &mut Frame, app: &App, theme: &ThemeColors) {
         vec![
             Line::from(""),
             Line::from(vec![
-                Span::styled("Process: ", Style::default().fg(theme.muted)),
-                Span::styled(
-                    &process.name,
-                    Style::default().fg(theme.fg).add_modifier(Modifier::BOLD),
-                ),
+                Span::styled("Process: ", theme.muted_style()),
+                Span::styled(&process.name, theme.fg_style().add_modifier(Modifier::BOLD)),
             ]),
             Line::from(vec![
-                Span::styled("PID: ", Style::default().fg(theme.muted)),
-                Span::styled(process.pid.to_string(), Style::default().fg(theme.fg)),
+                Span::styled("PID: ", theme.muted_style()),
+                Span::styled(process.pid.to_string(), theme.fg_style()),
             ]),
             Line::from(vec![
-                Span::styled("CPU: ", Style::default().fg(theme.muted)),
-                Span::styled(
-                    format!("{:.1}%", process.cpu_usage),
-                    Style::default().fg(theme.fg),
-                ),
+                Span::styled("CPU: ", theme.muted_style()),
+                Span::styled(format!("{:.1}%", process.cpu_usage), theme.fg_style()),
             ]),
             Line::from(vec![
-                Span::styled("Memory: ", Style::default().fg(theme.muted)),
-                Span::styled(
-                    format!("{:.1}MB", process.memory_mb),
-                    Style::default().fg(theme.fg),
-                ),
+                Span::styled("Memory: ", theme.muted_style()),
+                Span::styled(format!("{:.1}MB", process.memory_mb), theme.fg_style()),
             ]),
             Line::from(""),
             Line::from(vec![
-                Span::styled("Signal: ", Style::default().fg(theme.muted)),
+                Span::styled("Signal: ", theme.muted_style()),
                 Span::styled(" Graceful ", graceful_style),
-                Span::styled(" | ", Style::default().fg(theme.muted)),
+                Span::styled(" | ", theme.muted_style()),
                 Span::styled(" Force ", force_style),
-                Span::styled("  [Tab]", Style::default().fg(theme.muted)),
+                Span::styled("  [Tab]", theme.muted_style()),
             ]),
             Line::from(""),
-            Line::from(vec![Span::styled(
-                warning_text,
-                Style::default().fg(theme.warning),
-            )]),
+            Line::from(vec![Span::styled(warning_text, theme.warning_style())]),
             Line::from(""),
             Line::from(vec![
                 Span::styled(
@@ -219,14 +204,14 @@ pub fn render_kill_confirm(frame: &mut Frame, app: &App, theme: &ThemeColors) {
                         .fg(theme.danger)
                         .add_modifier(Modifier::BOLD),
                 ),
-                Span::styled(" Confirm  ", Style::default().fg(theme.fg)),
+                Span::styled(" Confirm  ", theme.fg_style()),
                 Span::styled(
                     "[N]",
                     Style::default()
                         .fg(theme.success)
                         .add_modifier(Modifier::BOLD),
                 ),
-                Span::styled(" Cancel", Style::default().fg(theme.fg)),
+                Span::styled(" Cancel", theme.fg_style()),
             ]),
         ]
     } else {
@@ -246,7 +231,7 @@ pub fn render_about(frame: &mut Frame, _app: &App, theme: &ThemeColors) {
     let block = Block::default()
         .title(" About ")
         .borders(Borders::ALL)
-        .border_style(Style::default().fg(theme.accent))
+        .border_style(theme.accent_style())
         .style(Style::default().bg(theme.dialog_bg));
 
     let inner = block.inner(area);
@@ -269,24 +254,24 @@ pub fn render_about(frame: &mut Frame, _app: &App, theme: &ThemeColors) {
         Line::from(""),
         Line::from(vec![Span::styled(
             "A terminal-based battery and energy monitor",
-            Style::default().fg(theme.fg),
+            theme.fg_style(),
         )]),
         Line::from(vec![Span::styled(
             "for macOS Apple Silicon Macs.",
-            Style::default().fg(theme.fg),
+            theme.fg_style(),
         )]),
         Line::from(""),
         Line::from(vec![Span::styled(
             "Track power consumption, battery health,",
-            Style::default().fg(theme.muted),
+            theme.muted_style(),
         )]),
         Line::from(vec![Span::styled(
             "and identify energy-hungry processes.",
-            Style::default().fg(theme.muted),
+            theme.muted_style(),
         )]),
         Line::from(""),
         Line::from(vec![
-            Span::styled("GitHub: ", Style::default().fg(theme.muted)),
+            Span::styled("GitHub: ", theme.muted_style()),
             Span::styled(
                 "https://github.com/jordond/jolt",
                 Style::default()
@@ -297,7 +282,7 @@ pub fn render_about(frame: &mut Frame, _app: &App, theme: &ThemeColors) {
         Line::from(""),
         Line::from(vec![Span::styled(
             "Press 'A' or Esc to close",
-            Style::default().fg(theme.muted),
+            theme.muted_style(),
         )]),
     ];
 

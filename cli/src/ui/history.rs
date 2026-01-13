@@ -29,7 +29,7 @@ pub fn render(frame: &mut Frame, app: &App, theme: &ThemeColors) {
     let block = Block::default()
         .title(" History ")
         .borders(Borders::ALL)
-        .border_style(Style::default().fg(theme.accent))
+        .border_style(theme.accent_style())
         .style(Style::default().bg(theme.dialog_bg));
 
     let inner = block.inner(area);
@@ -76,22 +76,22 @@ fn render_no_daemon(frame: &mut Frame, area: Rect, theme: &ThemeColors) {
         Line::from(""),
         Line::from(vec![Span::styled(
             "Start the daemon to collect history data:",
-            Style::default().fg(theme.muted),
+            theme.muted_style(),
         )]),
         Line::from(""),
         Line::from(vec![Span::styled(
             "  jolt daemon start",
-            Style::default().fg(theme.accent),
+            theme.accent_style(),
         )]),
         Line::from(""),
         Line::from(vec![Span::styled(
             "Or install as a service:",
-            Style::default().fg(theme.muted),
+            theme.muted_style(),
         )]),
         Line::from(""),
         Line::from(vec![Span::styled(
             "  jolt daemon install",
-            Style::default().fg(theme.accent),
+            theme.accent_style(),
         )]),
     ])
     .centered();
@@ -103,7 +103,7 @@ fn render_loading(frame: &mut Frame, area: Rect, theme: &ThemeColors) {
         Line::from(""),
         Line::from(vec![Span::styled(
             "Loading history data...",
-            Style::default().fg(theme.muted),
+            theme.muted_style(),
         )]),
     ])
     .centered();
@@ -128,7 +128,7 @@ fn render_period_tabs(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeCol
                     .bg(theme.accent)
                     .add_modifier(Modifier::BOLD)
             } else {
-                Style::default().fg(theme.muted)
+                theme.muted_style()
             };
             vec![
                 Span::styled(format!(" {} ", p.label()), style),
@@ -146,7 +146,7 @@ fn render_power_chart(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeCol
     let block = Block::default()
         .title(" Power Usage ")
         .borders(Borders::ALL)
-        .border_style(Style::default().fg(theme.border));
+        .border_style(theme.border_style());
 
     let inner = block.inner(area);
     frame.render_widget(block, area);
@@ -154,7 +154,7 @@ fn render_power_chart(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeCol
     if app.history_daily_stats.is_empty() && app.history_hourly_stats.is_empty() {
         let no_data = Paragraph::new(vec![Line::from(vec![Span::styled(
             "No data for this period",
-            Style::default().fg(theme.muted),
+            theme.muted_style(),
         )])])
         .centered();
         frame.render_widget(no_data, inner);
@@ -178,7 +178,7 @@ fn render_power_chart(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeCol
     if data_points.is_empty() {
         let no_data = Paragraph::new(vec![Line::from(vec![Span::styled(
             "No data for this period",
-            Style::default().fg(theme.muted),
+            theme.muted_style(),
         )])])
         .centered();
         frame.render_widget(no_data, inner);
@@ -194,7 +194,7 @@ fn render_power_chart(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeCol
     let dataset = Dataset::default()
         .marker(symbols::Marker::Braille)
         .graph_type(GraphType::Line)
-        .style(Style::default().fg(theme.accent))
+        .style(theme.accent_style())
         .data(&data_points);
 
     let x_label = if app.history_period == HistoryPeriod::Today {
@@ -206,14 +206,14 @@ fn render_power_chart(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeCol
     let chart = Chart::new(vec![dataset])
         .x_axis(
             Axis::default()
-                .title(Span::styled(x_label, Style::default().fg(theme.muted)))
-                .style(Style::default().fg(theme.border))
+                .title(Span::styled(x_label, theme.muted_style()))
+                .style(theme.border_style())
                 .bounds([0.0, data_points.len() as f64]),
         )
         .y_axis(
             Axis::default()
-                .title(Span::styled("Watts", Style::default().fg(theme.muted)))
-                .style(Style::default().fg(theme.border))
+                .title(Span::styled("Watts", theme.muted_style()))
+                .style(theme.border_style())
                 .bounds([0.0, max_power * 1.1])
                 .labels(vec![
                     Span::raw("0"),
@@ -285,13 +285,13 @@ fn render_sparklines(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColo
     let power_block = Block::default()
         .title(" Avg Power (W) ")
         .borders(Borders::ALL)
-        .border_style(Style::default().fg(theme.border));
+        .border_style(theme.border_style());
 
     let power_sparkline = Sparkline::default()
         .block(power_block)
         .data(&power_data)
         .max(power_data.iter().copied().max().unwrap_or(100).max(100))
-        .style(Style::default().fg(theme.accent));
+        .style(theme.accent_style());
 
     frame.render_widget(power_sparkline, chunks[0]);
 
@@ -304,13 +304,13 @@ fn render_sparklines(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColo
     let energy_block = Block::default()
         .title(energy_label)
         .borders(Borders::ALL)
-        .border_style(Style::default().fg(theme.border));
+        .border_style(theme.border_style());
 
     let energy_sparkline = Sparkline::default()
         .block(energy_block)
         .data(&battery_data)
         .max(battery_data.iter().copied().max().unwrap_or(100).max(100))
-        .style(Style::default().fg(theme.success));
+        .style(theme.success_style());
 
     frame.render_widget(energy_sparkline, chunks[1]);
 }
@@ -319,7 +319,7 @@ fn render_summary_stats(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeC
     let block = Block::default()
         .title(" Summary ")
         .borders(Borders::ALL)
-        .border_style(Style::default().fg(theme.border));
+        .border_style(theme.border_style());
 
     let inner = block.inner(area);
     frame.render_widget(block, area);
@@ -327,7 +327,7 @@ fn render_summary_stats(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeC
     if app.history_daily_stats.is_empty() {
         let no_data = Paragraph::new(vec![Line::from(vec![Span::styled(
             "No data",
-            Style::default().fg(theme.muted),
+            theme.muted_style(),
         )])])
         .centered();
         frame.render_widget(no_data, inner);
@@ -363,42 +363,30 @@ fn render_summary_stats(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeC
 
     let stats = vec![
         Line::from(vec![
-            Span::styled("Total Energy:  ", Style::default().fg(theme.muted)),
-            Span::styled(
-                format!("{:.1} Wh", total_energy),
-                Style::default().fg(theme.accent),
-            ),
+            Span::styled("Total Energy:  ", theme.muted_style()),
+            Span::styled(format!("{:.1} Wh", total_energy), theme.accent_style()),
         ]),
         Line::from(vec![
-            Span::styled("Avg Power:     ", Style::default().fg(theme.muted)),
-            Span::styled(format!("{:.1} W", avg_power), Style::default().fg(theme.fg)),
+            Span::styled("Avg Power:     ", theme.muted_style()),
+            Span::styled(format!("{:.1} W", avg_power), theme.fg_style()),
         ]),
         Line::from(vec![
-            Span::styled("Max Power:     ", Style::default().fg(theme.muted)),
-            Span::styled(
-                format!("{:.1} W", max_power),
-                Style::default().fg(theme.warning),
-            ),
+            Span::styled("Max Power:     ", theme.muted_style()),
+            Span::styled(format!("{:.1} W", max_power), theme.warning_style()),
         ]),
         Line::from(vec![
-            Span::styled("Screen On:     ", Style::default().fg(theme.muted)),
-            Span::styled(
-                format!("{:.1} hrs", total_screen_hours),
-                Style::default().fg(theme.fg),
-            ),
+            Span::styled("Screen On:     ", theme.muted_style()),
+            Span::styled(format!("{:.1} hrs", total_screen_hours), theme.fg_style()),
         ]),
         Line::from(vec![
-            Span::styled("Charging:      ", Style::default().fg(theme.muted)),
-            Span::styled(
-                format!("{:.1} hrs", total_charging),
-                Style::default().fg(theme.success),
-            ),
+            Span::styled("Charging:      ", theme.muted_style()),
+            Span::styled(format!("{:.1} hrs", total_charging), theme.success_style()),
         ]),
         Line::from(vec![
-            Span::styled("Days:          ", Style::default().fg(theme.muted)),
+            Span::styled("Days:          ", theme.muted_style()),
             Span::styled(
                 format!("{}", app.history_daily_stats.len()),
-                Style::default().fg(theme.fg),
+                theme.fg_style(),
             ),
         ]),
     ];
@@ -418,7 +406,7 @@ fn render_top_processes(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeC
     let block = Block::default()
         .title(" Top Power Consumers ")
         .borders(Borders::ALL)
-        .border_style(Style::default().fg(theme.border));
+        .border_style(theme.border_style());
 
     let inner = block.inner(area);
     frame.render_widget(block, area);
@@ -426,7 +414,7 @@ fn render_top_processes(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeC
     if app.history_top_processes.is_empty() {
         let no_data = Paragraph::new(vec![Line::from(vec![Span::styled(
             "No process data",
-            Style::default().fg(theme.muted),
+            theme.muted_style(),
         )])])
         .centered();
         frame.render_widget(no_data, inner);
@@ -507,19 +495,13 @@ fn render_footer(frame: &mut Frame, area: Rect, theme: &ThemeColors) {
     let footer = Paragraph::new(vec![Line::from(vec![
         Span::styled(
             format!("[{}/{}]", keys::PERIOD_PREV, keys::PERIOD_NEXT),
-            Style::default().fg(theme.accent),
+            theme.accent_style(),
         ),
-        Span::styled(" Period  ", Style::default().fg(theme.muted)),
-        Span::styled(
-            format!("[{}]", keys::SETTINGS),
-            Style::default().fg(theme.accent),
-        ),
-        Span::styled(" Settings  ", Style::default().fg(theme.muted)),
-        Span::styled(
-            format!("[{}]", keys::ESC),
-            Style::default().fg(theme.accent),
-        ),
-        Span::styled(" Close", Style::default().fg(theme.muted)),
+        Span::styled(" Period  ", theme.muted_style()),
+        Span::styled(format!("[{}]", keys::SETTINGS), theme.accent_style()),
+        Span::styled(" Settings  ", theme.muted_style()),
+        Span::styled(format!("[{}]", keys::ESC), theme.accent_style()),
+        Span::styled(" Close", theme.muted_style()),
     ])])
     .centered();
     frame.render_widget(footer, area);

@@ -201,9 +201,9 @@ pub fn render(frame: &mut Frame, area: Rect, app: &mut App, theme: &ThemeColors)
             let killable_style = if is_selected {
                 style
             } else if process.is_killable {
-                Style::default().fg(theme.success)
+                theme.success_style()
             } else {
-                Style::default().fg(theme.muted)
+                theme.muted_style()
             };
 
             let display_name = if *depth > 0 {
@@ -217,10 +217,10 @@ pub fn render(frame: &mut Frame, area: Rect, app: &mut App, theme: &ThemeColors)
                 style
             } else {
                 match process.status {
-                    ProcessState::Running => Style::default().fg(theme.success),
-                    ProcessState::Sleeping => Style::default().fg(theme.muted),
-                    ProcessState::Idle => Style::default().fg(theme.muted),
-                    _ => Style::default().fg(theme.warning),
+                    ProcessState::Running => theme.success_style(),
+                    ProcessState::Sleeping => theme.muted_style(),
+                    ProcessState::Idle => theme.muted_style(),
+                    _ => theme.warning_style(),
                 }
             };
 

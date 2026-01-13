@@ -34,7 +34,7 @@ pub fn render(frame: &mut Frame, app: &App, theme: &ThemeColors) {
     let block = Block::default()
         .title(" Settings ")
         .borders(Borders::ALL)
-        .border_style(Style::default().fg(theme.accent))
+        .border_style(theme.accent_style())
         .style(Style::default().bg(theme.dialog_bg));
 
     let inner = block.inner(area);
@@ -88,30 +88,27 @@ fn render_status_section(frame: &mut Frame, area: Rect, app: &App, theme: &Theme
 
         vec![
             Line::from(vec![
-                Span::styled("Background: ", Style::default().fg(theme.muted)),
+                Span::styled("Background: ", theme.muted_style()),
                 Span::styled(
                     bg_status,
                     Style::default().fg(bg_color).add_modifier(Modifier::BOLD),
                 ),
                 Span::raw(bg_spacer),
-                Span::styled("Uptime: ", Style::default().fg(theme.muted)),
-                Span::styled(uptime_str, Style::default().fg(theme.fg)),
+                Span::styled("Uptime: ", theme.muted_style()),
+                Span::styled(uptime_str, theme.fg_style()),
             ]),
             Line::from(vec![
-                Span::styled("Samples: ", Style::default().fg(theme.muted)),
-                Span::styled(
-                    format!("{:<8}", status.sample_count),
-                    Style::default().fg(theme.accent),
-                ),
+                Span::styled("Samples: ", theme.muted_style()),
+                Span::styled(format!("{:<8}", status.sample_count), theme.accent_style()),
                 Span::raw(samples_spacer),
-                Span::styled("DB Size: ", Style::default().fg(theme.muted)),
-                Span::styled(size_str, Style::default().fg(theme.fg)),
+                Span::styled("DB Size: ", theme.muted_style()),
+                Span::styled(size_str, theme.fg_style()),
             ]),
         ]
     } else {
         vec![
             Line::from(vec![
-                Span::styled("Background: ", Style::default().fg(theme.muted)),
+                Span::styled("Background: ", theme.muted_style()),
                 Span::styled(
                     bg_status,
                     Style::default().fg(bg_color).add_modifier(Modifier::BOLD),
@@ -119,7 +116,7 @@ fn render_status_section(frame: &mut Frame, area: Rect, app: &App, theme: &Theme
             ]),
             Line::from(vec![Span::styled(
                 "No daemon connection",
-                Style::default().fg(theme.muted),
+                theme.muted_style(),
             )]),
         ]
     };
@@ -131,7 +128,7 @@ fn render_status_section(frame: &mut Frame, area: Rect, app: &App, theme: &Theme
 fn render_divider(frame: &mut Frame, area: Rect, theme: &ThemeColors) {
     let divider = Paragraph::new(Line::from(vec![Span::styled(
         "\u{2500}".repeat(area.width as usize),
-        Style::default().fg(theme.border),
+        theme.border_style(),
     )]));
     frame.render_widget(divider, area);
 }
@@ -157,13 +154,13 @@ fn render_items_section(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeC
                         .bg(theme.selection_bg)
                         .add_modifier(Modifier::BOLD)
                 } else {
-                    Style::default().fg(theme.fg)
+                    theme.fg_style()
                 };
 
                 let value_style = if is_selected {
                     style.fg(theme.accent)
                 } else {
-                    Style::default().fg(theme.accent)
+                    theme.accent_style()
                 };
 
                 Line::from(vec![
@@ -181,11 +178,8 @@ fn render_items_section(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeC
 
 fn render_footer(frame: &mut Frame, area: Rect, theme: &ThemeColors) {
     let footer = Paragraph::new(Line::from(vec![
-        Span::styled(
-            format!("[{}]", keys::ESC),
-            Style::default().fg(theme.accent),
-        ),
-        Span::styled(" Close", Style::default().fg(theme.muted)),
+        Span::styled(format!("[{}]", keys::ESC), theme.accent_style()),
+        Span::styled(" Close", theme.muted_style()),
     ]))
     .alignment(Alignment::Center);
     frame.render_widget(footer, area);

@@ -1,7 +1,7 @@
 // UI adapter: converts jolt-theme colors to ratatui colors
 // The actual theme logic lives in the jolt-theme crate
 
-use ratatui::style::Color as RatatuiColor;
+use ratatui::style::{Color as RatatuiColor, Style};
 
 pub use jolt_theme::Color;
 
@@ -47,4 +47,62 @@ impl From<jolt_theme::ThemeColors> for ThemeColors {
 
 fn to_ratatui_color(color: Color) -> RatatuiColor {
     RatatuiColor::Rgb(color.r, color.g, color.b)
+}
+
+impl ThemeColors {
+    #[inline]
+    #[allow(dead_code)]
+    pub fn style(&self, color: RatatuiColor) -> Style {
+        Style::default().fg(color)
+    }
+
+    #[inline]
+    pub fn fg_style(&self) -> Style {
+        Style::default().fg(self.fg)
+    }
+
+    #[inline]
+    pub fn muted_style(&self) -> Style {
+        Style::default().fg(self.muted)
+    }
+
+    #[inline]
+    pub fn accent_style(&self) -> Style {
+        Style::default().fg(self.accent)
+    }
+
+    #[inline]
+    pub fn accent_secondary_style(&self) -> Style {
+        Style::default().fg(self.accent_secondary)
+    }
+
+    #[inline]
+    pub fn highlight_style(&self) -> Style {
+        Style::default().fg(self.highlight)
+    }
+
+    #[inline]
+    pub fn success_style(&self) -> Style {
+        Style::default().fg(self.success)
+    }
+
+    #[inline]
+    pub fn warning_style(&self) -> Style {
+        Style::default().fg(self.warning)
+    }
+
+    #[inline]
+    pub fn danger_style(&self) -> Style {
+        Style::default().fg(self.danger)
+    }
+
+    #[inline]
+    pub fn border_style(&self) -> Style {
+        Style::default().fg(self.border)
+    }
+
+    #[inline]
+    pub fn graph_style(&self) -> Style {
+        Style::default().fg(self.graph_line)
+    }
 }

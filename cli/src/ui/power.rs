@@ -13,7 +13,7 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) {
     let block = Block::default()
         .title(" Power ")
         .borders(Borders::ALL)
-        .border_style(Style::default().fg(theme.border))
+        .border_style(theme.border_style())
         .style(Style::default().bg(theme.bg));
 
     let inner = block.inner(area);
@@ -49,7 +49,7 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) {
     };
 
     let total = Paragraph::new(Line::from(vec![
-        Span::styled("Total: ", Style::default().fg(theme.muted)),
+        Span::styled("Total: ", theme.muted_style()),
         Span::styled(
             total_power,
             Style::default()
@@ -61,13 +61,13 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) {
 
     let cpu = Paragraph::new(Line::from(vec![Span::styled(
         cpu_power,
-        Style::default().fg(theme.accent),
+        theme.accent_style(),
     )]))
     .centered();
 
     let gpu = Paragraph::new(Line::from(vec![Span::styled(
         gpu_power,
-        Style::default().fg(theme.accent_secondary),
+        theme.accent_secondary_style(),
     )]))
     .centered();
 

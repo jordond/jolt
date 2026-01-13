@@ -13,7 +13,7 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) {
     let block = Block::default()
         .title(" System ")
         .borders(Borders::ALL)
-        .border_style(Style::default().fg(theme.border))
+        .border_style(theme.border_style())
         .style(Style::default().bg(theme.bg));
 
     let inner = block.inner(area);
@@ -91,7 +91,7 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) {
     };
 
     let cpu = Paragraph::new(Line::from(vec![
-        Span::styled("CPU: ", Style::default().fg(theme.muted)),
+        Span::styled("CPU: ", theme.muted_style()),
         Span::styled(
             cpu_text,
             Style::default().fg(cpu_color).add_modifier(Modifier::BOLD),
@@ -100,7 +100,7 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) {
     .centered();
 
     let load = Paragraph::new(Line::from(vec![
-        Span::styled("Load: ", Style::default().fg(theme.muted)),
+        Span::styled("Load: ", theme.muted_style()),
         Span::styled(
             load_text,
             Style::default().fg(load_color).add_modifier(Modifier::BOLD),
@@ -109,7 +109,7 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) {
     .centered();
 
     let memory = Paragraph::new(Line::from(vec![
-        Span::styled("Mem: ", Style::default().fg(theme.muted)),
+        Span::styled("Mem: ", theme.muted_style()),
         Span::styled(
             memory_text,
             Style::default()
@@ -120,11 +120,8 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) {
     .centered();
 
     let uptime = Paragraph::new(Line::from(vec![
-        Span::styled("Uptime: ", Style::default().fg(theme.muted)),
-        Span::styled(
-            uptime_text,
-            Style::default().fg(theme.fg).add_modifier(Modifier::BOLD),
-        ),
+        Span::styled("Uptime: ", theme.muted_style()),
+        Span::styled(uptime_text, theme.fg_style().add_modifier(Modifier::BOLD)),
     ]))
     .centered();
 

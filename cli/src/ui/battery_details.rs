@@ -45,7 +45,7 @@ pub fn render(frame: &mut Frame, app: &App, theme: &ThemeColors) {
     let block = Block::default()
         .title(" Battery Details ")
         .borders(Borders::ALL)
-        .border_style(Style::default().fg(theme.accent))
+        .border_style(theme.accent_style())
         .style(Style::default().bg(theme.dialog_bg));
 
     let inner = block.inner(area);
@@ -89,18 +89,18 @@ fn render_device_info(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeCol
 
     let lines = vec![
         Line::from(vec![
-            Span::styled("Vendor:     ", Style::default().fg(theme.muted)),
-            Span::styled(vendor, Style::default().fg(theme.fg)),
-            Span::styled("          Model:  ", Style::default().fg(theme.muted)),
-            Span::styled(model, Style::default().fg(theme.fg)),
+            Span::styled("Vendor:     ", theme.muted_style()),
+            Span::styled(vendor, theme.fg_style()),
+            Span::styled("          Model:  ", theme.muted_style()),
+            Span::styled(model, theme.fg_style()),
         ]),
         Line::from(vec![
-            Span::styled("Serial:     ", Style::default().fg(theme.muted)),
-            Span::styled(serial, Style::default().fg(theme.fg)),
+            Span::styled("Serial:     ", theme.muted_style()),
+            Span::styled(serial, theme.fg_style()),
         ]),
         Line::from(vec![
-            Span::styled("Technology: ", Style::default().fg(theme.muted)),
-            Span::styled(technology, Style::default().fg(theme.fg)),
+            Span::styled("Technology: ", theme.muted_style()),
+            Span::styled(technology, theme.fg_style()),
         ]),
     ];
 
@@ -118,7 +118,7 @@ fn render_charge_info(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeCol
 
     let lines = vec![
         Line::from(vec![
-            Span::styled("Charge:     ", Style::default().fg(theme.muted)),
+            Span::styled("Charge:     ", theme.muted_style()),
             Span::styled(
                 format!("{:.1}%", percent),
                 Style::default()
@@ -127,17 +127,14 @@ fn render_charge_info(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeCol
             ),
             Span::styled("  ", Style::default()),
             text_gauge(percent, 20, percent_color),
-            Span::styled(
-                format!("  ({:.1} Wh)", energy),
-                Style::default().fg(theme.muted),
-            ),
+            Span::styled(format!("  ({:.1} Wh)", energy), theme.muted_style()),
         ]),
         Line::from(vec![
-            Span::styled("Status:     ", Style::default().fg(theme.muted)),
-            Span::styled(state, Style::default().fg(theme.fg)),
+            Span::styled("Status:     ", theme.muted_style()),
+            Span::styled(state, theme.fg_style()),
             Span::styled(
                 format!("          Capacity: {:.1} Wh", max_capacity),
-                Style::default().fg(theme.muted),
+                theme.muted_style(),
             ),
         ]),
     ];
@@ -158,7 +155,7 @@ fn render_health_info(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeCol
 
     let lines = vec![
         Line::from(vec![
-            Span::styled("Health:     ", Style::default().fg(theme.muted)),
+            Span::styled("Health:     ", theme.muted_style()),
             Span::styled(
                 format!("{:.1}%", health),
                 Style::default()
@@ -167,12 +164,12 @@ fn render_health_info(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeCol
             ),
             Span::styled(
                 format!("  ({:.1} / {:.1} Wh)", max_capacity, design_capacity),
-                Style::default().fg(theme.muted),
+                theme.muted_style(),
             ),
         ]),
         Line::from(vec![
-            Span::styled("Cycles:     ", Style::default().fg(theme.muted)),
-            Span::styled(&cycles_str, Style::default().fg(theme.fg)),
+            Span::styled("Cycles:     ", theme.muted_style()),
+            Span::styled(&cycles_str, theme.fg_style()),
         ]),
     ];
 
@@ -193,16 +190,16 @@ fn render_electrical_info(frame: &mut Frame, area: Rect, app: &App, theme: &Them
 
     let lines = vec![
         Line::from(vec![
-            Span::styled("Temp:       ", Style::default().fg(theme.muted)),
-            Span::styled(&temp_str, Style::default().fg(theme.fg)),
-            Span::styled("          Voltage:  ", Style::default().fg(theme.muted)),
-            Span::styled(&voltage_str, Style::default().fg(theme.fg)),
+            Span::styled("Temp:       ", theme.muted_style()),
+            Span::styled(&temp_str, theme.fg_style()),
+            Span::styled("          Voltage:  ", theme.muted_style()),
+            Span::styled(&voltage_str, theme.fg_style()),
         ]),
         Line::from(vec![
-            Span::styled("Amperage:   ", Style::default().fg(theme.muted)),
-            Span::styled(&amperage_str, Style::default().fg(theme.fg)),
-            Span::styled("       Power:    ", Style::default().fg(theme.muted)),
-            Span::styled(&rate_str, Style::default().fg(theme.accent)),
+            Span::styled("Amperage:   ", theme.muted_style()),
+            Span::styled(&amperage_str, theme.fg_style()),
+            Span::styled("       Power:    ", theme.muted_style()),
+            Span::styled(&rate_str, theme.accent_style()),
         ]),
     ];
 
@@ -216,16 +213,16 @@ fn render_daily_soc(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColor
 
     let line = if let (Some(min), Some(max)) = (min_soc, max_soc) {
         Line::from(vec![
-            Span::styled("Today:      ", Style::default().fg(theme.muted)),
-            Span::styled(format!("{:.0}%", min), Style::default().fg(theme.warning)),
-            Span::styled(" - ", Style::default().fg(theme.muted)),
-            Span::styled(format!("{:.0}%", max), Style::default().fg(theme.success)),
-            Span::styled(" (min - max)", Style::default().fg(theme.muted)),
+            Span::styled("Today:      ", theme.muted_style()),
+            Span::styled(format!("{:.0}%", min), theme.warning_style()),
+            Span::styled(" - ", theme.muted_style()),
+            Span::styled(format!("{:.0}%", max), theme.success_style()),
+            Span::styled(" (min - max)", theme.muted_style()),
         ])
     } else {
         Line::from(vec![Span::styled(
             "Today:      N/A (macOS only)",
-            Style::default().fg(theme.muted),
+            theme.muted_style(),
         )])
     };
 
@@ -237,7 +234,7 @@ fn render_temperature_chart(frame: &mut Frame, area: Rect, app: &App, theme: &Th
     let block = Block::default()
         .title(" Temperature ")
         .borders(Borders::ALL)
-        .border_style(Style::default().fg(theme.border))
+        .border_style(theme.border_style())
         .style(Style::default().bg(theme.dialog_bg));
 
     let data = app.history.temperature_values();
@@ -253,20 +250,20 @@ fn render_temperature_chart(frame: &mut Frame, area: Rect, app: &App, theme: &Th
     let dataset = Dataset::default()
         .marker(Marker::Braille)
         .graph_type(GraphType::Line)
-        .style(Style::default().fg(theme.warning))
+        .style(theme.warning_style())
         .data(&data);
 
     let y_labels = vec![
-        Span::styled(format!("{:.0}°", min_y), Style::default().fg(theme.muted)),
-        Span::styled(format!("{:.0}°", max_y), Style::default().fg(theme.muted)),
+        Span::styled(format!("{:.0}°", min_y), theme.muted_style()),
+        Span::styled(format!("{:.0}°", max_y), theme.muted_style()),
     ];
 
     let x_axis = Axis::default()
-        .style(Style::default().fg(theme.muted))
+        .style(theme.muted_style())
         .bounds([0.0, max_x]);
 
     let y_axis = Axis::default()
-        .style(Style::default().fg(theme.muted))
+        .style(theme.muted_style())
         .bounds([min_y, max_y])
         .labels(y_labels);
 
@@ -282,7 +279,7 @@ fn render_temperature_chart(frame: &mut Frame, area: Rect, app: &App, theme: &Th
 fn render_footer(frame: &mut Frame, area: Rect, theme: &ThemeColors) {
     let line = Line::from(vec![Span::styled(
         "Press 'b' or Esc to close",
-        Style::default().fg(theme.muted),
+        theme.muted_style(),
     )]);
 
     let paragraph = Paragraph::new(vec![line]).centered();

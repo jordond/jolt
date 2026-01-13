@@ -40,7 +40,7 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) {
     let block = Block::default()
         .title(" Battery ")
         .borders(Borders::ALL)
-        .border_style(Style::default().fg(theme.border))
+        .border_style(theme.border_style())
         .style(Style::default().bg(theme.bg));
 
     let inner = block.inner(area);
@@ -200,22 +200,19 @@ fn render_battery_info_card(frame: &mut Frame, area: Rect, app: &App, theme: &Th
             .split(inner);
 
         let mut row1_spans = vec![
-            Span::styled(
-                format!("{} ", state_icon),
-                Style::default().fg(theme.accent),
-            ),
+            Span::styled(format!("{} ", state_icon), theme.accent_style()),
             Span::styled(
                 app.battery.state_label(),
-                Style::default().fg(theme.fg).add_modifier(Modifier::BOLD),
+                theme.fg_style().add_modifier(Modifier::BOLD),
             ),
-            Span::styled("  │  ", Style::default().fg(theme.border)),
-            Span::styled(format!("{} ", time_label), Style::default().fg(theme.muted)),
-            Span::styled(&time_value, Style::default().fg(theme.fg)),
+            Span::styled("  │  ", theme.border_style()),
+            Span::styled(format!("{} ", time_label), theme.muted_style()),
+            Span::styled(&time_value, theme.fg_style()),
         ];
 
         if let Some((ref text, has_value)) = forecast_info {
-            row1_spans.push(Span::styled("  │  ", Style::default().fg(theme.border)));
-            row1_spans.push(Span::styled("Forecast: ", Style::default().fg(theme.muted)));
+            row1_spans.push(Span::styled("  │  ", theme.border_style()));
+            row1_spans.push(Span::styled("Forecast: ", theme.muted_style()));
             let color = if has_value {
                 theme.success
             } else {
@@ -226,13 +223,13 @@ fn render_battery_info_card(frame: &mut Frame, area: Rect, app: &App, theme: &Th
 
         row1_spans.push(Span::styled(
             power_text.map_or(String::new(), |p| format!("  │  {}", p)),
-            Style::default().fg(theme.accent),
+            theme.accent_style(),
         ));
 
         let row1 = Line::from(row1_spans);
 
         let mut row2_spans = vec![
-            Span::styled("Health: ", Style::default().fg(theme.muted)),
+            Span::styled("Health: ", theme.muted_style()),
             Span::styled(
                 format!("{:.0}%", app.battery.health_percent()),
                 Style::default().fg(health_color),
@@ -243,42 +240,42 @@ fn render_battery_info_card(frame: &mut Frame, area: Rect, app: &App, theme: &Th
                     app.battery.max_capacity_wh(),
                     app.battery.design_capacity_wh()
                 ),
-                Style::default().fg(theme.muted),
+                theme.muted_style(),
             ),
-            Span::styled("  │  ", Style::default().fg(theme.border)),
-            Span::styled("Cycles: ", Style::default().fg(theme.muted)),
-            Span::styled(&cycles_text, Style::default().fg(theme.fg)),
+            Span::styled("  │  ", theme.border_style()),
+            Span::styled("Cycles: ", theme.muted_style()),
+            Span::styled(&cycles_text, theme.fg_style()),
         ];
 
         if let Some(temp) = app.battery.temperature_c() {
-            row2_spans.push(Span::styled("  │  ", Style::default().fg(theme.border)));
+            row2_spans.push(Span::styled("  │  ", theme.border_style()));
             row2_spans.push(Span::styled(
                 format!("{:.1}°C", temp),
-                Style::default().fg(theme.warning),
+                theme.warning_style(),
             ));
         }
 
-        row2_spans.push(Span::styled("  │  ", Style::default().fg(theme.border)));
+        row2_spans.push(Span::styled("  │  ", theme.border_style()));
         row2_spans.push(Span::styled(
             format!("{:.1}Wh", app.battery.energy_wh()),
-            Style::default().fg(theme.fg),
+            theme.fg_style(),
         ));
 
         if let (Some(min), Some(max)) = (app.battery.daily_min_soc(), app.battery.daily_max_soc()) {
-            row2_spans.push(Span::styled("  │  ", Style::default().fg(theme.border)));
+            row2_spans.push(Span::styled("  │  ", theme.border_style()));
             row2_spans.push(Span::styled(
                 format!("{:.0}-{:.0}%", min, max),
-                Style::default().fg(theme.muted),
+                theme.muted_style(),
             ));
         }
 
         if app.power.power_mode() != PowerMode::Unknown {
             let mode_icon = power_mode_icon(app.power.power_mode());
-            row2_spans.push(Span::styled("  │  ", Style::default().fg(theme.border)));
-            row2_spans.push(Span::styled("Mode: ", Style::default().fg(theme.muted)));
+            row2_spans.push(Span::styled("  │  ", theme.border_style()));
+            row2_spans.push(Span::styled("Mode: ", theme.muted_style()));
             row2_spans.push(Span::styled(
                 format!("{} {}", mode_icon, app.power.power_mode_label()),
-                Style::default().fg(theme.fg),
+                theme.fg_style(),
             ));
         }
 
@@ -306,19 +303,16 @@ fn build_single_line<'a>(
     health_color: ratatui::style::Color,
 ) -> Line<'a> {
     let mut spans = vec![
-        Span::styled(format!("{} ", icon), Style::default().fg(theme.accent)),
-        Span::styled(
-            state,
-            Style::default().fg(theme.fg).add_modifier(Modifier::BOLD),
-        ),
-        Span::styled("  │  ", Style::default().fg(theme.border)),
-        Span::styled(format!("{} ", time_label), Style::default().fg(theme.muted)),
-        Span::styled(time_value, Style::default().fg(theme.fg)),
+        Span::styled(format!("{} ", icon), theme.accent_style()),
+        Span::styled(state, theme.fg_style().add_modifier(Modifier::BOLD)),
+        Span::styled("  │  ", theme.border_style()),
+        Span::styled(format!("{} ", time_label), theme.muted_style()),
+        Span::styled(time_value, theme.fg_style()),
     ];
 
     if let Some((text, has_value)) = forecast {
-        spans.push(Span::styled("  │  ", Style::default().fg(theme.border)));
-        spans.push(Span::styled("Forecast: ", Style::default().fg(theme.muted)));
+        spans.push(Span::styled("  │  ", theme.border_style()));
+        spans.push(Span::styled("Forecast: ", theme.muted_style()));
         let color = if has_value {
             theme.success
         } else {
@@ -328,31 +322,28 @@ fn build_single_line<'a>(
     }
 
     if let Some(p) = power {
-        spans.push(Span::styled(
-            format!("  │  {}", p),
-            Style::default().fg(theme.accent),
-        ));
+        spans.push(Span::styled(format!("  │  {}", p), theme.accent_style()));
     }
 
     spans.extend([
-        Span::styled("  │  ", Style::default().fg(theme.border)),
+        Span::styled("  │  ", theme.border_style()),
         Span::styled(
             format!("health {:.0}%", health),
             Style::default().fg(health_color),
         ),
         Span::styled(
             format!(" ({:.0}/{:.0}Wh)", capacity, design_capacity),
-            Style::default().fg(theme.muted),
+            theme.muted_style(),
         ),
-        Span::styled("  │  ", Style::default().fg(theme.border)),
-        Span::styled(cycles, Style::default().fg(theme.fg)),
-        Span::styled(" cycles", Style::default().fg(theme.muted)),
+        Span::styled("  │  ", theme.border_style()),
+        Span::styled(cycles, theme.fg_style()),
+        Span::styled(" cycles", theme.muted_style()),
     ]);
 
     if let Some(mode) = power_mode {
-        spans.push(Span::styled("  │  ", Style::default().fg(theme.border)));
-        spans.push(Span::styled("Mode: ", Style::default().fg(theme.muted)));
-        spans.push(Span::styled(mode, Style::default().fg(theme.fg)));
+        spans.push(Span::styled("  │  ", theme.border_style()));
+        spans.push(Span::styled("Mode: ", theme.muted_style()));
+        spans.push(Span::styled(mode, theme.fg_style()));
     }
 
     Line::from(spans)

@@ -21,9 +21,9 @@ fn horizontal_line_points(y_value: f64, max_x: f64) -> Vec<(f64, f64)> {
 fn x_axis_time_labels(data_len: usize, theme: &ThemeColors) -> Vec<Span<'static>> {
     let max_x = data_len.max(60);
     vec![
-        Span::styled("now", Style::default().fg(theme.muted)),
-        Span::styled(format!("-{}s", max_x / 2), Style::default().fg(theme.muted)),
-        Span::styled(format!("-{}s", max_x), Style::default().fg(theme.muted)),
+        Span::styled("now", theme.muted_style()),
+        Span::styled(format!("-{}s", max_x / 2), theme.muted_style()),
+        Span::styled(format!("-{}s", max_x), theme.muted_style()),
     ]
 }
 
@@ -80,22 +80,17 @@ fn render_temperature_chart(frame: &mut Frame, area: Rect, app: &App, theme: &Th
     let current_temp = app.history.latest_temperature();
 
     let title_line = Line::from(vec![
-        Span::styled(
-            " Temp ",
-            Style::default()
-                .fg(theme.warning)
-                .add_modifier(Modifier::BOLD),
-        ),
+        Span::styled(" Temp ", theme.warning_style().add_modifier(Modifier::BOLD)),
         Span::styled(
             current_temp.map_or("--".to_string(), |t| format!("{:.1}°C", t)),
-            Style::default().fg(theme.fg),
+            theme.fg_style(),
         ),
     ]);
 
     let block = Block::default()
         .title(title_line)
         .borders(Borders::ALL)
-        .border_style(Style::default().fg(theme.border))
+        .border_style(theme.border_style())
         .style(Style::default().bg(theme.bg));
 
     if temp_data.is_empty() {
@@ -123,25 +118,25 @@ fn render_temperature_chart(frame: &mut Frame, area: Rect, app: &App, theme: &Th
         Dataset::default()
             .marker(Marker::Braille)
             .graph_type(GraphType::Line)
-            .style(Style::default().fg(theme.warning))
+            .style(theme.warning_style())
             .data(&temp_data),
     );
 
     let x_labels = x_axis_time_labels(temp_data.len(), theme);
 
     let y_labels = vec![
-        Span::styled(format!("{:.0}°", min_y), Style::default().fg(theme.muted)),
-        Span::styled(format!("{:.0}°", mid_y), Style::default().fg(theme.muted)),
-        Span::styled(format!("{:.0}°", max_y), Style::default().fg(theme.muted)),
+        Span::styled(format!("{:.0}°", min_y), theme.muted_style()),
+        Span::styled(format!("{:.0}°", mid_y), theme.muted_style()),
+        Span::styled(format!("{:.0}°", max_y), theme.muted_style()),
     ];
 
     let x_axis = Axis::default()
-        .style(Style::default().fg(theme.muted))
+        .style(theme.muted_style())
         .bounds([0.0, max_x])
         .labels(x_labels);
 
     let y_axis = Axis::default()
-        .style(Style::default().fg(theme.muted))
+        .style(theme.muted_style())
         .bounds([min_y, max_y])
         .labels(y_labels);
 
@@ -194,26 +189,18 @@ fn render_single(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) 
     let title_line = Line::from(vec![
         Span::styled(
             format!(" {} ", app.history.metric_label()),
-            Style::default()
-                .fg(theme.accent)
-                .add_modifier(Modifier::BOLD),
+            theme.accent_style().add_modifier(Modifier::BOLD),
         ),
-        Span::styled(
-            current_value.unwrap_or_default(),
-            Style::default().fg(theme.fg),
-        ),
+        Span::styled(current_value.unwrap_or_default(), theme.fg_style()),
         Span::styled(" ", Style::default()),
-        Span::styled(
-            avg_value.unwrap_or_default(),
-            Style::default().fg(theme.muted),
-        ),
-        Span::styled(" (g: toggle) ", Style::default().fg(theme.muted)),
+        Span::styled(avg_value.unwrap_or_default(), theme.muted_style()),
+        Span::styled(" (g: toggle) ", theme.muted_style()),
     ]);
 
     let block = Block::default()
         .title(title_line)
         .borders(Borders::ALL)
-        .border_style(Style::default().fg(theme.border))
+        .border_style(theme.border_style())
         .style(Style::default().bg(theme.bg));
 
     let data = app.history.current_values();
@@ -249,7 +236,7 @@ fn render_single(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) 
             Dataset::default()
                 .marker(Marker::Braille)
                 .graph_type(GraphType::Line)
-                .style(Style::default().fg(theme.danger))
+                .style(theme.danger_style())
                 .data(Box::leak(threshold_data.into_boxed_slice())),
         );
     }
@@ -258,36 +245,27 @@ fn render_single(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) 
         Dataset::default()
             .marker(Marker::Braille)
             .graph_type(GraphType::Line)
-            .style(Style::default().fg(theme.graph_line))
+            .style(theme.graph_style())
             .data(&data),
     );
 
     let x_labels = x_axis_time_labels(data.len(), theme);
 
     let y_labels = vec![
-        Span::styled(format!("{:.0}", min_y), Style::default().fg(theme.muted)),
-        Span::styled(
-            format!("{:.0}", min_y + quarter),
-            Style::default().fg(theme.muted),
-        ),
-        Span::styled(
-            format!("{:.0}", min_y + quarter * 2.0),
-            Style::default().fg(theme.muted),
-        ),
-        Span::styled(
-            format!("{:.0}", min_y + quarter * 3.0),
-            Style::default().fg(theme.muted),
-        ),
-        Span::styled(format!("{:.0}", max_y), Style::default().fg(theme.muted)),
+        Span::styled(format!("{:.0}", min_y), theme.muted_style()),
+        Span::styled(format!("{:.0}", min_y + quarter), theme.muted_style()),
+        Span::styled(format!("{:.0}", min_y + quarter * 2.0), theme.muted_style()),
+        Span::styled(format!("{:.0}", min_y + quarter * 3.0), theme.muted_style()),
+        Span::styled(format!("{:.0}", max_y), theme.muted_style()),
     ];
 
     let x_axis = Axis::default()
-        .style(Style::default().fg(theme.muted))
+        .style(theme.muted_style())
         .bounds([0.0, max_x])
         .labels(x_labels);
 
     let y_axis = Axis::default()
-        .style(Style::default().fg(theme.muted))
+        .style(theme.muted_style())
         .bounds([min_y, max_y])
         .labels(y_labels);
 
@@ -329,7 +307,7 @@ fn render_battery_markers(
 
         if x < inner.x + inner.width && y >= inner.y && y < inner.y + inner.height {
             let marker = Paragraph::new(format!("{:.0}", change.value))
-                .style(Style::default().fg(theme.accent_secondary));
+                .style(theme.accent_secondary_style());
             let marker_area = Rect::new(x.saturating_sub(1), y.saturating_sub(1), 4, 1);
             frame.render_widget(marker, marker_area);
         }
@@ -353,26 +331,21 @@ fn render_merged(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) 
     let title_line = Line::from(vec![
         Span::styled(
             " Combined ",
-            Style::default()
-                .fg(theme.accent)
-                .add_modifier(Modifier::BOLD),
+            theme.accent_style().add_modifier(Modifier::BOLD),
         ),
-        Span::styled(
-            format!("{:.1}W", power_val),
-            Style::default().fg(theme.graph_line),
-        ),
-        Span::styled(" │ ", Style::default().fg(theme.border)),
+        Span::styled(format!("{:.1}W", power_val), theme.graph_style()),
+        Span::styled(" │ ", theme.border_style()),
         Span::styled(
             format!("{:.0}%", battery_val),
-            Style::default().fg(theme.accent_secondary),
+            theme.accent_secondary_style(),
         ),
-        Span::styled(" (g: toggle) ", Style::default().fg(theme.muted)),
+        Span::styled(" (g: toggle) ", theme.muted_style()),
     ]);
 
     let block = Block::default()
         .title(title_line)
         .borders(Borders::ALL)
-        .border_style(Style::default().fg(theme.border))
+        .border_style(theme.border_style())
         .style(Style::default().bg(theme.bg));
 
     let power_data = app.history.power_values();
@@ -412,7 +385,7 @@ fn render_merged(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) 
             .name("Power")
             .marker(Marker::Braille)
             .graph_type(GraphType::Line)
-            .style(Style::default().fg(theme.graph_line))
+            .style(theme.graph_style())
             .data(&power_data),
     );
 
@@ -421,28 +394,28 @@ fn render_merged(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) 
             .name("Battery")
             .marker(Marker::Braille)
             .graph_type(GraphType::Line)
-            .style(Style::default().fg(theme.accent_secondary))
+            .style(theme.accent_secondary_style())
             .data(&battery_data),
     );
 
     let x_labels = x_axis_time_labels(power_data.len(), theme);
 
     let y_labels = vec![
-        Span::styled(format!("{:.0}W", min_y), Style::default().fg(theme.muted)),
+        Span::styled(format!("{:.0}W", min_y), theme.muted_style()),
         Span::styled(
             format!("{:.0}W", min_y + quarter * 2.0),
-            Style::default().fg(theme.muted),
+            theme.muted_style(),
         ),
-        Span::styled(format!("{:.0}W", max_y), Style::default().fg(theme.muted)),
+        Span::styled(format!("{:.0}W", max_y), theme.muted_style()),
     ];
 
     let x_axis = Axis::default()
-        .style(Style::default().fg(theme.muted))
+        .style(theme.muted_style())
         .bounds([0.0, max_x])
         .labels(x_labels);
 
     let y_axis = Axis::default()
-        .style(Style::default().fg(theme.muted))
+        .style(theme.muted_style())
         .bounds([min_y, max_y])
         .labels(y_labels);
 
@@ -494,7 +467,7 @@ fn render_mini_chart(
     let block = Block::default()
         .title(title)
         .borders(Borders::ALL)
-        .border_style(Style::default().fg(theme.border))
+        .border_style(theme.border_style())
         .style(Style::default().bg(theme.bg));
 
     if data.is_empty() {
@@ -526,17 +499,17 @@ fn render_mini_chart(
     );
 
     let y_labels = vec![
-        Span::styled(format!("{:.0}", min_y), Style::default().fg(theme.muted)),
-        Span::styled(format!("{:.0}", mid_y), Style::default().fg(theme.muted)),
-        Span::styled(format!("{:.0}", max_y), Style::default().fg(theme.muted)),
+        Span::styled(format!("{:.0}", min_y), theme.muted_style()),
+        Span::styled(format!("{:.0}", mid_y), theme.muted_style()),
+        Span::styled(format!("{:.0}", max_y), theme.muted_style()),
     ];
 
     let x_axis = Axis::default()
-        .style(Style::default().fg(theme.muted))
+        .style(theme.muted_style())
         .bounds([0.0, max_x]);
 
     let y_axis = Axis::default()
-        .style(Style::default().fg(theme.muted))
+        .style(theme.muted_style())
         .bounds([min_y, max_y])
         .labels(y_labels);
 
