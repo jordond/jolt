@@ -59,7 +59,7 @@ daemonize = "0.5"
 
 # Formatting
 bytesize = "2.3.1"
-humantime = "2.1"
+humantime = "2.3.0"
 
 # Internal crates (version required for crates.io publishing)
 jolt-protocol = { path = "crates/protocol", version = "1.0.0" }
