@@ -164,7 +164,7 @@ fn render_battery_info_card(frame: &mut Frame, area: Rect, app: &App, theme: &Th
         health_color,
     );
 
-    let single_line_width: usize = single_line.spans.iter().map(|s| s.content.len()).sum();
+    let single_line_width: usize = single_line.spans.iter().map(|s| s.width()).sum();
 
     if inner.width as usize >= single_line_width || inner.height < 3 {
         let centered = Layout::default()
@@ -269,6 +269,7 @@ fn render_battery_info_card(frame: &mut Frame, area: Rect, app: &App, theme: &Th
         let row2 = Line::from(row2_spans);
 
         frame.render_widget(Paragraph::new(row1).centered(), rows[0]);
+        frame.render_widget(Paragraph::new(Line::default()), rows[1]);
         frame.render_widget(Paragraph::new(row2).centered(), rows[2]);
     }
 }
