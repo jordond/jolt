@@ -251,7 +251,7 @@ fn render_temperature_chart(frame: &mut Frame, area: Rect, app: &App, theme: &Th
                 .marker(Marker::Braille)
                 .graph_type(GraphType::Scatter)
                 .style(theme.success_style())
-                .data(Box::leak(cool_points.into_boxed_slice())),
+                .data(&cool_points),
         );
     }
     if !warm_points.is_empty() {
@@ -260,7 +260,7 @@ fn render_temperature_chart(frame: &mut Frame, area: Rect, app: &App, theme: &Th
                 .marker(Marker::Braille)
                 .graph_type(GraphType::Scatter)
                 .style(theme.warning_style())
-                .data(Box::leak(warm_points.into_boxed_slice())),
+                .data(&warm_points),
         );
     }
     if !hot_points.is_empty() {
@@ -269,7 +269,7 @@ fn render_temperature_chart(frame: &mut Frame, area: Rect, app: &App, theme: &Th
                 .marker(Marker::Braille)
                 .graph_type(GraphType::Scatter)
                 .style(theme.danger_style())
-                .data(Box::leak(hot_points.into_boxed_slice())),
+                .data(&hot_points),
         );
     }
 

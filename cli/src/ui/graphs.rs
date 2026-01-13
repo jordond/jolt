@@ -108,18 +108,9 @@ fn render_temperature_chart(frame: &mut Frame, area: Rect, app: &App, theme: &Th
     let (min_y, max_y) = app.history.temperature_range();
     let max_x = temp_data.len().max(60) as f64;
 
-    let mut datasets = Vec::new();
-
     let grid_color = Color::Rgb(60, 60, 60);
     let mid_y = (min_y + max_y) / 2.0;
     let grid_data: Vec<(f64, f64)> = horizontal_line_points(mid_y, max_x);
-    datasets.push(
-        Dataset::default()
-            .marker(Marker::Dot)
-            .graph_type(GraphType::Scatter)
-            .style(Style::default().fg(grid_color))
-            .data(Box::leak(grid_data.into_boxed_slice())),
-    );
 
     let cool_points: Vec<(f64, f64)> = temp_data
         .iter()
@@ -137,13 +128,22 @@ fn render_temperature_chart(frame: &mut Frame, area: Rect, app: &App, theme: &Th
         .copied()
         .collect();
 
+    let mut datasets = Vec::new();
+    datasets.push(
+        Dataset::default()
+            .marker(Marker::Dot)
+            .graph_type(GraphType::Scatter)
+            .style(Style::default().fg(grid_color))
+            .data(&grid_data),
+    );
+
     if !cool_points.is_empty() {
         datasets.push(
             Dataset::default()
                 .marker(Marker::Braille)
                 .graph_type(GraphType::Scatter)
                 .style(theme.success_style())
-                .data(Box::leak(cool_points.into_boxed_slice())),
+                .data(&cool_points),
         );
     }
     if !warm_points.is_empty() {
@@ -152,7 +152,7 @@ fn render_temperature_chart(frame: &mut Frame, area: Rect, app: &App, theme: &Th
                 .marker(Marker::Braille)
                 .graph_type(GraphType::Scatter)
                 .style(theme.warning_style())
-                .data(Box::leak(warm_points.into_boxed_slice())),
+                .data(&warm_points),
         );
     }
     if !hot_points.is_empty() {
@@ -161,7 +161,7 @@ fn render_temperature_chart(frame: &mut Frame, area: Rect, app: &App, theme: &Th
                 .marker(Marker::Braille)
                 .graph_type(GraphType::Scatter)
                 .style(theme.danger_style())
-                .data(Box::leak(hot_points.into_boxed_slice())),
+                .data(&hot_points),
         );
     }
 
