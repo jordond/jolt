@@ -10,23 +10,7 @@ use ratatui::{
 use crate::app::App;
 use crate::theme::ThemeColors;
 
-fn centered_rect(area: Rect, width: u16, height: u16) -> Rect {
-    let width = width.min(area.width.saturating_sub(4));
-    let height = height.min(area.height.saturating_sub(2));
-    let x = area.x + (area.width.saturating_sub(width)) / 2;
-    let y = area.y + (area.height.saturating_sub(height)) / 2;
-    Rect::new(x, y, width, height)
-}
-
-fn color_for_percent(percent: f32, high: f32, low: f32, theme: &ThemeColors) -> Color {
-    if percent > high {
-        theme.success
-    } else if percent > low {
-        theme.warning
-    } else {
-        theme.danger
-    }
-}
+use super::utils::{centered_rect, color_for_percent};
 
 fn text_gauge(percent: f32, width: usize, color: Color) -> Span<'static> {
     let filled = ((percent / 100.0) * width as f32) as usize;

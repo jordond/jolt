@@ -9,16 +9,10 @@ use ratatui::{
 use crate::app::App;
 use crate::theme::ThemeColors;
 
-fn centered_rect(area: Rect, percent_x: u16, percent_y: u16) -> Rect {
-    let width = (area.width * percent_x / 100).min(area.width.saturating_sub(4));
-    let height = (area.height * percent_y / 100).min(area.height.saturating_sub(2));
-    let x = area.x + (area.width.saturating_sub(width)) / 2;
-    let y = area.y + (area.height.saturating_sub(height)) / 2;
-    Rect::new(x, y, width, height)
-}
+use super::utils::centered_rect_percent;
 
 pub fn render(frame: &mut Frame, app: &App, theme: &ThemeColors) {
-    let area = centered_rect(frame.area(), 65, 80);
+    let area = centered_rect_percent(frame.area(), 65, 80);
     frame.render_widget(Clear, area);
 
     let status = if app.importer_loading {

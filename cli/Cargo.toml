@@ -45,3 +45,5 @@ ureq = { workspace = true }
 plist = { workspace = true }
 rusqlite = { workspace = true }
 daemonize = { workspace = true }
+bytesize = { workspace = true }
+humantime = { workspace = true }

@@ -11,6 +11,8 @@ use crate::input::keys;
 use crate::settings::{self, SettingsRow, SETTINGS_LAYOUT};
 use crate::theme::ThemeColors;
 
+use super::utils::format_bytes;
+
 const CONTENT_WIDTH: u16 = 44;
 
 fn centered_fixed_rect(area: Rect, width: u16, height: u16) -> Rect {
@@ -196,21 +198,5 @@ fn format_uptime(secs: u64) -> String {
         format!("{}h {}m", hours, mins)
     } else {
         format!("{}m", mins)
-    }
-}
-
-fn format_bytes(bytes: u64) -> String {
-    const KB: u64 = 1024;
-    const MB: u64 = KB * 1024;
-    const GB: u64 = MB * 1024;
-
-    if bytes >= GB {
-        format!("{:.2} GB", bytes as f64 / GB as f64)
-    } else if bytes >= MB {
-        format!("{:.2} MB", bytes as f64 / MB as f64)
-    } else if bytes >= KB {
-        format!("{:.2} KB", bytes as f64 / KB as f64)
-    } else {
-        format!("{} B", bytes)
     }
 }

@@ -14,16 +14,10 @@ use crate::app::{App, HistoryPeriod};
 use crate::input::keys;
 use crate::theme::ThemeColors;
 
-fn centered_rect(area: Rect, width_percent: u16, height_percent: u16) -> Rect {
-    let popup_width = area.width * width_percent / 100;
-    let popup_height = area.height * height_percent / 100;
-    let x = area.x + (area.width.saturating_sub(popup_width)) / 2;
-    let y = area.y + (area.height.saturating_sub(popup_height)) / 2;
-    Rect::new(x, y, popup_width, popup_height)
-}
+use super::utils::centered_rect_percent;
 
 pub fn render(frame: &mut Frame, app: &App, theme: &ThemeColors) {
-    let area = centered_rect(frame.area(), 90, 85);
+    let area = centered_rect_percent(frame.area(), 90, 85);
     frame.render_widget(Clear, area);
 
     let block = Block::default()

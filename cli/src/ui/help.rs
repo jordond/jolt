@@ -1,5 +1,5 @@
 use ratatui::{
-    layout::{Constraint, Direction, Layout, Rect},
+    layout::{Constraint, Direction, Layout},
     style::{Modifier, Style},
     text::{Line, Span},
     widgets::{Block, Borders, Clear, Paragraph},
@@ -12,19 +12,13 @@ use crate::input::KEY_BINDINGS;
 use crate::theme::ThemeColors;
 use crate::ui::VERSION;
 
-fn centered_fixed_rect(area: Rect, width: u16, height: u16) -> Rect {
-    let width = width.min(area.width.saturating_sub(4));
-    let height = height.min(area.height.saturating_sub(2));
-    let x = area.x + (area.width.saturating_sub(width)) / 2;
-    let y = area.y + (area.height.saturating_sub(height)) / 2;
-    Rect::new(x, y, width, height)
-}
+use super::utils::centered_rect;
 
 pub fn render_help(frame: &mut Frame, app: &App, theme: &ThemeColors) {
     let legend_lines = 6;
     let content_height = KEY_BINDINGS.len() as u16 + legend_lines + 10;
     let content_width = 55;
-    let area = centered_fixed_rect(frame.area(), content_width, content_height);
+    let area = centered_rect(frame.area(), content_width, content_height);
 
     frame.render_widget(Clear, area);
 
@@ -131,7 +125,7 @@ pub fn render_help(frame: &mut Frame, app: &App, theme: &ThemeColors) {
 }
 
 pub fn render_kill_confirm(frame: &mut Frame, app: &App, theme: &ThemeColors) {
-    let area = centered_fixed_rect(frame.area(), 54, 16);
+    let area = centered_rect(frame.area(), 54, 16);
 
     frame.render_widget(Clear, area);
 
@@ -224,7 +218,7 @@ pub fn render_kill_confirm(frame: &mut Frame, app: &App, theme: &ThemeColors) {
 }
 
 pub fn render_about(frame: &mut Frame, _app: &App, theme: &ThemeColors) {
-    let area = centered_fixed_rect(frame.area(), 60, 16);
+    let area = centered_rect(frame.area(), 60, 16);
 
     frame.render_widget(Clear, area);
 

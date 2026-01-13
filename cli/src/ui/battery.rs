@@ -11,20 +11,7 @@ use crate::data::battery::ChargeState;
 use crate::data::power::PowerMode;
 use crate::theme::ThemeColors;
 
-fn percent_to_color(
-    percent: f32,
-    high_threshold: f32,
-    low_threshold: f32,
-    theme: &ThemeColors,
-) -> Color {
-    if percent > high_threshold {
-        theme.success
-    } else if percent > low_threshold {
-        theme.warning
-    } else {
-        theme.danger
-    }
-}
+use super::utils::color_for_percent;
 
 /// Returns the icon for the given power mode.
 fn power_mode_icon(mode: PowerMode) -> &'static str {
@@ -72,7 +59,7 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) {
 
 fn render_battery_gauge(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) {
     let percent = app.battery.charge_percent();
-    let gauge_color = percent_to_color(percent, 50.0, 20.0, theme);
+    let gauge_color = color_for_percent(percent, 50.0, 20.0, theme);
     let unfilled_color = darken_color(theme.border, 0.6);
 
     let gauge = Gauge::default()
@@ -147,7 +134,7 @@ fn render_battery_info_card(frame: &mut Frame, area: Rect, app: &App, theme: &Th
         app.battery.discharge_watts().map(|w| format!("{:.1}W", w))
     };
 
-    let health_color = percent_to_color(app.battery.health_percent(), 79.0, 49.0, theme);
+    let health_color = color_for_percent(app.battery.health_percent(), 79.0, 49.0, theme);
 
     let cycles_text = app
         .battery

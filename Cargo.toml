@@ -57,6 +57,10 @@ plist = "1.8.0"
 ureq = "3.1.4"
 daemonize = "0.5"
 
+# Formatting
+bytesize = "2.3"
+humantime = "2.1"
+
 # Internal crates (version required for crates.io publishing)
 jolt-protocol = { path = "crates/protocol", version = "1.0.0" }
 jolt-theme = { path = "crates/theme", version = "1.0.0" }
