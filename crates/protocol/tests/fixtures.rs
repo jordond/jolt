@@ -1,7 +1,7 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use protocol::*;
+use jolt_protocol::*;
 
 fn fixtures_dir() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR"))
@@ -21,8 +21,22 @@ fn responses_dir() -> PathBuf {
 }
 
 fn write_fixture(dir: &Path, name: &str, json: &str) {
-    let path = dir.join(format!("{}.json", name));
-    fs::write(&path, json).unwrap_or_else(|_| panic!("Failed to write fixture: {:?}", path));
+    let filename = format!("{}.json", name);
+    let path = dir.join(&filename);
+
+    // Check if update is needed
+    if let Ok(existing) = fs::read_to_string(&path) {
+        if existing == json {
+            return;
+        }
+    }
+
+    // Atomic write: write to .tmp, then rename
+    let tmp_path = dir.join(format!(".{}.tmp", filename));
+    fs::write(&tmp_path, json)
+        .unwrap_or_else(|_| panic!("Failed to write temp fixture: {:?}", tmp_path));
+    fs::rename(&tmp_path, &path)
+        .unwrap_or_else(|_| panic!("Failed to rename fixture: {:?} to {:?}", tmp_path, path));
 }
 
 fn sample_battery_snapshot() -> BatterySnapshot {
