@@ -53,6 +53,25 @@ brew install jordond/tap/jolt
 cargo install jolt-tui
 ```
 
+### Nix
+
+Run directly:
+```shell
+nix run github:jordond/jolt
+```
+
+Install to profile:
+```shell
+nix profile install github:jordond/jolt
+```
+
+Add to `configuration.nix`:
+```nix
+environment.systemPackages = [
+  (builtins.getFlake "github:jordond/jolt").packages.${pkgs.system}.default
+];
+```
+
 ### From Source
 
 ```shell
