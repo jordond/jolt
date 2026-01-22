@@ -2,13 +2,9 @@
 //!
 //! Supports:
 //! - macOS: LaunchAgent via launchd
-//! - Linux: systemd user service
 
 use std::path::PathBuf;
 
-use color_eyre::eyre::{eyre, Result};
-
-#[cfg(target_os = "macos")]
 const SERVICE_LABEL: &str = "sh.getjolt.daemon";
 
 #[derive(Debug, Clone)]
@@ -62,54 +58,20 @@ fn warn_if_dev_binary(exe_path: &std::path::Path) {
     }
 }
 
-#[cfg(target_os = "macos")]
 pub fn install_service(force: bool) -> Result<()> {
-    #[cfg(target_os = "macos")]
-    {
-        install_macos_service(force)
-    }
-    #[cfg(not(any(target_os = "macos", target_os = "linux")))]
-    {
-        Err(eyre!("Service installation not supported on this platform"))
-    }
+    install_macos_service(force)
 }
 
-#[cfg(target_os = "macos")]
 pub fn uninstall_service() -> Result<()> {
-    #[cfg(target_os = "macos")]
-    {
-        uninstall_macos_service()
-    }
-    #[cfg(not(any(target_os = "macos", target_os = "linux")))]
-    {
-        Err(eyre!(
-            "Service uninstallation not supported on this platform"
-        ))
-    }
+    uninstall_macos_service()
 }
 
-#[cfg(target_os = "macos")]
 pub fn get_service_status() -> ServiceStatus {
-    #[cfg(target_os = "macos")]
-    {
-        get_macos_service_status()
-    }
-    #[cfg(not(any(target_os = "macos", target_os = "linux")))]
-    {
-        ServiceStatus {
-            installed: false,
-            enabled: false,
-            running: false,
-            config_path: PathBuf::new(),
-            configured_exe: None,
-            warnings: vec!["Service management not supported on this platform".to_string()],
-        }
-    }
+    get_macos_service_status()
 }
 
 // macOS: launchd LaunchAgent
 
-#[cfg(target_os = "macos")]
 fn macos_plist_path() -> PathBuf {
     let home = dirs::home_dir().unwrap_or_else(|| {
         PathBuf::from(std::env::var("HOME").expect("HOME environment variable not set"))
@@ -119,12 +81,10 @@ fn macos_plist_path() -> PathBuf {
         .join(format!("{}.plist", SERVICE_LABEL))
 }
 
-#[cfg(target_os = "macos")]
 fn macos_log_dir() -> PathBuf {
     crate::config::runtime_dir()
 }
 
-#[cfg(target_os = "macos")]
 fn generate_macos_plist(exe_path: &std::path::Path) -> String {
     let log_dir = macos_log_dir();
     format!(
@@ -162,7 +122,6 @@ fn generate_macos_plist(exe_path: &std::path::Path) -> String {
     )
 }
 
-#[cfg(target_os = "macos")]
 fn install_macos_service(force: bool) -> Result<()> {
     let plist_path = macos_plist_path();
     let exe_path = std::env::current_exe()?;
@@ -234,7 +193,6 @@ fn install_macos_service(force: bool) -> Result<()> {
     Ok(())
 }
 
-#[cfg(target_os = "macos")]
 fn uninstall_macos_service() -> Result<()> {
     let plist_path = macos_plist_path();
 
@@ -255,7 +213,6 @@ fn uninstall_macos_service() -> Result<()> {
     Ok(())
 }
 
-#[cfg(target_os = "macos")]
 fn unload_macos_service() -> Result<()> {
     let plist_path = macos_plist_path();
     let uid = get_uid();
@@ -282,7 +239,6 @@ fn unload_macos_service() -> Result<()> {
     Ok(())
 }
 
-#[cfg(target_os = "macos")]
 fn is_macos_service_loaded() -> bool {
     let output = std::process::Command::new("launchctl")
         .args(["list", SERVICE_LABEL])
@@ -291,7 +247,6 @@ fn is_macos_service_loaded() -> bool {
     matches!(output, Ok(o) if o.status.success())
 }
 
-#[cfg(target_os = "macos")]
 fn get_macos_service_status() -> ServiceStatus {
     let plist_path = macos_plist_path();
     let installed = plist_path.exists();
@@ -325,7 +280,6 @@ fn get_macos_service_status() -> ServiceStatus {
     }
 }
 
-#[cfg(target_os = "macos")]
 fn extract_exe_from_plist(content: &str) -> Option<PathBuf> {
     let start = content.find("<array>")?;
     let end = content[start..].find("</array>")?;
@@ -344,77 +298,6 @@ fn get_uid() -> u32 {
     // calling process's user ID. It does not dereference pointers or rely on
     // any Rust-side invariants, so it cannot cause undefined behavior.
     unsafe { libc::getuid() }
-}
-
-// Linux: systemd user service
-
-#[cfg(target_os = "linux")]
-fn is_systemd_available() -> bool {
-    std::process::Command::new("systemctl")
-        .args(["--user", "status"])
-        .output()
-        .map(|o| o.status.code() != Some(127))
-        .unwrap_or(false)
-}
-
-#[cfg(target_os = "linux")]
-fn is_linux_service_enabled() -> bool {
-    let output = std::process::Command::new("systemctl")
-        .args(["--user", "is-enabled", SYSTEMD_SERVICE_NAME])
-        .output();
-
-    matches!(output, Ok(o) if o.status.success())
-}
-
-#[cfg(target_os = "linux")]
-fn is_linux_service_active() -> bool {
-    let output = std::process::Command::new("systemctl")
-        .args(["--user", "is-active", SYSTEMD_SERVICE_NAME])
-        .output();
-
-    matches!(output, Ok(o) if o.status.success())
-}
-
-#[cfg(target_os = "linux")]
-fn get_linux_service_status() -> ServiceStatus {
-    let service_path = linux_service_path();
-    let installed = service_path.exists();
-
-    let (enabled, running) = if is_systemd_available() {
-        (is_linux_service_enabled(), is_linux_service_active())
-    } else {
-        (false, crate::daemon::is_daemon_running())
-    };
-
-    let mut warnings = Vec::new();
-    let mut configured_exe = None;
-
-    if installed {
-        if let Ok(content) = std::fs::read_to_string(&service_path) {
-            configured_exe = extract_exe_from_systemd_service(&content);
-            if let Some(ref exe) = configured_exe {
-                if !exe.exists() {
-                    warnings.push(format!(
-                        "Configured executable not found: {}",
-                        exe.display()
-                    ));
-                }
-            }
-        }
-    }
-
-    if !is_systemd_available() {
-        warnings.push("systemd not available on this system".to_string());
-    }
-
-    ServiceStatus {
-        installed,
-        enabled,
-        running,
-        config_path: service_path,
-        configured_exe,
-        warnings,
-    }
 }
 
 #[cfg(test)]
@@ -468,14 +351,5 @@ mod tests {
         let exe = extract_exe_from_plist(plist);
         assert_eq!(exe, Some(PathBuf::from("/usr/local/bin/jolt")));
     }
-
-    #[cfg(target_os = "linux")]
-    #[test]
-    fn test_linux_service_path() {
-        let path = linux_service_path();
-        assert!(path.to_string_lossy().contains("systemd/user"));
-        assert!(path.to_string_lossy().contains("jolt-daemon.service"));
-    }
-
 
 }

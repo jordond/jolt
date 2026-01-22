@@ -1,0 +1,14 @@
+[Unit]
+Description=Jolt Battery Monitor Daemon
+Documentation=https://github.com/jordond/jolt
+After=graphical-session.target
+
+[Service]
+Type=simple
+ExecStart=jolt daemon start --foreground
+Restart=on-failure
+RestartSec=5
+Environment=RUST_LOG=info
+
+[Install]
+WantedBy=default.target
