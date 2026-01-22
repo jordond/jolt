@@ -1,6 +1,7 @@
 mod client;
 mod protocol;
 mod server;
+#[cfg(target_os = "macos")]
 pub mod service;
 
 pub use client::{ClientError, DaemonClient};
