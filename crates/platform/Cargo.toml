@@ -22,6 +22,7 @@ color-eyre = { workspace = true }
 sysinfo = { workspace = true }
 
 # macOS-specific (optional)
+[target.'cfg(target_os = "macos")'.dependencies]
 core-foundation = { workspace = true, optional = true }
 core-foundation-sys = { workspace = true, optional = true }
 mach2 = { workspace = true, optional = true }
