@@ -28,20 +28,16 @@ jobs:
             homebrew_arch: arm64
           - target: x86_64-unknown-linux-gnu
             os: ubuntu-latest
-            use-cross: true
             homebrew_os: linux
             homebrew_arch: amd64
           - target: aarch64-unknown-linux-gnu
             os: ubuntu-latest
-            use-cross: true
             homebrew_os: linux
             homebrew_arch: arm64
           - target: x86_64-unknown-linux-musl
             os: ubuntu-latest
-            use-cross: true
           - target: aarch64-unknown-linux-musl
             os: ubuntu-latest
-            use-cross: true
 
     steps:
       - name: Checkout
@@ -61,7 +57,6 @@ jobs:
           targets: ${{ matrix.target }}
 
       - name: Install cross
-        if: matrix.use-cross
         run: cargo install cross --git https://github.com/cross-rs/cross
 
       - name: Setup cache
@@ -71,13 +66,7 @@ jobs:
           key: ${{ matrix.target }}
 
       - name: Build binary
-        run: |
-          if [ "${{ matrix.use-cross }}" = "true" ]; then
-            cross build --release --target ${{ matrix.target }}
-          else
-            cargo build --release --target ${{ matrix.target }}
-          fi
-        shell: bash
+        run: cross build --release --target ${{ matrix.target }}
 
       - name: Prepare release artifacts
         run: |
