@@ -11,6 +11,8 @@ use crate::data::SystemInfo;
 use crate::input::keys;
 use crate::theme::ThemeColors;
 
+use super::utils::truncate_str;
+
 pub fn render_title_bar(
     frame: &mut Frame,
     area: Rect,
@@ -46,11 +48,7 @@ pub fn render_title_bar(
 
 pub fn render_status_bar(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) {
     let theme_name = app.config.theme_name();
-    let theme_display = if theme_name.len() > 12 {
-        format!("{}...", &theme_name[..9])
-    } else {
-        theme_name.to_string()
-    };
+    let theme_display = truncate_str(theme_name, 12);
 
     let appearance = app.config.appearance_label().to_lowercase();
 

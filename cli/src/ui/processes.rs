@@ -10,7 +10,7 @@ use crate::app::{App, SortColumn};
 use crate::data::ProcessState;
 use crate::theme::ThemeColors;
 
-use super::utils::format_duration;
+use super::utils::{format_duration, truncate_str};
 
 const COL_EXPAND: u16 = 6;
 const COL_PID: u16 = 7;
@@ -235,8 +235,8 @@ pub fn render(frame: &mut Frame, area: Rect, app: &mut App, theme: &ThemeColors)
                 Span::styled(process.pid.to_string(), style),
                 Span::styled(status_char, status_style),
                 Span::styled(format!("{:.1}", process.energy_impact), style),
-                Span::styled(truncate_name(display_name, name_width), style),
-                Span::styled(truncate_name(&process.command_args, command_width), style),
+                Span::styled(truncate_str(display_name, name_width), style),
+                Span::styled(truncate_str(&process.command_args, command_width), style),
                 Span::styled(format!("{:.1}", process.cpu_usage), style),
                 Span::styled(format_memory(process.memory_mb), style),
                 Span::styled(disk_io, style),
@@ -267,14 +267,6 @@ pub fn render(frame: &mut Frame, area: Rect, app: &mut App, theme: &ThemeColors)
     let table = Table::new(rows, widths).header(header);
 
     frame.render_widget(table, inner);
-}
-
-fn truncate_name(name: &str, max_len: usize) -> String {
-    if name.len() <= max_len {
-        name.to_string()
-    } else {
-        format!("{}...", &name[..max_len - 3])
-    }
 }
 
 fn format_header(name: &str, col: SortColumn, current: SortColumn, indicator: &str) -> String {

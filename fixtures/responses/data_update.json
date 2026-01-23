@@ -34,6 +34,7 @@
         "pid": 1234,
         "name": "Safari",
         "command": "/Applications/Safari.app/Contents/MacOS/Safari",
+        "command_args": "/Applications/Safari.app/Contents/MacOS/Safari -NSDocumentRevisionsDebugMode YES",
         "cpu_usage": 15.5,
         "memory_mb": 256.0,
         "energy_impact": 25.0,
@@ -43,6 +44,7 @@
             "pid": 1235,
             "name": "Safari Web Content",
             "command": "Safari Web Content",
+            "command_args": "Safari Web Content",
             "cpu_usage": 5.0,
             "memory_mb": 128.0,
             "energy_impact": 10.0,
@@ -63,6 +65,28 @@
         "run_time_secs": 7200,
         "total_cpu_time_secs": 600
       }
-    ]
+    ],
+    "system": {
+      "chip": "Apple M1 Pro",
+      "os_version": "14.2.1",
+      "p_cores": 8,
+      "e_cores": 2
+    },
+    "system_stats": {
+      "cpu_usage_percent": 25.5,
+      "load_one": 2.5,
+      "load_five": 2.0,
+      "load_fifteen": 1.5,
+      "memory_used_bytes": 8589934592,
+      "memory_total_bytes": 17179869184,
+      "uptime_secs": 86400,
+      "is_warmed_up": true
+    },
+    "forecast": {
+      "duration_secs": 18000,
+      "avg_power_watts": 12.5,
+      "sample_count": 30,
+      "source": "daemon"
+    }
   }
 }

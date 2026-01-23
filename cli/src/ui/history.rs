@@ -15,7 +15,7 @@ use crate::input::keys;
 use crate::theme::ThemeColors;
 
 use super::utils::{
-    centered_rect_percent, energy_unit_label, format_energy, format_energy_compact,
+    centered_rect_percent, energy_unit_label, format_energy, format_energy_compact, truncate_str,
 };
 
 pub fn render(frame: &mut Frame, app: &App, theme: &ThemeColors) {
@@ -453,7 +453,7 @@ fn render_top_processes(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeC
             let power_color = power_level_color(p.avg_power, max_power, theme);
 
             Row::new(vec![
-                truncate_name(&p.process_name, name_width),
+                truncate_str(&p.process_name, name_width),
                 format!("{:.1}", p.avg_power),
                 format_energy_compact(p.total_energy_wh, energy_unit),
                 format!("{:.0}", p.avg_cpu),
@@ -508,12 +508,4 @@ fn render_footer(frame: &mut Frame, area: Rect, theme: &ThemeColors) {
     ])])
     .centered();
     frame.render_widget(footer, area);
-}
-
-fn truncate_name(name: &str, max_len: usize) -> String {
-    if name.len() <= max_len {
-        name.to_string()
-    } else {
-        format!("{}...", &name[..max_len - 3])
-    }
 }

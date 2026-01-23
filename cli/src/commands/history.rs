@@ -4,6 +4,7 @@ use color_eyre::eyre::Result;
 
 use crate::cli::HistoryCommands;
 use crate::data::{self, HistoryStore};
+use crate::ui::utils::truncate_str;
 
 pub fn run(command: Option<HistoryCommands>) -> Result<()> {
     let cmd = command.unwrap_or(HistoryCommands::Summary {
@@ -215,14 +216,6 @@ pub fn get_date_range(period: &str) -> (String, String) {
         "month" => (data::history_store::days_ago_date_string(30), today),
         "all" => ("2000-01-01".to_string(), today),
         _ => (data::history_store::days_ago_date_string(7), today),
-    }
-}
-
-pub fn truncate_str(s: &str, max_len: usize) -> String {
-    if s.len() <= max_len {
-        s.to_string()
-    } else {
-        format!("{}...", &s[..max_len - 3])
     }
 }
 
