@@ -11,7 +11,7 @@ mod status_bar;
 mod system_stats;
 mod theme_importer;
 mod theme_picker;
-mod utils;
+pub mod utils;
 
 use ratatui::{
     layout::{Constraint, Direction, Layout},

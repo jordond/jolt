@@ -68,7 +68,8 @@ mod tests {
     use clap::CommandFactory;
 
     use crate::cli::{DaemonCommands, HistoryCommands, ThemeCommands};
-    use crate::commands::history::{escape_csv, get_date_range, truncate_str};
+    use crate::commands::history::{escape_csv, get_date_range};
+    use crate::ui::utils::truncate_str;
 
     #[test]
     fn cli_configuration_is_valid() {

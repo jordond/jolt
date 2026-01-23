@@ -125,6 +125,16 @@ pub fn convert_temperature(celsius: f32, unit: TemperatureUnit) -> f32 {
     }
 }
 
+pub fn truncate_str(s: &str, max_len: usize) -> String {
+    if s.len() <= max_len {
+        s.to_string()
+    } else if max_len <= 3 {
+        s[..max_len].to_string()
+    } else {
+        format!("{}...", &s[..max_len - 3])
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -240,5 +250,25 @@ mod tests {
             format_data_size(1_073_741_824, DataSizeUnit::Binary),
             "1.0 GiB"
         );
+    }
+
+    #[test]
+    fn test_truncate_str_no_underflow_when_max_len_small() {
+        assert_eq!(truncate_str("Terminal", 0), "");
+        assert_eq!(truncate_str("Terminal", 1), "T");
+        assert_eq!(truncate_str("Terminal", 2), "Te");
+        assert_eq!(truncate_str("Terminal", 3), "Ter");
+    }
+
+    #[test]
+    fn test_truncate_str_adds_ellipsis() {
+        assert_eq!(truncate_str("Terminal", 7), "Term...");
+        assert_eq!(truncate_str("Terminal", 4), "T...");
+    }
+
+    #[test]
+    fn test_truncate_str_unchanged_when_fits() {
+        assert_eq!(truncate_str("Terminal", 8), "Terminal");
+        assert_eq!(truncate_str("Terminal", 10), "Terminal");
     }
 }
