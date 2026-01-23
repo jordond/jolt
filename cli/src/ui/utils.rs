@@ -126,12 +126,15 @@ pub fn convert_temperature(celsius: f32, unit: TemperatureUnit) -> f32 {
 }
 
 pub fn truncate_str(s: &str, max_len: usize) -> String {
-    if s.len() <= max_len {
+    let char_count = s.chars().count();
+    if char_count <= max_len {
         s.to_string()
     } else if max_len <= 3 {
-        s[..max_len].to_string()
+        s.chars().take(max_len).collect()
     } else {
-        format!("{}...", &s[..max_len - 3])
+        let visible_len = max_len - 3;
+        let result: String = s.chars().take(visible_len).collect();
+        result + "..."
     }
 }
 
@@ -270,5 +273,42 @@ mod tests {
     fn test_truncate_str_unchanged_when_fits() {
         assert_eq!(truncate_str("Terminal", 8), "Terminal");
         assert_eq!(truncate_str("Terminal", 10), "Terminal");
+    }
+
+    #[test]
+    fn test_truncate_str_utf8_multibyte_chars() {
+        // Emoji (4 bytes each in UTF-8)
+        assert_eq!(truncate_str("🚀🔥💻", 3), "🚀🔥💻"); // Fits exactly
+        assert_eq!(truncate_str("🚀🔥💻", 2), "🚀🔥"); // max_len <= 3, no ellipsis
+        assert_eq!(truncate_str("🚀🔥💻🎉", 4), "🚀🔥💻🎉"); // Fits exactly (4 chars)
+        assert_eq!(truncate_str("🚀🔥💻🎉🌟", 4), "🚀..."); // Truncates with ellipsis
+
+        // Mixed ASCII and emoji
+        assert_eq!(truncate_str("Terminal🚀", 9), "Terminal🚀"); // Fits exactly
+        assert_eq!(truncate_str("Terminal🚀", 8), "Termi..."); // Truncates
+
+        // CJK characters (3 bytes each in UTF-8)
+        assert_eq!(truncate_str("文字列", 3), "文字列"); // Fits exactly
+        assert_eq!(truncate_str("文字列テスト", 5), "文字..."); // Truncates with ellipsis
+
+        // Accented characters
+        assert_eq!(truncate_str("café", 4), "café"); // Fits exactly
+        assert_eq!(truncate_str("naïve", 4), "n..."); // Truncates with ellipsis
+    }
+
+    #[test]
+    fn test_truncate_str_utf8_edge_cases() {
+        // Empty string
+        assert_eq!(truncate_str("", 0), "");
+        assert_eq!(truncate_str("", 5), "");
+
+        // Single multi-byte char with small max_len
+        assert_eq!(truncate_str("🚀", 1), "🚀"); // Fits (1 char)
+        assert_eq!(truncate_str("🚀", 0), ""); // Zero length
+
+        // Ensure no panic on boundary conditions
+        assert_eq!(truncate_str("🚀hello", 1), "🚀");
+        assert_eq!(truncate_str("🚀hello", 4), "🚀...");
+        assert_eq!(truncate_str("🚀hello", 6), "🚀hello");
     }
 }
