@@ -71,7 +71,13 @@ jobs:
           key: ${{ matrix.target }}
 
       - name: Build binary
-        run: ${{ matrix.use-cross && 'cross' || 'cargo' }} build --release --target ${{ matrix.target }} -p jolt-tui
+        run: |
+          if [ "${{ matrix.use-cross }}" = "true" ]; then
+            cross build --release --target ${{ matrix.target }}
+          else
+            cargo build --release --target ${{ matrix.target }}
+          fi
+        shell: bash
 
       - name: Prepare release artifacts
         run: |
