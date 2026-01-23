@@ -8,7 +8,7 @@
     "version": "0.1.0",
     "subscriber_count": 2,
     "history_enabled": true,
-    "protocol_version": 1,
+    "protocol_version": 2,
     "min_supported_version": 1
   }
 }
