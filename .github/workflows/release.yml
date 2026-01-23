@@ -20,33 +20,27 @@ jobs:
         include:
           - target: x86_64-apple-darwin
             os: macos-latest
-            features: macos
             homebrew_os: darwin
             homebrew_arch: amd64
           - target: aarch64-apple-darwin
             os: macos-latest
-            features: macos
             homebrew_os: darwin
             homebrew_arch: arm64
           - target: x86_64-unknown-linux-gnu
             os: ubuntu-latest
-            features: linux
             use-cross: true
             homebrew_os: linux
             homebrew_arch: amd64
           - target: aarch64-unknown-linux-gnu
             os: ubuntu-latest
-            features: linux
             use-cross: true
             homebrew_os: linux
             homebrew_arch: arm64
           - target: x86_64-unknown-linux-musl
             os: ubuntu-latest
-            features: linux
             use-cross: true
           - target: aarch64-unknown-linux-musl
             os: ubuntu-latest
-            features: linux
             use-cross: true
 
     steps:
@@ -79,9 +73,9 @@ jobs:
       - name: Build binary
         run: |
           if [ "${{ matrix.use-cross }}" = "true" ]; then
-            cross build --release --target ${{ matrix.target }} --no-default-features --features ${{ matrix.features }}
+            cross build --release --target ${{ matrix.target }}
           else
-            cargo build --release --target ${{ matrix.target }} --no-default-features --features ${{ matrix.features }}
+            cargo build --release --target ${{ matrix.target }}
           fi
         shell: bash
 
