@@ -30,11 +30,9 @@ pub use power::{PowerInfo, PowerProvider};
 pub use types::{BatteryTechnology, ChargeState, PowerMode};
 
 #[cfg(target_os = "macos")]
-#[cfg(feature = "macos")]
 pub mod macos;
 
 #[cfg(target_os = "linux")]
-#[cfg(feature = "linux")]
 pub mod linux;
 
 pub mod units {

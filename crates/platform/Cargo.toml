@@ -8,11 +8,6 @@ description = "Cross-platform battery and power monitoring for jolt"
 
 [features]
 default = []
-macos = [
-    "dep:core-foundation",
-    "dep:core-foundation-sys",
-    "dep:mach2",
-]
 linux = []
 
 [dependencies]
@@ -20,12 +15,11 @@ linux = []
 starship-battery = { workspace = true }
 color-eyre = { workspace = true }
 sysinfo = { workspace = true }
-
-# macOS-specific (optional)
-core-foundation = { workspace = true, optional = true }
-core-foundation-sys = { workspace = true, optional = true }
-mach2 = { workspace = true, optional = true }
 libc = { workspace = true }
+
+[target.'cfg(target_os = "macos")'.dependencies]
+core-foundation = { workspace = true }
+core-foundation-sys = { workspace = true }
 
 [target.'cfg(target_os = "linux")'.dependencies]
 # Linux doesn't need extra deps - uses sysfs directly

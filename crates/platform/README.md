@@ -191,5 +191,4 @@ jolt-platform/
 | `sysinfo` | CPU usage fallback | All |
 | `core-foundation` | macOS API bindings | macOS |
 | `core-foundation-sys` | macOS FFI types | macOS |
-| `mach2` | macOS kernel interfaces | macOS |
 | `libc` | System calls | All |
