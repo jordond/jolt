@@ -28,9 +28,8 @@
           # Specific to workspace structure, target the CLI package
           cargoBuildFlags = [ "-p" "jolt-tui" ];
 
-          # Feature handling: disable macos default on Linux, enable linux feature
+          # Feature handling: disable macos default on Linux
           buildNoDefaultFeatures = pkgs.stdenv.isLinux;
-          buildFeatures = pkgs.lib.optionals pkgs.stdenv.isLinux [ "linux" ];
 
           nativeBuildInputs = with pkgs; [
             pkg-config
