@@ -127,7 +127,7 @@ jobs:
           workspaces: cli
           key: ${{ matrix.target }}
       - name: Build
-        run: ${{ matrix.use-cross && 'cross' || 'cargo' }} build --release --target ${{ matrix.target }}
+        run: ${{ matrix.use-cross && 'cross' || 'cargo' }} build --release --target ${{ matrix.target }} -p jolt-tui
 
   website-lint:
     name: Website Lint
