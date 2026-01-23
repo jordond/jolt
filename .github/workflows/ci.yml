@@ -36,6 +36,7 @@ jobs:
               - '**/*.rs'
               - 'Cargo.toml'
               - 'Cargo.lock'
+              - '.github/workflows/*.yml'
             website:
               - 'website/**'
 
