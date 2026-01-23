@@ -105,6 +105,7 @@ pub struct PowerSnapshot {
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct SystemSnapshot {
     pub chip: String,
+    pub os_name: String,
     pub os_version: String,
     pub p_cores: u32,
     pub e_cores: u32,

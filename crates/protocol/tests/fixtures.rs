@@ -114,6 +114,7 @@ fn sample_process_snapshot() -> ProcessSnapshot {
 fn sample_system_snapshot() -> SystemSnapshot {
     SystemSnapshot {
         chip: "Apple M1 Pro".to_string(),
+        os_name: "macOS".to_string(),
         os_version: "14.2.1".to_string(),
         p_cores: 8,
         e_cores: 2,
