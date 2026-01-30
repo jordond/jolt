@@ -68,6 +68,7 @@
     ],
     "system": {
       "chip": "Apple M1 Pro",
+      "os_name": "macOS",
       "os_version": "14.2.1",
       "p_cores": 8,
       "e_cores": 2

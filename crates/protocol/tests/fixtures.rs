@@ -458,3 +458,23 @@ fn verify_response_fixtures_deserialize() {
         }
     }
 }
+
+#[test]
+fn test_system_snapshot_backward_compatibility() {
+    // Test that SystemSnapshot can be deserialized from JSON without os_name field
+    let json_without_os_name = r#"{
+        "chip": "Apple M1",
+        "os_version": "14.0",
+        "p_cores": 8,
+        "e_cores": 2
+    }"#;
+
+    let snapshot: SystemSnapshot = serde_json::from_str(json_without_os_name)
+        .expect("Failed to deserialize SystemSnapshot without os_name");
+
+    assert_eq!(snapshot.chip, "Apple M1");
+    assert_eq!(snapshot.os_name, "Unknown");
+    assert_eq!(snapshot.os_version, "14.0");
+    assert_eq!(snapshot.p_cores, 8);
+    assert_eq!(snapshot.e_cores, 2);
+}
