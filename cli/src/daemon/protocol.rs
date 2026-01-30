@@ -123,6 +123,7 @@ impl From<&data::SystemInfo> for SystemSnapshot {
     fn from(s: &data::SystemInfo) -> Self {
         Self {
             chip: s.chip.clone(),
+            os_name: s.os_name.clone(),
             os_version: s.os_version.clone(),
             p_cores: s.p_cores,
             e_cores: s.e_cores,

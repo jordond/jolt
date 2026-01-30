@@ -102,9 +102,15 @@ pub struct PowerSnapshot {
     pub is_warmed_up: bool,
 }
 
+fn default_os_name() -> String {
+    "Unknown".to_string()
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct SystemSnapshot {
     pub chip: String,
+    #[serde(default = "default_os_name")]
+    pub os_name: String,
     pub os_version: String,
     pub p_cores: u32,
     pub e_cores: u32,

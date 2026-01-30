@@ -27,8 +27,9 @@ pub fn render_title_bar(
     ];
 
     let right_text = format!(
-        "{} · macOS {} · {} ",
+        "{} · {} {} · {} ",
         system_info.chip,
+        system_info.os_name,
         system_info.os_version,
         system_info.cores_display()
     );
