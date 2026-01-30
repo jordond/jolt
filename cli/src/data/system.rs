@@ -45,9 +45,8 @@ impl SystemInfo {
 }
 
 fn get_chip_info() -> (String, u32, u32) {
-    let mut system = System::new_with_specifics(
-        RefreshKind::nothing().with_cpu(CpuRefreshKind::everything()),
-    );
+    let mut system =
+        System::new_with_specifics(RefreshKind::nothing().with_cpu(CpuRefreshKind::everything()));
     system.refresh_cpu_all();
 
     let cpus = system.cpus();
@@ -63,13 +62,13 @@ fn get_chip_info() -> (String, u32, u32) {
         let p_cores = get_sysctl_int("hw.perflevel0.physicalcpu").unwrap_or(0);
         let e_cores = get_sysctl_int("hw.perflevel1.physicalcpu").unwrap_or(0);
         if p_cores > 0 || e_cores > 0 {
-             // If we have P/E cores, we trust sysctl more for the count
-             return (chip, p_cores, e_cores);
+            // If we have P/E cores, we trust sysctl more for the count
+            return (chip, p_cores, e_cores);
         }
     }
 
     let physical_cores = System::physical_core_count().unwrap_or(cpus.len());
-    
+
     // On non-macOS or if sysctl failed, we treat all as P-cores for now
     (chip, physical_cores as u32, 0)
 }
@@ -81,7 +80,7 @@ fn clean_chip_name(name: &str) -> String {
 fn get_os_info() -> (String, String) {
     let name = System::name().unwrap_or_else(|| "Unknown".to_string());
     let version = System::os_version().unwrap_or_else(|| "Unknown".to_string());
-    
+
     // Clean up macOS name
     let name = if name == "Darwin" {
         "macOS".to_string()
@@ -101,4 +100,3 @@ fn get_sysctl_int(key: &str) -> Option<u32> {
         None
     }
 }
-
