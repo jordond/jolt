@@ -32,7 +32,7 @@ ratatui = { version = "0.30", features = ["crossterm"] }
 crossterm = "0.29"
 
 # CLI
-clap = { version = "4.5.54", features = ["derive"] }
+clap = { version = "4.5.56", features = ["derive"] }
 
 # Logging
 tracing = "0.1.44"
@@ -40,7 +40,7 @@ tracing-subscriber = { version = "0.3.22", features = ["env-filter", "time"] }
 tracing-appender = "0.2.4"
 
 # System
-sysinfo = "0.37.2"
+sysinfo = "0.38.0"
 systemstat = "0.2.5"
 core-foundation = "0.10.1"
 core-foundation-sys = "0.8.7"
