@@ -24,6 +24,10 @@ pub struct BatteryData {
 }
 
 impl BatteryData {
+    pub fn is_available() -> bool {
+        PlatformBattery::is_available()
+    }
+
     pub fn new() -> Result<Self> {
         let provider = PlatformBattery::new()?;
         let info = provider.info();

@@ -20,13 +20,9 @@ use data::BatteryData;
 use logging::LogMode;
 
 fn require_battery() {
-    if let Err(e) = BatteryData::new() {
-        if e.to_string().contains("No battery found") {
-            eprintln!(
-                "No battery found. jolt is designed for laptops and battery-powered devices."
-            );
-            std::process::exit(1);
-        }
+    if !BatteryData::is_available() {
+        eprintln!("No battery found. jolt is designed for laptops and battery-powered devices.");
+        std::process::exit(1);
     }
 }
 
