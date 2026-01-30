@@ -16,7 +16,17 @@ use color_eyre::eyre::Result;
 
 use cli::{Cli, Commands};
 use config::{ensure_dirs, LogLevel, UserConfig};
+use data::BatteryData;
 use logging::LogMode;
+
+fn require_battery() {
+    if let Err(e) = BatteryData::new() {
+        if e.to_string().contains("No battery found") {
+            eprintln!("No battery found. jolt is designed for laptops and battery-powered devices.");
+            std::process::exit(1);
+        }
+    }
+}
 
 fn main() -> Result<()> {
     color_eyre::install()?;
@@ -32,10 +42,12 @@ fn main() -> Result<()> {
             interval,
             compact,
         }) => {
+            require_battery();
             let _guard = logging::init(config.log_level, LogMode::Stderr, log_level_override);
             commands::pipe::run(samples, interval, compact)
         }
         Some(Commands::Debug) => {
+            require_battery();
             let _guard = logging::init(config.log_level, LogMode::Stderr, log_level_override);
             commands::debug::run()
         }
@@ -56,6 +68,7 @@ fn main() -> Result<()> {
         }
         Some(Commands::Logs { lines, follow }) => commands::logs::run(lines, follow),
         Some(Commands::Ui) | None => {
+            require_battery();
             let _guard = logging::init(config.log_level, LogMode::File, log_level_override);
             run_tui(config)
         }
