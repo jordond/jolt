@@ -89,6 +89,22 @@ jobs:
           workspaces: cli
       - run: cargo check --all-targets --all-features
 
+  rust-test:
+    name: Rust Test
+    needs: changes
+    if: needs.changes.outputs.rust == 'true'
+    runs-on: macos-latest
+    defaults:
+      run:
+        working-directory: ./cli
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: cli
+      - run: cargo test --workspace
+
   rust-build:
     name: Build ${{ matrix.target }}
     needs: changes

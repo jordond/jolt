@@ -9,7 +9,7 @@ use color_eyre::eyre::Result;
 use tracing::{debug, info};
 
 use super::App;
-use crate::daemon::{DaemonClient, DataSnapshot};
+use crate::daemon::{ClientError, DaemonClient, DataSnapshot};
 
 impl App {
     /// Attempts to connect to the daemon and subscribe for real-time updates.
@@ -37,43 +37,48 @@ impl App {
     /// Attempts to subscribe to the daemon for real-time updates.
     /// Returns true if subscription was successful.
     fn try_subscribe_to_daemon(&mut self) -> bool {
-        if let Ok(mut client) = DaemonClient::connect() {
-            if client.subscribe().is_ok() && client.set_nonblocking(true).is_ok() {
-                info!("Subscribed to daemon for real-time data");
+        let client = match DaemonClient::connect_with_version_check() {
+            Ok(c) => c,
+            Err(ClientError::VersionMismatch(e)) => {
+                tracing::warn!("{}", e);
+                return false;
+            }
+            Err(_) => return false,
+        };
 
-                // Create channel for background thread to send snapshots
-                let (tx, rx) = std::sync::mpsc::channel();
-                self.snapshot_rx = Some(rx);
+        let mut client = client;
+        if client.subscribe().is_ok() && client.set_nonblocking(true).is_ok() {
+            info!("Subscribed to daemon for real-time data");
 
-                // Spawn background thread to continuously read from socket
-                std::thread::spawn(move || {
-                    debug!("Background daemon reader thread started");
-                    let mut client = client;
-                    loop {
-                        match client.read_update() {
-                            Ok(Some(snapshot)) => {
-                                if tx.send(snapshot).is_err() {
-                                    debug!("Channel closed, reader thread exiting");
-                                    break;
-                                }
-                            }
-                            Ok(None) => {
-                                // No data available, sleep briefly to avoid busy loop
-                                std::thread::sleep(std::time::Duration::from_millis(10));
-                            }
-                            Err(e) => {
-                                debug!(error = %e, "Background reader connection lost");
+            let (tx, rx) = std::sync::mpsc::channel();
+            self.snapshot_rx = Some(rx);
+
+            std::thread::spawn(move || {
+                debug!("Background daemon reader thread started");
+                let mut client = client;
+                loop {
+                    match client.read_update() {
+                        Ok(Some(snapshot)) => {
+                            if tx.send(snapshot).is_err() {
+                                debug!("Channel closed, reader thread exiting");
                                 break;
                             }
                         }
+                        Ok(None) => {
+                            std::thread::sleep(std::time::Duration::from_millis(10));
+                        }
+                        Err(e) => {
+                            debug!(error = %e, "Background reader connection lost");
+                            break;
+                        }
                     }
-                });
+                }
+            });
 
-                self.using_daemon_data = true;
-                self.daemon_connected = true;
-                self.sync_daemon_broadcast_interval();
-                return true;
-            }
+            self.using_daemon_data = true;
+            self.daemon_connected = true;
+            self.sync_daemon_broadcast_interval();
+            return true;
         }
         false
     }

@@ -5,8 +5,55 @@ use std::time::Duration;
 use crate::daemon::protocol::{
     ChargeSession, CycleSummary, DaemonRequest, DaemonResponse, DaemonStatus, DailyCycle,
     DailyStat, DailyTopProcess, DataSnapshot, HourlyStat, KillProcessResult, KillSignal, Sample,
+    MIN_SUPPORTED_VERSION, PROTOCOL_VERSION,
 };
 use crate::daemon::socket_path;
+
+#[derive(Debug, Clone)]
+pub struct VersionMismatchError {
+    pub tui_protocol_version: u32,
+    pub tui_min_supported: u32,
+    pub daemon_protocol_version: u32,
+    pub daemon_min_supported: u32,
+    pub daemon_binary_version: String,
+    pub kind: VersionMismatchKind,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum VersionMismatchKind {
+    TuiTooOld,
+    DaemonTooOld,
+}
+
+impl std::fmt::Display for VersionMismatchError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self.kind {
+            VersionMismatchKind::TuiTooOld => {
+                write!(
+                    f,
+                    "Protocol version mismatch: TUI uses protocol v{}, but daemon (v{}) requires v{}+.\n\n\
+                    Please update jolt:\n  \
+                    brew upgrade jolt\n  \
+                    # or: cargo install jolt-tui",
+                    self.tui_protocol_version,
+                    self.daemon_binary_version,
+                    self.daemon_min_supported
+                )
+            }
+            VersionMismatchKind::DaemonTooOld => {
+                write!(
+                    f,
+                    "Protocol version mismatch: daemon (v{}) uses protocol v{}, but this TUI requires v{}+.\n\n\
+                    Please restart the daemon:\n  \
+                    jolt daemon restart",
+                    self.daemon_binary_version,
+                    self.daemon_protocol_version,
+                    self.tui_min_supported
+                )
+            }
+        }
+    }
+}
 
 #[derive(Debug, thiserror::Error)]
 pub enum ClientError {
@@ -21,9 +68,42 @@ pub enum ClientError {
 
     #[error("Subscription rejected: {0}")]
     SubscriptionRejected(String),
+
+    #[error("{0}")]
+    VersionMismatch(VersionMismatchError),
 }
 
 pub type Result<T> = std::result::Result<T, ClientError>;
+
+/// Checks if the TUI and daemon protocol versions are compatible.
+/// Returns Ok(()) if compatible, or Err with detailed mismatch info.
+pub fn check_version_compatibility(status: &DaemonStatus) -> Result<()> {
+    // Check 1: Can daemon understand TUI's messages?
+    if PROTOCOL_VERSION < status.min_supported_version {
+        return Err(ClientError::VersionMismatch(VersionMismatchError {
+            tui_protocol_version: PROTOCOL_VERSION,
+            tui_min_supported: MIN_SUPPORTED_VERSION,
+            daemon_protocol_version: status.protocol_version,
+            daemon_min_supported: status.min_supported_version,
+            daemon_binary_version: status.version.clone(),
+            kind: VersionMismatchKind::TuiTooOld,
+        }));
+    }
+
+    // Check 2: Can TUI understand daemon's messages?
+    if status.protocol_version < MIN_SUPPORTED_VERSION {
+        return Err(ClientError::VersionMismatch(VersionMismatchError {
+            tui_protocol_version: PROTOCOL_VERSION,
+            tui_min_supported: MIN_SUPPORTED_VERSION,
+            daemon_protocol_version: status.protocol_version,
+            daemon_min_supported: status.min_supported_version,
+            daemon_binary_version: status.version.clone(),
+            kind: VersionMismatchKind::DaemonTooOld,
+        }));
+    }
+
+    Ok(())
+}
 
 pub struct DaemonClient {
     stream: UnixStream,
@@ -40,6 +120,15 @@ impl DaemonClient {
             stream,
             read_buffer: Vec::with_capacity(64 * 1024),
         })
+    }
+
+    /// Connects to the daemon and validates protocol version compatibility.
+    /// This is the preferred connection method for the TUI.
+    pub fn connect_with_version_check() -> Result<Self> {
+        let mut client = Self::connect()?;
+        let status = client.get_status()?;
+        check_version_compatibility(&status)?;
+        Ok(client)
     }
 
     fn read_line_blocking(&mut self) -> Result<String> {
@@ -291,5 +380,109 @@ impl DaemonClient {
             self.stream.set_write_timeout(None)?;
         }
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn make_status(
+        protocol_version: u32,
+        min_supported_version: u32,
+        version: &str,
+    ) -> DaemonStatus {
+        DaemonStatus {
+            running: true,
+            uptime_secs: 0,
+            sample_count: 0,
+            last_sample_time: None,
+            database_size_bytes: 0,
+            version: version.to_string(),
+            subscriber_count: 0,
+            history_enabled: false,
+            protocol_version,
+            min_supported_version,
+        }
+    }
+
+    #[test]
+    fn test_version_compatible_same_version() {
+        let status = make_status(PROTOCOL_VERSION, MIN_SUPPORTED_VERSION, "1.0.0");
+        assert!(check_version_compatibility(&status).is_ok());
+    }
+
+    #[test]
+    fn test_version_compatible_daemon_newer() {
+        let status = make_status(PROTOCOL_VERSION + 1, MIN_SUPPORTED_VERSION, "2.0.0");
+        assert!(check_version_compatibility(&status).is_ok());
+    }
+
+    #[test]
+    fn test_version_compatible_at_min_boundary() {
+        let status = make_status(MIN_SUPPORTED_VERSION, MIN_SUPPORTED_VERSION, "0.5.0");
+        assert!(check_version_compatibility(&status).is_ok());
+    }
+
+    #[test]
+    fn test_version_tui_too_old() {
+        let status = make_status(10, PROTOCOL_VERSION + 1, "3.0.0");
+        let result = check_version_compatibility(&status);
+        assert!(result.is_err());
+        if let Err(ClientError::VersionMismatch(e)) = result {
+            assert_eq!(e.kind, VersionMismatchKind::TuiTooOld);
+            assert_eq!(e.tui_protocol_version, PROTOCOL_VERSION);
+            assert_eq!(e.daemon_min_supported, PROTOCOL_VERSION + 1);
+            assert!(e.to_string().contains("update jolt"));
+        } else {
+            panic!("Expected VersionMismatch error");
+        }
+    }
+
+    #[test]
+    fn test_version_daemon_too_old() {
+        let status = make_status(0, 0, "0.1.0");
+        let result = check_version_compatibility(&status);
+        assert!(result.is_err());
+        if let Err(ClientError::VersionMismatch(e)) = result {
+            assert_eq!(e.kind, VersionMismatchKind::DaemonTooOld);
+            assert_eq!(e.daemon_protocol_version, 0);
+            assert_eq!(e.tui_min_supported, MIN_SUPPORTED_VERSION);
+            assert!(e.to_string().contains("restart the daemon"));
+        } else {
+            panic!("Expected VersionMismatch error");
+        }
+    }
+
+    #[test]
+    fn test_version_mismatch_error_display_tui_too_old() {
+        let error = VersionMismatchError {
+            tui_protocol_version: 1,
+            tui_min_supported: 1,
+            daemon_protocol_version: 3,
+            daemon_min_supported: 2,
+            daemon_binary_version: "2.0.0".to_string(),
+            kind: VersionMismatchKind::TuiTooOld,
+        };
+        let msg = error.to_string();
+        assert!(msg.contains("TUI uses protocol v1"));
+        assert!(msg.contains("daemon (v2.0.0) requires v2+"));
+        assert!(msg.contains("brew upgrade jolt"));
+    }
+
+    #[test]
+    fn test_version_mismatch_error_display_daemon_too_old() {
+        let error = VersionMismatchError {
+            tui_protocol_version: 3,
+            tui_min_supported: 2,
+            daemon_protocol_version: 1,
+            daemon_min_supported: 1,
+            daemon_binary_version: "0.5.0".to_string(),
+            kind: VersionMismatchKind::DaemonTooOld,
+        };
+        let msg = error.to_string();
+        assert!(msg.contains("daemon (v0.5.0) uses protocol v1"));
+        assert!(msg.contains("TUI requires v2+"));
+        assert!(msg.contains("jolt daemon restart"));
     }
 }
