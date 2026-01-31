@@ -68,6 +68,7 @@ pub fn run(
                 }
             }
         }
+        #[cfg(target_os = "macos")]
         DaemonCommands::Status => {
             println!("Daemon Status");
             println!("{}", "-".repeat(40));
@@ -107,9 +108,11 @@ pub fn run(
                 println!("Running:      no");
             }
         }
+        #[cfg(target_os = "macos")]
         DaemonCommands::Install { force } => {
             crate::daemon::service::install_service(force)?;
         }
+        #[cfg(target_os = "macos")]
         DaemonCommands::Uninstall => {
             crate::daemon::service::uninstall_service()?;
         }
