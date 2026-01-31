@@ -3,7 +3,7 @@ mod protocol;
 mod server;
 pub mod service;
 
-pub use client::DaemonClient;
+pub use client::{ClientError, DaemonClient};
 #[allow(unused_imports)]
 pub use jolt_protocol::{
     BatterySnapshot, BatteryState, ChargeSession, ChargingState, CycleSummary, DaemonRequest,
