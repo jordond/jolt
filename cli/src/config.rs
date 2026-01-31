@@ -1,10 +1,17 @@
 use crate::theme::ThemeColors;
 use jolt_theme::NamedTheme;
 use serde::{Deserialize, Serialize};
+use std::env;
 use std::fs;
 use std::path::PathBuf;
 use std::process::Command;
 use tracing::Level;
+
+// XDG Base Directory environment variables
+pub const XDG_CONFIG_HOME: &str = "XDG_CONFIG_HOME";
+pub const XDG_CACHE_HOME: &str = "XDG_CACHE_HOME";
+pub const XDG_DATA_HOME: &str = "XDG_DATA_HOME";
+pub const XDG_RUNTIME_DIR: &str = "XDG_RUNTIME_DIR";
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "lowercase")]
@@ -266,25 +273,41 @@ impl Default for UnitsConfig {
 }
 
 pub fn config_dir() -> PathBuf {
-    dirs::config_dir()
+    env::var(XDG_CONFIG_HOME)
+        .ok()
+        .filter(|s| !s.is_empty())
+        .map(PathBuf::from)
+        .or_else(dirs::config_dir)
         .unwrap_or_else(|| PathBuf::from("~/.config"))
         .join("jolt")
 }
 
 pub fn cache_dir() -> PathBuf {
-    dirs::cache_dir()
+    env::var(XDG_CACHE_HOME)
+        .ok()
+        .filter(|s| !s.is_empty())
+        .map(PathBuf::from)
+        .or_else(dirs::cache_dir)
         .unwrap_or_else(|| PathBuf::from("~/.cache"))
         .join("jolt")
 }
 
 pub fn data_dir() -> PathBuf {
-    dirs::data_dir()
+    env::var(XDG_DATA_HOME)
+        .ok()
+        .filter(|s| !s.is_empty())
+        .map(PathBuf::from)
+        .or_else(dirs::data_dir)
         .unwrap_or_else(|| PathBuf::from("~/.local/share"))
         .join("jolt")
 }
 
 pub fn runtime_dir() -> PathBuf {
-    dirs::runtime_dir()
+    env::var(XDG_RUNTIME_DIR)
+        .ok()
+        .filter(|s| !s.is_empty())
+        .map(PathBuf::from)
+        .or_else(dirs::runtime_dir)
         .or_else(dirs::cache_dir)
         .unwrap_or_else(|| PathBuf::from("/tmp"))
         .join("jolt")

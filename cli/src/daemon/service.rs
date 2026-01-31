@@ -362,10 +362,15 @@ const SYSTEMD_SERVICE_NAME: &str = "jolt-daemon.service";
 
 #[cfg(target_os = "linux")]
 fn linux_service_path() -> PathBuf {
-    let config_dir = dirs::config_dir().unwrap_or_else(|| {
-        let home = std::env::var("HOME").unwrap_or_default();
-        PathBuf::from(home).join(".config")
-    });
+    let config_dir = std::env::var(crate::config::XDG_CONFIG_HOME)
+        .ok()
+        .filter(|s| !s.is_empty())
+        .map(PathBuf::from)
+        .or_else(dirs::config_dir)
+        .unwrap_or_else(|| {
+            let home = std::env::var("HOME").unwrap_or_default();
+            PathBuf::from(home).join(".config")
+        });
 
     config_dir.join("systemd/user").join(SYSTEMD_SERVICE_NAME)
 }
