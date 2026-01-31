@@ -125,7 +125,7 @@ fn render_battery_info_card(frame: &mut Frame, area: Rect, app: &App, theme: &Th
 
     let left_block = Block::default()
         .title(Span::styled(" Status ", Style::default().fg(status_color)))
-        .title_alignment(Alignment::Right)
+        .title_alignment(Alignment::Left)
         .borders(Borders::ALL)
         .border_style(Style::default().fg(status_color))
         .padding(Padding::horizontal(1))
