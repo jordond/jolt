@@ -152,4 +152,18 @@ pub trait BatteryProvider {
     {
         true
     }
+
+    /// Check if a battery is available on this system.
+    fn is_available() -> bool
+    where
+        Self: Sized,
+    {
+        use starship_battery::Manager;
+        Manager::new()
+            .ok()
+            .and_then(|m| m.batteries().ok())
+            .and_then(|mut b| b.next())
+            .and_then(|b| b.ok())
+            .is_some()
+    }
 }
