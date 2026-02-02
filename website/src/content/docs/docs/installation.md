@@ -42,6 +42,12 @@ This script automatically:
 - Verifies checksums
 - Installs to `~/.local/bin`
 
+For pre-release/beta versions:
+
+```bash
+curl -fsSL https://getjolt.sh/install.sh | bash -s -- --prerelease
+```
+
 ## Homebrew
 
 Install via the jolt Homebrew tap:
@@ -99,6 +105,10 @@ For pre-release builds, use the [jolt-git](https://aur.archlinux.org/packages/jo
 ```bash
 paru -S jolt-git
 ```
+
+:::note
+AUR packages maintained by [@anelgarhy](https://aur.archlinux.org/account/anelgarhy).
+:::
 
 ## From Source
 

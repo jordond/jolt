@@ -28,17 +28,6 @@ Yes, but with limited functionality. Intel Macs will show:
 
 For full power metrics on Intel hardware, use Linux with RAPL support.
 
-### Does jolt work over SSH?
-
-Yes! jolt is fully terminal-based and works great over SSH:
-
-```bash
-ssh myserver
-jolt
-```
-
-Make sure your terminal supports 256 colors for the best experience.
-
 ### Does jolt work in tmux/screen?
 
 Yes, jolt works in terminal multiplexers. If you experience display issues:
@@ -50,12 +39,12 @@ set -g default-terminal "screen-256color"
 
 ### How much battery does jolt itself use?
 
-Very little. At the default 1-second refresh rate:
+Very little. At the default 2-second refresh rate:
 
 - ~0.1-0.2% CPU usage
 - ~15-20 MB memory
 
-Use `--low-power` mode to reduce even further.
+You can increase `refresh_ms` in settings to reduce CPU usage further.
 
 ### Can I use jolt in scripts?
 
@@ -225,19 +214,13 @@ Try:
 
 ### jolt is slow/laggy
 
-1. Increase refresh interval:
+1. Increase refresh interval in settings (press `s`) or config:
 
-   ```bash
-   jolt --refresh-ms 2000
+   ```toml
+   refresh_ms = 3000
    ```
 
-2. Use low power mode:
-
-   ```bash
-   jolt --low-power
-   ```
-
-3. Check for resource-heavy processes in the list
+2. Check for resource-heavy processes in the list
 
 ### Config changes aren't applying
 

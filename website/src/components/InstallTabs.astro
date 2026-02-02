@@ -86,6 +86,7 @@
             </svg>
           </button>
         </div>
+        <p class="prerelease-note">Add <code>-s -- --prerelease</code> for beta versions</p>
       </div>
     </div>
 
@@ -395,14 +396,16 @@ cd jolt && cargo build --release
     color: var(--sl-color-gray-3);
   }
 
-  .aur-note {
+  .aur-note,
+  .prerelease-note {
     font-size: 0.85rem;
     color: var(--sl-color-gray-3);
     margin: 0 1.75rem 1rem;
     text-align: center;
   }
 
-  .aur-note code {
+  .aur-note code,
+  .prerelease-note code {
     color: var(--sl-color-accent);
     background: rgba(229, 255, 0, 0.1);
     padding: 0.15rem 0.4rem;

@@ -23,7 +23,11 @@ The config file is located at:
 
 ### XDG Base Directory Support
 
-jolt respects the [XDG Base Directory Specification](https://specifications.freedesktop.org/basedir-spec/latest/). If you set XDG environment variables, jolt will use them instead of the default paths:
+jolt respects the [XDG Base Directory Specification](https://specifications.freedesktop.org/basedir-spec/latest/). Path resolution follows this priority:
+
+1. **XDG environment variable** (if set and non-empty)
+2. **Platform default** (via `dirs` crate)
+3. **Hardcoded fallback** (e.g., `~/.config`)
 
 | Variable          | Default (macOS)                 | Default (Linux)  | Used for                   |
 | ----------------- | ------------------------------- | ---------------- | -------------------------- |
@@ -31,6 +35,8 @@ jolt respects the [XDG Base Directory Specification](https://specifications.free
 | `XDG_DATA_HOME`   | `~/Library/Application Support` | `~/.local/share` | Database, history          |
 | `XDG_CACHE_HOME`  | `~/Library/Caches`              | `~/.cache`       | Temporary cache            |
 | `XDG_RUNTIME_DIR` | (falls back to cache)           | `/run/user/$UID` | Runtime files, logs        |
+
+This means macOS users who prefer XDG-style paths (`~/.config`, `~/.local/share`) can set these environment variables and jolt will use them instead of the Apple-specific locations.
 
 For example, to store jolt's config in `~/.config` on macOS:
 

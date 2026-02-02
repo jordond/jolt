@@ -3,49 +3,41 @@ title: Introduction
 description: What is jolt and why use it?
 ---
 
-jolt is a terminal-based battery and energy monitor for macOS and Linux. Built in Rust for performance and reliability, it provides real-time insights into your laptop's power consumption.
+jolt is a terminal-based battery and energy monitor for macOS and Linux. It shows you what's draining your battery and how much power your system is using.
 
 ## Why jolt?
 
-Desktop operating systems include GUI battery monitors (macOS Activity Monitor, GNOME Power Statistics), but they don't work in terminal-only environments. jolt fills this gap by providing:
+The built-in battery monitors (Activity Monitor on macOS, GNOME Power Statistics on Linux) are GUI-only. If you spend time in the terminal, SSH into machines, or use tmux, you need something that works there too.
 
-- **SSH-friendly** — Monitor battery over SSH connections
-- **tmux compatible** — Works perfectly in terminal multiplexers
-- **Platform native** — Direct hardware access for accurate power metrics
-- **Scriptable** — JSON output for automation
+jolt gives you:
 
-## Key Features
+- **Battery stats in your terminal** — works over SSH, in tmux, wherever
+- **Actual power numbers** — CPU, GPU, and total system watts
+- **Process energy tracking** — see which apps are killing your battery
+- **JSON output** — pipe it to scripts, log it, do whatever
 
-### Real-time Battery Status
+## What You Get
 
-- Charge percentage with visual gauge
-- Charging state and time remaining
-- Battery health and cycle count
-- Charger wattage detection
+### Battery Status
 
-### Power Monitoring
+Charge percentage, time remaining, health, cycle count, and charger wattage. The basics, but in your terminal.
 
-- Total system power draw in watts
-- CPU and GPU power breakdown
-- Power mode detection (Low Power, Normal, High Performance)
+### Power Metrics
+
+System power draw broken down by CPU and GPU, plus power mode detection. On Apple Silicon you get ANE (Neural Engine) power too.
 
 :::note
-Power metrics require Apple Silicon on macOS or RAPL support on Linux.
+Power metrics need Apple Silicon on macOS or RAPL support on Linux. Intel Macs only get battery data.
 :::
 
 ### Process Tracking
 
-- Processes sorted by energy impact
-- Color-coded severity levels
-- Collapsible parent/child process groups
-- Kill processes directly from the TUI
+Processes sorted by energy impact with color-coded severity. Expand parent processes to see their children. Kill energy hogs directly from the UI.
 
-### Theming
+### Themes
 
-- 300+ importable themes from iTerm2 Color Schemes
-- Dark, light, and auto modes
-- Create custom themes with TOML
+Import from 300+ iTerm2 color schemes or make your own. Supports dark, light, and auto modes.
 
 ## Next Steps
 
-Ready to get started? Head to [Installation](/docs/installation/) to set up jolt on your system.
+[Install jolt](/docs/installation/) and try it out.
