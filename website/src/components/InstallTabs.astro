@@ -33,6 +33,24 @@
     </button>
     <button
       class="tab-btn"
+      data-tab="nix"
+      role="tab"
+      aria-selected="false"
+      aria-controls="panel-nix"
+    >
+      Nix
+    </button>
+    <button
+      class="tab-btn"
+      data-tab="aur"
+      role="tab"
+      aria-selected="false"
+      aria-controls="panel-aur"
+    >
+      AUR
+    </button>
+    <button
+      class="tab-btn"
       data-tab="source"
       role="tab"
       aria-selected="false"
@@ -68,6 +86,7 @@
             </svg>
           </button>
         </div>
+        <p class="prerelease-note">Add <code>-s -- --prerelease</code> for beta versions</p>
       </div>
     </div>
 
@@ -96,6 +115,59 @@
             </svg>
           </button>
         </div>
+      </div>
+    </div>
+
+    <div class="tab-content" id="panel-nix" role="tabpanel" aria-labelledby="nix">
+      <div class="tab-inner">
+        <div class="code-block">
+          <pre><code>nix run github:jordond/jolt</code></pre>
+          <button
+            class="copy-btn"
+            data-code="nix run github:jordond/jolt"
+            aria-label="Copy to clipboard"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-content" id="panel-aur" role="tabpanel" aria-labelledby="aur">
+      <div class="tab-inner">
+        <div class="code-block">
+          <pre><code>paru -S jolt</code></pre>
+          <button class="copy-btn" data-code="paru -S jolt" aria-label="Copy to clipboard">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+            </svg>
+          </button>
+        </div>
+        <p class="aur-note">Or <code>jolt-git</code> for pre-release builds</p>
       </div>
     </div>
 
@@ -322,6 +394,24 @@ cd jolt && cargo build --release
     margin: 0;
     font-size: 0.85rem;
     color: var(--sl-color-gray-3);
+  }
+
+  .aur-note,
+  .prerelease-note {
+    font-size: 0.85rem;
+    color: var(--sl-color-gray-3);
+    margin: 0 1.75rem 1rem;
+    text-align: center;
+  }
+
+  .aur-note code,
+  .prerelease-note code {
+    color: var(--sl-color-accent);
+    background: rgba(229, 255, 0, 0.1);
+    padding: 0.15rem 0.4rem;
+    border-radius: 0.25rem;
+    font-family: var(--sl-font-mono);
+    font-size: 0.85rem;
   }
 
   @media (max-width: 480px) {

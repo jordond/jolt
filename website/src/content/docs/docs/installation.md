@@ -42,12 +42,17 @@ This script automatically:
 - Verifies checksums
 - Installs to `~/.local/bin`
 
-## Homebrew (Coming Soon)
-
-Homebrew support is planned but not yet available:
+For pre-release/beta versions:
 
 ```bash
-# Future release
+curl -fsSL https://getjolt.sh/install.sh | bash -s -- --prerelease
+```
+
+## Homebrew
+
+Install via the jolt Homebrew tap:
+
+```bash
 brew install jordond/tap/jolt
 ```
 
@@ -58,6 +63,52 @@ If you have Rust installed (works on both macOS and Linux):
 ```bash
 cargo install jolt-tui
 ```
+
+## Nix
+
+Run directly without installing:
+
+```bash
+nix run github:jordond/jolt
+```
+
+Install to your profile:
+
+```bash
+nix profile install github:jordond/jolt
+```
+
+Or add to your `configuration.nix`:
+
+```nix
+environment.systemPackages = [
+  (builtins.getFlake "github:jordond/jolt").packages.${pkgs.system}.default
+];
+```
+
+## AUR (Arch Linux)
+
+Install from the [AUR](https://aur.archlinux.org/packages/jolt) using your preferred AUR helper:
+
+```bash
+paru -S jolt
+```
+
+Or with yay:
+
+```bash
+yay -S jolt
+```
+
+For pre-release builds, use the [jolt-git](https://aur.archlinux.org/packages/jolt-git) package:
+
+```bash
+paru -S jolt-git
+```
+
+:::note
+AUR packages maintained by [@anelgarhy](https://aur.archlinux.org/account/anelgarhy).
+:::
 
 ## From Source
 

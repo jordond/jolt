@@ -7,10 +7,11 @@ Complete reference for all jolt commands and options.
 
 ## Global Options
 
-| Option      | Short | Description           |
-| ----------- | ----- | --------------------- |
-| `--help`    | `-h`  | Show help information |
-| `--version` | `-V`  | Show version          |
+| Option        | Short | Description                                     |
+| ------------- | ----- | ----------------------------------------------- |
+| `--help`      | `-h`  | Show help information                           |
+| `--version`   | `-V`  | Show version                                    |
+| `--log-level` |       | Set log level (error, warn, info, debug, trace) |
 
 ## Commands
 
@@ -114,11 +115,12 @@ List available themes.
 jolt theme list [OPTIONS]
 ```
 
-| Option                | Description                               |
-| --------------------- | ----------------------------------------- |
-| `--iterm2`            | List importable iTerm2 themes             |
-| `--search <QUERY>`    | Search themes by name                     |
-| `--variant <VARIANT>` | Filter by variant: `dark`, `light`, `all` |
+| Option             | Description                   |
+| ------------------ | ----------------------------- |
+| `--builtin`        | Show builtin themes only      |
+| `--user`           | Show user themes only         |
+| `--iterm2`         | List importable iTerm2 themes |
+| `--search <QUERY>` | Search themes by name         |
 
 #### `jolt theme check`
 
@@ -128,26 +130,35 @@ Validate themes for contrast issues.
 jolt theme check [OPTIONS]
 ```
 
-| Option           | Description                |
-| ---------------- | -------------------------- |
-| `--theme <NAME>` | Check specific theme       |
-| `--fix`          | Attempt to auto-fix issues |
+| Option            | Description      |
+| ----------------- | ---------------- |
+| `-A`, `--all`     | Check all themes |
+| `-v`, `--verbose` | Verbose output   |
 
 #### `jolt theme import`
 
 Import an iTerm2 theme.
 
 ```bash
-jolt theme import <NAME>
+jolt theme import <SCHEME> [OPTIONS]
 ```
+
+| Option         | Description                    |
+| -------------- | ------------------------------ |
+| `-n`, `--name` | Custom name for imported theme |
 
 #### `jolt theme create`
 
 Create a new theme from template.
 
 ```bash
-jolt theme create <NAME>
+jolt theme create <NAME> [OPTIONS]
 ```
+
+| Option                 | Description                      |
+| ---------------------- | -------------------------------- |
+| `-t`, `--template`     | Template to use (default: blank) |
+| `-b`, `--base <THEME>` | Base theme to inherit from       |
 
 #### `jolt theme open`
 
@@ -161,6 +172,32 @@ Opens the themes directory in Finder (macOS) or default file manager (Linux):
 
 - **macOS:** `~/Library/Application Support/jolt/themes/`
 - **Linux:** `~/.config/jolt/themes/`
+
+#### `jolt theme fetch`
+
+Fetch iTerm2 color schemes from the remote repository.
+
+```bash
+jolt theme fetch [OPTIONS]
+```
+
+| Option          | Description         |
+| --------------- | ------------------- |
+| `-f`, `--force` | Force refresh cache |
+
+This downloads the latest iTerm2 color schemes for use with `jolt theme import`.
+
+#### `jolt theme clean`
+
+Clean up cached theme data.
+
+```bash
+jolt theme clean [OPTIONS]
+```
+
+| Option        | Description       |
+| ------------- | ----------------- |
+| `-y`, `--yes` | Skip confirmation |
 
 ### `jolt daemon`
 
@@ -326,10 +363,16 @@ jolt history clear [--force]
 
 ## Environment Variables
 
-| Variable          | Description                              |
-| ----------------- | ---------------------------------------- |
-| `JOLT_CONFIG`     | Custom config file path                  |
-| `JOLT_THEME`      | Override theme                           |
-| `JOLT_APPEARANCE` | Override appearance mode                 |
-| `JOLT_LOG_LEVEL`  | Logging level (error, warn, info, debug) |
-| `NO_COLOR`        | Disable colored output                   |
+| Variable          | Description                                            |
+| ----------------- | ------------------------------------------------------ |
+| `JOLT_CONFIG`     | Custom config file path                                |
+| `JOLT_THEME`      | Override theme                                         |
+| `JOLT_APPEARANCE` | Override appearance mode                               |
+| `JOLT_LOG_LEVEL`  | Logging level (error, warn, info, debug)               |
+| `NO_COLOR`        | Disable colored output                                 |
+| `XDG_CONFIG_HOME` | Override config directory (default: platform-specific) |
+| `XDG_DATA_HOME`   | Override data directory                                |
+| `XDG_CACHE_HOME`  | Override cache directory                               |
+| `XDG_RUNTIME_DIR` | Override runtime directory                             |
+
+See [Configuration](/docs/configuration/#xdg-base-directory-support) for XDG details.

@@ -22,6 +22,48 @@ export default defineConfig({
             href: '/sitemap-index.xml',
           },
         },
+        {
+          tag: 'meta',
+          attrs: {
+            property: 'og:site_name',
+            content: 'jolt',
+          },
+        },
+        {
+          tag: 'meta',
+          attrs: {
+            property: 'og:image',
+            content: 'https://getjolt.sh/og_image.png',
+          },
+        },
+        {
+          tag: 'meta',
+          attrs: {
+            property: 'og:image:width',
+            content: '1200',
+          },
+        },
+        {
+          tag: 'meta',
+          attrs: {
+            property: 'og:image:height',
+            content: '630',
+          },
+        },
+        {
+          tag: 'meta',
+          attrs: {
+            name: 'twitter:card',
+            content: 'summary_large_image',
+          },
+        },
+        {
+          tag: 'meta',
+          attrs: {
+            name: 'twitter:image',
+            content: 'https://getjolt.sh/og_image.png',
+          },
+        },
       ],
       social: [
         {

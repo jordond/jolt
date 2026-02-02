@@ -3,7 +3,7 @@ description: Create a PR to complete a plan, auto-closing the issue when merged
 ---
 
 <command-instruction>
-BEFORE ANYTHING ELSE, ASK THE USER FOR AN ISSUE NUMBER. THEN USE THAT ISSUE NUMBER FOR THE REMAINING WORK. DO NOT PROCEED WITHOUT AN ISSUE NUMBER.
+BEFORE ANYTHING ELSE, YOU NEED THE ISSUE NUMBER! TRY TO INFER THE ISSUE NUMBER FROM THE BRANCH. IF YOU ARE UNSURE AT ALL, ASK THE USER FOR CONFIRMATION.
 
 Create a PR to complete a plan. The PR will auto-close the issue when merged.
 

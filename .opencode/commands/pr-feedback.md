@@ -3,7 +3,12 @@ description: Address PR review comments one by one with user confirmation
 ---
 
 <command-instruction>
-BEFORE ANYTHING ELSE, ASK THE USER FOR A PR NUMBER. THEN USE THAT PR NUMBER FOR THE REMAINING WORK.
+BEFORE ANYTHING ELSE, YOU NEED A PR NUMBER TO CONTINUE. YOU CAN:
+
+- check current branch against current active PRs
+- ask the user to confirm
+
+IF YOU ARE UNSURE ABOUT THE PR NUMBER, ASK USER FOR CONFIRMATION!
 
 Address PR review comments one by one with user confirmation.
 
