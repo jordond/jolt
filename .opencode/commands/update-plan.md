@@ -3,7 +3,7 @@ description: Update an existing plan with progress, always including a continuat
 ---
 
 <command-instruction>
-BEFORE ANYTHING ELSE, ASK THE USER FOR AN ISSUE NUMBER. THEN USE THAT ISSUE NUMBER FOR THE REMAINING WORK. DO NOT PROCEED WITHOUT AN ISSUE NUMBER.
+BEFORE ANYTHING ELSE, INFERN THE ISSUE NUMBER OR ASK THE USER FOR AN ISSUE NUMBER. THEN USE THAT ISSUE NUMBER FOR THE REMAINING WORK. DO NOT PROCEED WITHOUT AN ISSUE NUMBER.
 
 Update an existing plan with progress. Always includes a continuation prompt.
 
