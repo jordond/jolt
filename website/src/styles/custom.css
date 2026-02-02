@@ -45,11 +45,12 @@
 
 /* Light mode */
 :root[data-theme='light'] {
-  --sl-color-accent: #a3b800;
-  --sl-color-accent-high: #8fa300;
-  --sl-color-accent-low: #faffc0;
-  --electric-glow: 0 0 15px rgba(163, 184, 0, 0.3), 0 0 30px rgba(163, 184, 0, 0.15);
-  --electric-glow-intense: 0 0 20px rgba(163, 184, 0, 0.4), 0 0 40px rgba(163, 184, 0, 0.2);
+  --sl-color-accent: #6b7a00;
+  --sl-color-accent-high: #5a6800;
+  --sl-color-accent-low: #f0f4c3;
+  --electric-glow: 0 0 15px rgba(107, 122, 0, 0.25), 0 0 30px rgba(107, 122, 0, 0.12);
+  --electric-glow-intense: 0 0 20px rgba(107, 122, 0, 0.35), 0 0 40px rgba(107, 122, 0, 0.18);
+  --electric-glow-subtle: 0 0 8px rgba(107, 122, 0, 0.2);
 }
 
 /* Neon glow on links */
@@ -119,16 +120,16 @@ a:hover {
   color: var(--sl-color-white);
   text-decoration: none;
   border-radius: 0.5rem;
-  background: rgba(229, 255, 0, 0.1);
-  border: 1px solid rgba(229, 255, 0, 0.3);
+  background: color-mix(in srgb, var(--sl-color-accent) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--sl-color-accent) 30%, transparent);
   margin-right: 0.5rem;
   transition: all 0.2s ease;
 }
 
 [data-has-hero] .landing-docs-link:hover {
-  background: rgba(229, 255, 0, 0.2);
+  background: color-mix(in srgb, var(--sl-color-accent) 20%, transparent);
   border-color: var(--sl-color-accent);
-  box-shadow: 0 0 20px rgba(229, 255, 0, 0.3);
+  box-shadow: var(--electric-glow);
   color: var(--sl-color-white);
 }
 
@@ -298,9 +299,10 @@ tr:hover {
   margin: 2rem 0;
 }
 
-/* Smooth scrolling */
-html {
-  scroll-behavior: smooth;
+@media (prefers-reduced-motion: no-preference) {
+  :root {
+    scroll-behavior: smooth;
+  }
 }
 
 /* Selection color */
