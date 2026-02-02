@@ -5,6 +5,8 @@
 
 use std::path::PathBuf;
 
+use color_eyre::eyre::{eyre, Result};
+
 const SERVICE_LABEL: &str = "sh.getjolt.daemon";
 
 #[derive(Debug, Clone)]
@@ -351,5 +353,4 @@ mod tests {
         let exe = extract_exe_from_plist(plist);
         assert_eq!(exe, Some(PathBuf::from("/usr/local/bin/jolt")));
     }
-
 }
