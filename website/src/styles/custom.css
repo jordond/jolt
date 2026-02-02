@@ -299,9 +299,10 @@ tr:hover {
   margin: 2rem 0;
 }
 
-/* Smooth scrolling */
-html {
-  scroll-behavior: smooth;
+@media (prefers-reduced-motion: no-preference) {
+  :root {
+    scroll-behavior: smooth;
+  }
 }
 
 /* Selection color */
