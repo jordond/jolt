@@ -18,38 +18,38 @@ jolt is fully keyboard-driven. Here's a complete reference of all shortcuts.
 
 ## Process List
 
-| Key               | Action                                    |
-| ----------------- | ----------------------------------------- |
-| `Enter` / `Space` | Expand/collapse process group             |
-| `K`               | Kill selected process (with confirmation) |
-| `r`               | Refresh process list                      |
+| Key               | Action                                      |
+| ----------------- | ------------------------------------------- |
+| `Enter` / `Space` | Expand/collapse process group               |
+| `K`               | Kill selected process (with confirmation)   |
+| `m`               | Toggle merge mode (group similar processes) |
+| `o`               | Cycle sort column (PID/Name/CPU/Mem/Energy) |
+| `O`               | Toggle sort direction (asc/desc)            |
 
 ## Views & Panels
 
-| Key | Action                                |
-| --- | ------------------------------------- |
-| `g` | Toggle graph metric (battery ↔ power) |
-| `p` | Toggle process panel visibility       |
-| `b` | Toggle battery panel visibility       |
-| `w` | Toggle power panel visibility         |
+| Key | Action                                                |
+| --- | ----------------------------------------------------- |
+| `g` | Cycle graph metric (Battery → Power → Split → Merged) |
 
 ## Appearance
 
 | Key       | Action                                      |
 | --------- | ------------------------------------------- |
-| `t`       | Cycle appearance mode (Auto → Dark → Light) |
-| `T`       | Open theme picker                           |
-| `+` / `=` | Increase refresh rate                       |
-| `-`       | Decrease refresh rate                       |
+| `t`       | Open theme picker                           |
+| `a`       | Cycle appearance mode (Auto → Dark → Light) |
+| `+` / `=` | Increase refresh rate (faster updates)      |
+| `-`       | Decrease refresh rate (slower updates)      |
 
 ## Dialogs
 
-| Key       | Action             |
-| --------- | ------------------ |
-| `?` / `h` | Show help dialog   |
-| `c`       | Open config editor |
-| `a`       | Show about dialog  |
-| `d`       | Show daemon status |
+| Key       | Action            |
+| --------- | ----------------- |
+| `?` / `/` | Show help dialog  |
+| `s`       | Open settings     |
+| `h`       | View history      |
+| `b`       | Battery details   |
+| `A`       | Show about dialog |
 
 ## General
 
@@ -58,41 +58,77 @@ jolt is fully keyboard-driven. Here's a complete reference of all shortcuts.
 | `q` / `Esc` | Quit (or close dialog) |
 | `Ctrl+c`    | Force quit             |
 
-## Dialog Navigation
-
-When a dialog or modal is open:
-
-| Key         | Action                |
-| ----------- | --------------------- |
-| `Esc` / `q` | Close dialog          |
-| `↑` / `↓`   | Navigate options      |
-| `Enter`     | Select/confirm        |
-| `Tab`       | Next field (in forms) |
-
 ## Theme Picker
 
-When the theme picker is open:
+When the theme picker is open (press `t`):
 
-| Key       | Action                             |
-| --------- | ---------------------------------- |
-| `↑` / `↓` | Browse themes                      |
-| `Enter`   | Apply selected theme               |
-| `/`       | Search themes                      |
-| `f`       | Filter by variant (all/dark/light) |
-| `i`       | Import iTerm2 theme                |
-| `Esc`     | Cancel and close                   |
+| Key               | Action                                 |
+| ----------------- | -------------------------------------- |
+| `↑` / `k`         | Previous theme                         |
+| `↓` / `j`         | Next theme                             |
+| `Enter` / `Space` | Apply selected theme                   |
+| `a` / `←` / `→`   | Toggle preview appearance (dark/light) |
+| `i`               | Open theme importer                    |
+| `Esc` / `t` / `q` | Close theme picker                     |
 
-## Config Editor
+## Theme Importer
 
-When the config editor is open:
+When the theme importer is open (press `i` in theme picker):
+
+| Key             | Action                     |
+| --------------- | -------------------------- |
+| `↑` / `k`       | Previous theme             |
+| `↓` / `j`       | Next theme                 |
+| `Space`         | Toggle theme selection     |
+| `Enter` / `p`   | Preview selected theme     |
+| `i`             | Import selected themes     |
+| `r`             | Refresh from remote        |
+| `/` / `s`       | Toggle search mode         |
+| `Backspace`     | Clear filter / delete char |
+| `PgUp` / `PgDn` | Page navigation            |
+| `Esc`           | Close importer             |
+
+## History
+
+When history view is open (press `h`):
+
+| Key             | Action                                 |
+| --------------- | -------------------------------------- |
+| `←` / `[`       | Previous period (Today/Week/Month/All) |
+| `→` / `]` / Tab | Next period                            |
+| `s`             | Open settings                          |
+| `Esc` / `q`     | Close history                          |
+
+## Settings
+
+When settings is open (press `s`):
 
 | Key               | Action                         |
 | ----------------- | ------------------------------ |
-| `↑` / `↓`         | Navigate settings              |
+| `↑` / `k`         | Navigate settings up           |
+| `↓` / `j`         | Navigate settings down         |
 | `Enter` / `Space` | Toggle boolean / open selector |
-| `←` / `→`         | Adjust numeric values          |
-| `s`               | Save changes                   |
-| `Esc`             | Cancel changes                 |
+| `→` / `l` / `=`   | Increment numeric values       |
+| `←` / `-`         | Decrement numeric values       |
+| `Esc` / `s` / `q` | Close settings                 |
+
+## Battery Details
+
+When battery details is open (press `b`):
+
+| Key               | Action                |
+| ----------------- | --------------------- |
+| `Esc` / `b` / `q` | Close battery details |
+
+## Kill Confirmation
+
+When kill confirmation is shown (press `K` on a process):
+
+| Key                 | Action                              |
+| ------------------- | ----------------------------------- |
+| `y` / `Y` / `Enter` | Confirm kill                        |
+| `n` / `N` / `Esc`   | Cancel kill                         |
+| `Tab` / `←` / `→`   | Toggle kill signal (graceful/force) |
 
 ## Vim-Style Alternatives
 

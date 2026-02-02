@@ -73,102 +73,137 @@ theme = "default"
 ### Refresh Rate
 
 ```toml
-# Update interval in milliseconds (min: 100, max: 10000)
-refresh_ms = 1000
+# Update interval in milliseconds (min: 500, max: 10000)
+refresh_ms = 2000
 ```
 
 Lower values = more responsive but higher CPU usage.
 
+### Unit Preferences
+
+```toml
+[units]
+# Energy display: "wh" (Watt-hours) or "mah" (milliamp-hours)
+energy = "wh"
+
+# Temperature display: "celsius" or "fahrenheit"
+temperature = "celsius"
+
+# Data size display: "si" (KB, MB, GB) or "binary" (KiB, MiB, GiB)
+data_size = "si"
+```
+
+These settings affect how values are displayed throughout the TUI, including battery capacity, temperature readings, and data sizes.
+
 ### Process Display
 
 ```toml
-[processes]
-# Show child processes expanded by default
-expand_all = false
-
 # Maximum processes to display
-max_visible = 20
+process_count = 50
 
-# Sort by: "energy", "cpu", "name", "pid"
-sort_by = "energy"
+# Minimum energy impact (watts) to show a process
+energy_threshold = 0.5
 
-# Sort direction: "desc" or "asc"
-sort_direction = "desc"
+# Group similar processes together
+merge_mode = true
+
+# Processes to hide from the list
+excluded_processes = []
+```
+
+Example with exclusions:
+
+```toml
+excluded_processes = ["kernel_task", "WindowServer"]
 ```
 
 ### Graph Settings
 
 ```toml
-[graph]
-# Default metric: "battery" or "power"
-default_metric = "battery"
+# Show the graph panel
+show_graph = true
 
-# Show graph panel
-visible = true
-
-# Graph height in rows
-height = 8
+# Graph metric: "battery", "power", "split", or "merged"
+graph_metric = "merged"
 ```
 
-### Panel Visibility
-
-```toml
-[panels]
-battery = true
-power = true
-processes = true
-graph = true
-```
+| Metric  | Description                    |
+| ------- | ------------------------------ |
+| battery | Battery percentage only        |
+| power   | System power draw only         |
+| split   | Battery and power side-by-side |
+| merged  | Combined view (default)        |
 
 ### History Settings
 
 ```toml
 [history]
-# Enable historical data collection
-enabled = true
+# Enable background data collection (requires daemon)
+background_recording = false
 
-# Retention period in days
-retention_days = 30
+# Sample interval in seconds
+sample_interval_secs = 60
 
-# Sample interval for storage (seconds)
-sample_interval = 60
+# Keep raw samples for N days
+retention_raw_days = 30
+
+# Keep hourly aggregates for N days
+retention_hourly_days = 180
+
+# Keep daily aggregates for N days (0 = forever)
+retention_daily_days = 0
+
+# Keep session data for N days
+retention_sessions_days = 90
+
+# Maximum database size in MB
+max_database_mb = 500
 ```
+
+:::note
+The `enabled` alias still works for `background_recording` for backwards compatibility.
+:::
 
 ## Full Example Config
 
 ```toml
+# Display settings
 appearance = "auto"
 theme = "dracula"
-refresh_ms = 1000
+refresh_ms = 2000
 
-[processes]
-expand_all = false
-max_visible = 25
-sort_by = "energy"
-sort_direction = "desc"
+# Graph settings
+show_graph = true
+graph_metric = "merged"
 
-[graph]
-default_metric = "power"
-visible = true
-height = 10
+# Process settings
+process_count = 50
+energy_threshold = 0.5
+merge_mode = true
+excluded_processes = []
 
-[panels]
-battery = true
-power = true
-processes = true
-graph = true
+# Unit preferences
+[units]
+energy = "wh"
+temperature = "celsius"
+data_size = "si"
 
+# History settings (requires daemon)
 [history]
-enabled = true
-retention_days = 30
-sample_interval = 60
+background_recording = false
+sample_interval_secs = 60
+retention_raw_days = 30
+retention_hourly_days = 180
+retention_daily_days = 0
+retention_sessions_days = 90
+max_database_mb = 500
 ```
 
-## In-TUI Config Editor
+## In-TUI Settings
 
-Press `c` in jolt to open the config editor, which provides a visual interface for changing settings without editing the file directly.
+Press `s` in jolt to open the settings panel, which provides a visual interface for changing settings without editing the file directly.
 
-Changes made in the config editor are saved immediately to the config file.
+Changes made in settings are saved immediately to the config file.
 
 ## Environment Variables
 
