@@ -268,7 +268,7 @@ cd jolt && cargo build --release
   .tab-buttons {
     display: flex;
     gap: 0.25rem;
-    border-bottom: 1px solid var(--sl-color-gray-5);
+    border-bottom: 1px solid var(--color-border);
     margin-bottom: 0;
   }
 
@@ -276,29 +276,29 @@ cd jolt && cargo build --release
     padding: 0.75rem 1.25rem;
     background: transparent;
     border: none;
-    color: var(--sl-color-gray-2);
+    color: var(--color-text-muted);
     cursor: pointer;
     font-size: 0.95rem;
     font-weight: 500;
     border-bottom: 2px solid transparent;
     transition: all 0.2s ease;
-    font-family: var(--sl-font);
+    font-family: var(--font-sans);
   }
 
   .tab-btn:hover {
-    color: var(--sl-color-white);
-    background: rgba(229, 255, 0, 0.05);
+    color: var(--color-text);
+    background: var(--color-accent-10);
   }
 
   .tab-btn.active {
-    color: var(--sl-color-accent);
-    border-bottom-color: var(--sl-color-accent);
-    text-shadow: 0 0 10px rgba(229, 255, 0, 0.5);
+    color: var(--color-accent);
+    border-bottom-color: var(--color-accent);
+    text-shadow: 0 0 10px var(--color-accent-glow);
   }
 
   .tab-panels {
-    background: var(--sl-color-bg-sidebar, #12121a);
-    border: 1px solid rgba(229, 255, 0, 0.2);
+    background: var(--color-surface);
+    border: 1px solid var(--color-accent-20);
     border-radius: 0 0 0.5rem 0.5rem;
     overflow: hidden;
   }
@@ -337,9 +337,9 @@ cd jolt && cargo build --release
   }
 
   .code-block code {
-    font-family: var(--sl-font-mono);
+    font-family: var(--font-mono);
     font-size: 0.9rem;
-    color: var(--sl-color-white);
+    color: var(--color-text);
     background: transparent !important;
     padding: 0;
     border: none;
@@ -350,12 +350,12 @@ cd jolt && cargo build --release
     position: absolute;
     top: 0.75rem;
     right: 0.75rem;
-    background: rgba(229, 255, 0, 0.1);
-    border: 1px solid rgba(229, 255, 0, 0.2);
+    background: var(--color-accent-10);
+    border: 1px solid var(--color-accent-20);
     border-radius: 0.375rem;
     padding: 0.5rem;
     cursor: pointer;
-    color: var(--sl-color-gray-2);
+    color: var(--color-text-muted);
     transition: all 0.2s ease;
     display: flex;
     align-items: center;
@@ -363,9 +363,9 @@ cd jolt && cargo build --release
   }
 
   .copy-btn:hover {
-    background: rgba(229, 255, 0, 0.2);
-    color: var(--sl-color-accent);
-    border-color: var(--sl-color-accent);
+    background: var(--color-accent-20);
+    color: var(--color-accent);
+    border-color: var(--color-accent);
   }
 
   .copy-btn.copied {
@@ -376,14 +376,14 @@ cd jolt && cargo build --release
 
   .platform-note {
     font-size: 0.85rem;
-    color: var(--sl-color-gray-3);
+    color: var(--color-text-muted);
     margin: 0.75rem 1.25rem 0.5rem;
     text-align: center;
   }
 
   .coming-soon-notice {
-    background: rgba(229, 255, 0, 0.05);
-    border: 1px solid rgba(229, 255, 0, 0.2);
+    background: var(--color-accent-10);
+    border: 1px solid var(--color-accent-20);
     border-radius: 0.375rem;
     padding: 0.5rem;
     margin: 1rem 1.75rem 0.5rem;
@@ -393,24 +393,24 @@ cd jolt && cargo build --release
   .coming-soon-notice p {
     margin: 0;
     font-size: 0.85rem;
-    color: var(--sl-color-gray-3);
+    color: var(--color-text-muted);
   }
 
   .aur-note,
   .prerelease-note {
     font-size: 0.85rem;
-    color: var(--sl-color-gray-3);
+    color: var(--color-text-muted);
     margin: 0 1.75rem 1rem;
     text-align: center;
   }
 
   .aur-note code,
   .prerelease-note code {
-    color: var(--sl-color-accent);
-    background: rgba(229, 255, 0, 0.1);
+    color: var(--color-accent);
+    background: var(--color-accent-10);
     padding: 0.15rem 0.4rem;
     border-radius: 0.25rem;
-    font-family: var(--sl-font-mono);
+    font-family: var(--font-mono);
     font-size: 0.85rem;
   }
 

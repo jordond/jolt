@@ -27,9 +27,9 @@ import Default from '@astrojs/starlight/components/Header.astro'
 
   .nav-link:hover {
     color: var(--sl-color-accent);
-    background: rgba(229, 255, 0, 0.1);
-    border-color: rgba(229, 255, 0, 0.3);
-    text-shadow: 0 0 10px rgba(229, 255, 0, 0.4);
+    background: color-mix(in srgb, var(--sl-color-accent) 10%, transparent);
+    border-color: color-mix(in srgb, var(--sl-color-accent) 30%, transparent);
+    text-shadow: var(--electric-glow-subtle);
   }
 
   @media (max-width: 600px) {
