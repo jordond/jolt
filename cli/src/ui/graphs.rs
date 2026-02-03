@@ -81,6 +81,7 @@ fn render_with_temp_stacked(frame: &mut Frame, area: Rect, app: &App, theme: &Th
 }
 
 fn render_temperature_chart(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) {
+    let bg = theme.bg_color(app.config.user_config.transparent_background);
     let temp_unit = app.config.user_config.units.temperature;
     let temp_data = app.history.temperature_values();
     let current_temp = app.history.latest_temperature();
@@ -102,7 +103,7 @@ fn render_temperature_chart(frame: &mut Frame, area: Rect, app: &App, theme: &Th
         .title(title_line)
         .borders(Borders::ALL)
         .border_style(Style::default().fg(temp_color))
-        .style(Style::default().bg(theme.bg));
+        .style(Style::default().bg(bg));
 
     if temp_data.is_empty() {
         frame.render_widget(block, area);
@@ -210,12 +211,13 @@ fn render_temperature_chart(frame: &mut Frame, area: Rect, app: &App, theme: &Th
         .block(block)
         .x_axis(x_axis)
         .y_axis(y_axis)
-        .style(Style::default().bg(theme.bg));
+        .style(Style::default().bg(bg));
 
     frame.render_widget(chart, area);
 }
 
 fn render_single(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) {
+    let bg = theme.bg_color(app.config.user_config.transparent_background);
     let is_battery = app.history.current_metric == HistoryMetric::Battery;
 
     let (current_value, graph_color) = if is_battery {
@@ -267,7 +269,7 @@ fn render_single(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) 
         .title(title_line)
         .borders(Borders::ALL)
         .border_style(Style::default().fg(graph_color))
-        .style(Style::default().bg(theme.bg));
+        .style(Style::default().bg(bg));
 
     let data = app.history.current_values();
 
@@ -350,7 +352,7 @@ fn render_single(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) 
         .block(block)
         .x_axis(x_axis)
         .y_axis(y_axis)
-        .style(Style::default().bg(theme.bg));
+        .style(Style::default().bg(bg));
 
     frame.render_widget(chart, area);
 
@@ -392,6 +394,7 @@ fn render_battery_markers(
 }
 
 fn render_merged(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) {
+    let bg = theme.bg_color(app.config.user_config.transparent_background);
     let power_val = app
         .history
         .points
@@ -427,7 +430,7 @@ fn render_merged(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) 
         .title(title_line)
         .borders(Borders::ALL)
         .border_style(Style::default().fg(graph_color))
-        .style(Style::default().bg(theme.bg));
+        .style(Style::default().bg(bg));
 
     let power_data = app.history.power_values();
     let battery_data: Vec<(f64, f64)> = app
@@ -510,12 +513,13 @@ fn render_merged(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) 
         .block(block)
         .x_axis(x_axis)
         .y_axis(y_axis)
-        .style(Style::default().bg(theme.bg));
+        .style(Style::default().bg(bg));
 
     frame.render_widget(chart, area);
 }
 
 fn render_split(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) {
+    let bg = theme.bg_color(app.config.user_config.transparent_background);
     let chunks = Layout::default()
         .direction(Direction::Horizontal)
         .constraints([Constraint::Percentage(50), Constraint::Percentage(50)])
@@ -529,6 +533,7 @@ fn render_split(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) {
         app.history.power_range(),
         theme,
         theme.graph_line,
+        bg,
     );
 
     render_mini_chart(
@@ -539,9 +544,11 @@ fn render_split(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) {
         (0.0, 100.0),
         theme,
         theme.accent_secondary,
+        bg,
     );
 }
 
+#[allow(clippy::too_many_arguments)]
 fn render_mini_chart(
     frame: &mut Frame,
     area: Rect,
@@ -550,12 +557,13 @@ fn render_mini_chart(
     (min_y, max_y): (f64, f64),
     theme: &ThemeColors,
     line_color: Color,
+    bg: Color,
 ) {
     let block = Block::default()
         .title(Span::styled(title, Style::default().fg(line_color)))
         .borders(Borders::ALL)
         .border_style(Style::default().fg(line_color))
-        .style(Style::default().bg(theme.bg));
+        .style(Style::default().bg(bg));
 
     if data.is_empty() {
         frame.render_widget(block, area);

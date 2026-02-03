@@ -13,6 +13,7 @@ use crate::theme::ThemeColors;
 use super::utils::{color_for_value, format_data_size};
 
 pub fn render(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) {
+    let bg = theme.bg_color(app.config.user_config.transparent_background);
     let load_color = if app.system_stats.is_warmed_up() {
         color_for_value(app.system_stats.load_one(), 2.0, 4.0, theme)
     } else {
@@ -23,7 +24,7 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) {
         .title(Span::styled(" System ", Style::default().fg(load_color)))
         .borders(Borders::ALL)
         .border_style(Style::default().fg(load_color))
-        .style(Style::default().bg(theme.bg));
+        .style(Style::default().bg(bg));
 
     let inner = block.inner(area);
     frame.render_widget(block, area);

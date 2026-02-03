@@ -12,6 +12,7 @@ use crate::theme::ThemeColors;
 use super::utils::color_for_value;
 
 pub fn render(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) {
+    let bg = theme.bg_color(app.config.user_config.transparent_background);
     let power_color = if app.power.is_warmed_up() {
         color_for_value(app.power.total_power_watts(), 8.0, 15.0, theme)
     } else {
@@ -22,7 +23,7 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) {
         .title(Span::styled(" Power ", Style::default().fg(power_color)))
         .borders(Borders::ALL)
         .border_style(Style::default().fg(power_color))
-        .style(Style::default().bg(theme.bg));
+        .style(Style::default().bg(bg));
 
     let inner = block.inner(area);
     frame.render_widget(block, area);

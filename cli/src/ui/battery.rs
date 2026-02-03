@@ -24,6 +24,7 @@ fn power_mode_icon(mode: PowerMode) -> &'static str {
 }
 
 pub fn render(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) {
+    let bg = theme.bg_color(app.config.user_config.transparent_background);
     let battery_color = color_for_percent(app.battery.charge_percent(), 50.0, 20.0, theme);
 
     let block = Block::default()
@@ -33,7 +34,7 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) {
         ))
         .borders(Borders::ALL)
         .border_style(Style::default().fg(battery_color))
-        .style(Style::default().bg(theme.bg));
+        .style(Style::default().bg(bg));
 
     let inner = block.inner(area);
     frame.render_widget(block, area);
@@ -61,7 +62,7 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) {
         render_battery_gauge(frame, chunks[0], app, theme);
 
         if info_card_height > 0 {
-            render_battery_info_card(frame, chunks[2], app, theme);
+            render_battery_info_card(frame, chunks[2], app, theme, bg);
         }
     }
 }
@@ -91,7 +92,13 @@ fn darken_color(color: Color, factor: f32) -> Color {
     }
 }
 
-fn render_battery_info_card(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) {
+fn render_battery_info_card(
+    frame: &mut Frame,
+    area: Rect,
+    app: &App,
+    theme: &ThemeColors,
+    bg: Color,
+) {
     if area.height == 0 || area.width < 20 {
         return;
     }
@@ -129,7 +136,7 @@ fn render_battery_info_card(frame: &mut Frame, area: Rect, app: &App, theme: &Th
         .borders(Borders::ALL)
         .border_style(Style::default().fg(status_color))
         .padding(Padding::horizontal(1))
-        .style(Style::default().bg(theme.bg));
+        .style(Style::default().bg(bg));
     let left_inner = left_block.inner(chunks[0]);
     frame.render_widget(left_block, chunks[0]);
 
@@ -138,7 +145,7 @@ fn render_battery_info_card(frame: &mut Frame, area: Rect, app: &App, theme: &Th
         .borders(Borders::ALL)
         .border_style(Style::default().fg(health_color))
         .padding(Padding::horizontal(1))
-        .style(Style::default().bg(theme.bg));
+        .style(Style::default().bg(bg));
     let right_inner = right_block.inner(chunks[1]);
     frame.render_widget(right_block, chunks[1]);
 
