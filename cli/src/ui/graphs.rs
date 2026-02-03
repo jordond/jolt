@@ -608,7 +608,7 @@ fn render_mini_chart(
         .block(block)
         .x_axis(x_axis)
         .y_axis(y_axis)
-        .style(Style::default().bg(theme.bg));
+        .style(Style::default().bg(bg));
 
     frame.render_widget(chart, area);
 }
