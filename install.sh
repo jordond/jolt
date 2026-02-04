@@ -84,31 +84,54 @@ get_latest_version_with_assets() {
 		exit 1
 	fi
 
-	local tags
-	tags="$(echo "${response}" | grep '"tag_name":' | sed -E 's/.*"tag_name":[[:space:]]*"([^"]+)".*/\1/')"
-	while IFS= read -r tag; do
-		[ -z "${tag}" ] && continue
-
-		local version="${tag#v}"
-		local release_section
-		release_section="$(echo "${response}" | awk "BEGIN{found=0} /\"tag_name\":[[:space:]]*\"${tag}\"/{found=1} found{print} /^[[:space:]]*\},[[:space:]]*$/{if(found) exit}")"
-
-		local is_prerelease=false
-		if echo "${release_section}" | grep -q '"prerelease":[[:space:]]*true'; then
-			is_prerelease=true
+	# Use jq if available for reliable JSON parsing
+	if command -v jq >/dev/null 2>&1; then
+		local filter
+		if [ "${include_prerelease}" = "true" ]; then
+			filter='.[] | select(.assets | length > 0) | .tag_name'
+		else
+			filter='.[] | select(.prerelease == false) | select(.assets | length > 0) | .tag_name'
 		fi
 
-		if [ "${include_prerelease}" = "false" ] && [ "${is_prerelease}" = "true" ]; then
-			continue
+		local version
+		version="$(echo "${response}" | jq -r "${filter}" | head -1)"
+		if [ -n "${version}" ] && [ "${version}" != "null" ]; then
+			echo "${version#v}"
+			return 0
 		fi
-		# Check if this release has assets (not an empty array)
-		if echo "${release_section}" | grep -q '"assets":[[:space:]]*\['; then
-			if ! echo "${release_section}" | grep -q '"assets":[[:space:]]*\[\]'; then
+	else
+		# Fallback: parse JSON without jq using simpler approach
+		# Extract releases as blocks separated by release boundaries
+		local tags
+		tags="$(echo "${response}" | grep '"tag_name":' | sed -E 's/.*"tag_name":[[:space:]]*"([^"]+)".*/\1/')"
+
+		while IFS= read -r tag; do
+			[ -z "${tag}" ] && continue
+
+			local version="${tag#v}"
+
+			# Check prerelease status - look for the prerelease field after this tag
+			local is_prerelease=false
+			if echo "${response}" | grep -A 10 "\"tag_name\":[[:space:]]*\"${tag}\"" | grep -q '"prerelease":[[:space:]]*true'; then
+				is_prerelease=true
+			fi
+
+			if [ "${include_prerelease}" = "false" ] && [ "${is_prerelease}" = "true" ]; then
+				continue
+			fi
+
+			# Check if this release has assets by looking at assets_url response
+			# Each release with assets will have asset entries after the assets array opener
+			# We look for the pattern of this tag followed eventually by a non-empty assets array
+			local assets_count
+			assets_count="$(echo "${response}" | grep -A 200 "\"tag_name\":[[:space:]]*\"${tag}\"" | grep -m 1 -c '"browser_download_url":' || echo "0")"
+
+			if [ "${assets_count}" -gt 0 ]; then
 				echo "${version}"
 				return 0
 			fi
-		fi
-	done <<<"${tags}"
+		done <<<"${tags}"
+	fi
 
 	log_error "No releases with assets found"
 	return 1
