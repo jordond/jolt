@@ -3,6 +3,7 @@ mod history;
 mod theme;
 
 pub use daemon::DaemonCommands;
+pub use daemon::DaemonCli;
 pub use history::HistoryCommands;
 pub use theme::ThemeCommands;
 
@@ -54,12 +55,6 @@ pub enum Commands {
     Theme {
         #[command(subcommand)]
         command: Option<ThemeCommands>,
-    },
-
-    #[command(about = "Control the background daemon")]
-    Daemon {
-        #[command(subcommand)]
-        command: DaemonCommands,
     },
 
     #[command(about = "View and export historical data")]

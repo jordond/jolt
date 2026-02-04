@@ -766,7 +766,6 @@ async fn client_writer_task(
 pub fn run_daemon(
     foreground: bool,
     log_level: crate::config::LogLevel,
-    log_level_override: Option<crate::config::LogLevel>,
 ) -> Result<()> {
     let socket = socket_path();
 
@@ -791,7 +790,7 @@ pub fn run_daemon(
         // mem::forget is intentional - the guard must not drop or logging stops.
         // The OS reclaims all resources when the daemon process exits.
         let guard =
-            crate::logging::init(log_level, crate::logging::LogMode::File, log_level_override);
+            crate::logging::init(log_level, crate::logging::LogMode::File, None);
         std::mem::forget(guard);
     }
 

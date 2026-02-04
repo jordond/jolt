@@ -11,7 +11,11 @@ categories = ["command-line-utilities"]
 
 [[bin]]
 name = "jolt"
-path = "src/main.rs"
+path = "src/jolt.rs"
+
+[[bin]]
+name = "jolt-daemon"
+path = "src/jolt-daemon.rs"
 
 [features]
 default = []

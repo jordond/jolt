@@ -1,8 +1,8 @@
 mod app;
 mod cli;
+mod daemon;
 mod commands;
 mod config;
-mod daemon;
 mod data;
 mod input;
 mod logging;
@@ -56,9 +56,6 @@ fn main() -> Result<()> {
         Some(Commands::Theme { command }) => {
             let _guard = logging::init(config.log_level, LogMode::Stderr, log_level_override);
             commands::theme::run(command)
-        }
-        Some(Commands::Daemon { command }) => {
-            commands::daemon::run(command, config.log_level, log_level_override)
         }
         Some(Commands::History { command }) => {
             let _guard = logging::init(config.log_level, LogMode::Stderr, log_level_override);
@@ -153,19 +150,6 @@ mod tests {
         }
     }
 
-    #[test]
-    fn cli_parse_daemon_start_foreground() {
-        let cli = Cli::try_parse_from(["jolt", "daemon", "start", "--foreground"]).unwrap();
-        match cli.command {
-            Some(Commands::Daemon { command }) => {
-                assert!(matches!(
-                    command,
-                    DaemonCommands::Start { foreground: true }
-                ));
-            }
-            _ => panic!("Expected Daemon command"),
-        }
-    }
 
     #[test]
     fn cli_parse_theme_check_all() {
