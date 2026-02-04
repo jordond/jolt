@@ -7,19 +7,15 @@ use ratatui::{
 };
 
 use crate::app::App;
-use crate::data::SystemInfo;
 use crate::input::keys;
 use crate::theme::ThemeColors;
 
 use super::utils::truncate_str;
 
-pub fn render_title_bar(
-    frame: &mut Frame,
-    area: Rect,
-    system_info: &SystemInfo,
-    theme: &ThemeColors,
-) {
+pub fn render_title_bar(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) {
+    let bg = theme.bg_color(app.config.user_config.transparent_background);
     let version = super::VERSION;
+    let system_info = &app.system_info;
 
     let left_spans = vec![
         Span::styled("⚡️jolt ", theme.accent_style()),
@@ -42,11 +38,12 @@ pub fn render_title_bar(
     spans.push(Span::raw(" ".repeat(padding)));
     spans.push(Span::styled(right_text, theme.muted_style()));
 
-    let bar = Paragraph::new(Line::from(spans)).style(Style::default().bg(theme.bg));
+    let bar = Paragraph::new(Line::from(spans)).style(Style::default().bg(bg));
     frame.render_widget(bar, area);
 }
 
 pub fn render_status_bar(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) {
+    let bg = theme.bg_color(app.config.user_config.transparent_background);
     let theme_name = app.config.theme_name();
     let theme_display = truncate_str(theme_name, 12);
 
@@ -118,7 +115,7 @@ pub fn render_status_bar(frame: &mut Frame, area: Rect, app: &App, theme: &Theme
 
     let line = Line::from(left_spans);
     let bar = Paragraph::new(line)
-        .style(Style::default().bg(theme.bg))
+        .style(Style::default().bg(bg))
         .alignment(Alignment::Left);
 
     frame.render_widget(bar, area);

@@ -51,6 +51,15 @@ fn to_ratatui_color(color: Color) -> RatatuiColor {
 
 impl ThemeColors {
     #[inline]
+    pub fn bg_color(&self, transparent: bool) -> RatatuiColor {
+        if transparent {
+            RatatuiColor::Reset
+        } else {
+            self.bg
+        }
+    }
+
+    #[inline]
     #[allow(dead_code)]
     pub fn style(&self, color: RatatuiColor) -> Style {
         Style::default().fg(color)

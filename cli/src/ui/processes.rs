@@ -64,6 +64,7 @@ fn lerp(a: u8, b: u8, t: f32) -> u8 {
 }
 
 pub fn render(frame: &mut Frame, area: Rect, app: &mut App, theme: &ThemeColors) {
+    let bg = theme.bg_color(app.config.user_config.transparent_background);
     let title = if app.selection_mode {
         " Processes [SELECTION MODE - Esc to exit] "
     } else if app.merge_mode {
@@ -82,7 +83,7 @@ pub fn render(frame: &mut Frame, area: Rect, app: &mut App, theme: &ThemeColors)
         .title(Span::styled(title, Style::default().fg(border_color)))
         .borders(Borders::ALL)
         .border_style(Style::default().fg(border_color))
-        .style(Style::default().bg(theme.bg));
+        .style(Style::default().bg(bg));
 
     let inner = block.inner(area);
     frame.render_widget(block, area);

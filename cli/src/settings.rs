@@ -14,6 +14,7 @@ pub enum SettingId {
     // Display
     ShowGraph,
     MergeMode,
+    TransparentBackground,
     ProcessCount,
     EnergyThreshold,
     // Units
@@ -99,6 +100,10 @@ pub const SETTINGS_LAYOUT: &[SettingsRow] = &[
         label: "Merge Mode",
     },
     SettingsRow::Item {
+        id: SettingId::TransparentBackground,
+        label: "Transparent Background",
+    },
+    SettingsRow::Item {
         id: SettingId::ProcessCount,
         label: "Process Count",
     },
@@ -158,6 +163,9 @@ pub fn setting_value(app: &App, id: SettingId) -> String {
         SettingId::RefreshMs => app.refresh_ms.to_string(),
         SettingId::ShowGraph => bool_label(app.config.user_config.show_graph),
         SettingId::MergeMode => bool_label(app.merge_mode),
+        SettingId::TransparentBackground => {
+            bool_label(app.config.user_config.transparent_background)
+        }
         SettingId::ProcessCount => app.config.user_config.process_count.to_string(),
         SettingId::EnergyThreshold => format!("{:.1}", app.config.user_config.energy_threshold),
         SettingId::EnergyUnit => app.config.user_config.units.energy.label().to_string(),
@@ -241,6 +249,12 @@ pub fn setting_apply(app: &mut App, id: SettingId, input: SettingInput) -> Setti
                 a.merge_mode = v;
                 a.config.user_config.merge_mode = v;
             },
+        ),
+        SettingId::TransparentBackground => apply_bool(
+            app,
+            input,
+            |a| a.config.user_config.transparent_background,
+            |a, v| a.config.user_config.transparent_background = v,
         ),
         SettingId::ProcessCount => apply_int(
             app,
