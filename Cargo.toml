@@ -53,7 +53,7 @@ rusqlite = { version = "0.38.0", features = ["bundled"] }
 plist = "1.8.0"
 
 # Network/Other
-ureq = "3.1.4"
+ureq = "3.2.0"
 daemonize = "0.5"
 
 # Formatting
