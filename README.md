@@ -102,7 +102,6 @@ Commands:
   debug    Print system and battery debug info
   config   Manage configuration
   theme    Manage themes
-  daemon   Control the background daemon
   history  View and export historical data
   logs     View daemon logs
   help     Print this message or the help of the given subcommand(s)
@@ -133,13 +132,13 @@ jolt includes a background daemon for collecting historical data:
 
 ```shell
 # Start the daemon
-jolt daemon start
+jolt-daemon start
 
 # Check status
-jolt daemon status
+jolt-daemon status
 
 # Stop the daemon
-jolt daemon stop
+jolt-daemon stop
 ```
 
 ## Platform Support
