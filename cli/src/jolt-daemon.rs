@@ -8,6 +8,7 @@ use clap::Parser;
 use color_eyre::eyre::Result;
 
 use crate::daemon::{is_daemon_running, server::run_daemon, socket_path, DaemonClient, service::get_service_status};
+use crate::daemon::service;
 
 use data::BatteryData;
 use logging::{LogMode, LogLevel};
@@ -31,6 +32,7 @@ fn main() -> Result<()> {
         DaemonCommands::Start { foreground } => daemon_start(foreground, log_level),
         DaemonCommands::Stop => daemon_stop(),
         DaemonCommands::Status => daemon_status(),
+        DaemonCommands::Disable => service::disable_service(),
         #[cfg(target_os = "macos")]
         DaemonCommands::Install { force } => service::install_service(force),
         #[cfg(target_os = "macos")]

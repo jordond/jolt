@@ -145,7 +145,7 @@ fn uninstall_macos_service() -> Result<()> {
     Ok(())
 }
 
-fn unload_macos_service() -> Result<()> {
+pub fn unload_macos_service() -> Result<()> {
     let plist_path = macos_plist_path();
     let uid = get_uid();
 

@@ -10,7 +10,6 @@ pub(super) mod macos;
 pub(super) mod linux;
 
 use std::path::PathBuf;
-#[cfg(target_os = "macos")]
 use color_eyre::eyre::Result;
 
 #[cfg(target_os = "linux")]
@@ -95,6 +94,15 @@ pub fn get_service_status() -> ServiceStatus {
             configured_exe: None,
             warnings: vec!["Service management not supported on this platform".to_string()],
         }
+    }
+}
+
+pub fn disable_service() -> Result<()> {
+    #[cfg(target_os = "linux")] {
+        linux::disable_linux_service()
+    }
+    #[cfg(target_os = "macos")] {
+        macos::unload_macos_service()
     }
 }
 

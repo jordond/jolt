@@ -121,11 +121,11 @@ mod tests {
     //     assert!(path.to_string_lossy().contains("systemd/user"));
     //     assert!(path.to_string_lossy().contains("jolt-daemon.service"));
     // }
-    
+
     #[test]
     fn test_extract_exe_from_systemd_service() {
         let service = "ExecStart=/usr/local/bin/jolt-daemon start --foreground";
         let exe = extract_exe_from_systemd_service(service);
-        assert_eq!(exe, Some(PathBuf::from("/usr/local/bin/jolt")));
+        assert_eq!(exe, Some(PathBuf::from("/usr/local/bin/jolt-daemon")));
     }
 }
