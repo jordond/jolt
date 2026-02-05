@@ -28,9 +28,6 @@ pub enum DaemonCommands {
     Stop,
 
     Status,
-    
-    #[cfg(target_os = "macos")]
-    Status,
 
     #[cfg(target_os = "macos")]
     Install {
