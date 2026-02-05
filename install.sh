@@ -8,6 +8,7 @@ set -e
 REPO="jordond/jolt"
 INSTALL_DIR="${HOME}/.local/bin"
 BINARY_NAME="jolt"
+DAEMON_BINARY_NAME='jolt-daemon'
 PRERELEASE=false
 
 # Colors for output
@@ -159,7 +160,7 @@ build_download_info() {
 		fi
 	fi
 
-	local filename="${BINARY_NAME}-${version}-${arch}-${target}"
+	local filename="${BINARY_NAME}-${version}-${arch}-${target}.tar.gz"
 	local url="https://github.com/${REPO}/releases/download/${version}/${filename}"
 	local checksum_url="${url}.sha256"
 
@@ -206,7 +207,7 @@ verify_checksum() {
 
 is_daemon_running() {
 	if [ -x "${INSTALL_DIR}/${BINARY_NAME}" ]; then
-		"${INSTALL_DIR}/${BINARY_NAME}" daemon status >/dev/null 2>&1
+		"${INSTALL_DIR}/${DAEMON_BINARY_NAME}" status >/dev/null 2>&1
 		return $?
 	fi
 	return 1
@@ -215,7 +216,7 @@ is_daemon_running() {
 stop_daemon() {
 	if is_daemon_running; then
 		log_info "Stopping running daemon..."
-		if "${INSTALL_DIR}/${BINARY_NAME}" daemon stop >/dev/null 2>&1; then
+		if "${INSTALL_DIR}/${DAEMON_BINARY_NAME}" stop >/dev/null 2>&1; then
 			log_info "Daemon stopped"
 			return 0
 		else
@@ -228,7 +229,7 @@ stop_daemon() {
 
 start_daemon() {
 	log_info "Starting daemon..."
-	if "${INSTALL_DIR}/${BINARY_NAME}" daemon start >/dev/null 2>&1; then
+	if "${INSTALL_DIR}/${DAEMON_BINARY_NAME}" start >/dev/null 2>&1; then
 		log_info "Daemon started"
 		return 0
 	else
@@ -276,9 +277,9 @@ install_jolt() {
 	trap 'rm -rf "${tmp_dir}"' EXIT
 
 	log_info "Downloading ${filename}..."
-	local binary_path="${tmp_dir}/${BINARY_NAME}"
-	if ! download_file "${url}" "${binary_path}"; then
-		log_error "Failed to download jolt binary"
+	local tar_path="${tmp_dir}/${BINARY_NAME}.tar.gz"
+	if ! download_file "${url}" "${tar_path}"; then
+		log_error "Failed to download jolt tar"
 		exit 1
 	fi
 
@@ -295,10 +296,18 @@ install_jolt() {
 		log_warn "Checksum file not found, skipping verification"
 	fi
 
+    log_info "Extracting ${tar_path}..."
+    tar xf "${tar_path}"
+
+    local binary_path="${tmp_dir}/${BINARY_NAME}"
+    local daemon_binary_path="${tmp_dir}/${DAEMON_BINARY_NAME}"
+
 	log_info "Installing to ${INSTALL_DIR}..."
 	mkdir -p "${INSTALL_DIR}"
 	chmod +x "${binary_path}"
+	chmod +x "${daemon_binary_path}"
 	mv "${binary_path}" "${INSTALL_DIR}/${BINARY_NAME}"
+	mv "${daemon_binary_path}" "${INSTALL_DIR}/${DAEMON_BINARY_NAME}"
 
 	log_info "Successfully installed jolt v${version}!"
 
