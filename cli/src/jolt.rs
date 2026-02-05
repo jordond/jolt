@@ -34,35 +34,37 @@ fn main() -> Result<()> {
     let config = UserConfig::load();
     let log_level_override = cli.log_level.as_deref().map(LogLevel::from_str);
 
-    match cli.command {
-        Some(Commands::Pipe {
+    let command = cli.command.unwrap_or_else(|| Commands::Ui);
+
+    match command {
+        Commands::Pipe {
             samples,
             interval,
             compact,
-        }) => {
+        } => {
             require_battery();
             let _guard = logging::init(config.log_level, LogMode::Stderr, log_level_override);
             commands::pipe::run(samples, interval, compact)
         }
-        Some(Commands::Debug) => {
+        Commands::Debug => {
             require_battery();
             let _guard = logging::init(config.log_level, LogMode::Stderr, log_level_override);
             commands::debug::run()
         }
-        Some(Commands::Config { path, reset, edit }) => {
+        Commands::Config { path, reset, edit } => {
             let _guard = logging::init(config.log_level, LogMode::Stderr, log_level_override);
             commands::config::run(path, reset, edit)
         }
-        Some(Commands::Theme { command }) => {
+        Commands::Theme { command } => {
             let _guard = logging::init(config.log_level, LogMode::Stderr, log_level_override);
             commands::theme::run(command)
         }
-        Some(Commands::History { command }) => {
+        Commands::History { command } => {
             let _guard = logging::init(config.log_level, LogMode::Stderr, log_level_override);
             commands::history::run(command)
         }
-        Some(Commands::Logs { lines, follow }) => commands::logs::run(lines, follow),
-        Some(Commands::Ui) | None => {
+        Commands::Logs { lines, follow } => commands::logs::run(lines, follow),
+        Commands::Ui => {
             require_battery();
             let _guard = logging::init(config.log_level, LogMode::File, log_level_override);
             run_tui(config)
