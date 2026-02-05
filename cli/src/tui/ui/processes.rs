@@ -6,9 +6,9 @@ use ratatui::{
     Frame,
 };
 
-use crate::app::{App, SortColumn};
+use crate::tui::app::{App, SortColumn};
 use crate::data::ProcessState;
-use crate::theme::ThemeColors;
+use crate::tui::theme::ThemeColors;
 
 use super::utils::{format_duration, truncate_str};
 

@@ -1,7 +1,6 @@
 use std::os::unix::process::CommandExt;
 
 use color_eyre::eyre::Result;
-
 use crate::config;
 
 pub fn run(lines: usize, follow: bool) -> Result<()> {

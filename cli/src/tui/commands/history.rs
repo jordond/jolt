@@ -2,9 +2,9 @@ use std::io::Write;
 
 use color_eyre::eyre::Result;
 
-use crate::cli::HistoryCommands;
+use crate::tui::cli::HistoryCommands;
 use crate::data::{self, HistoryStore};
-use crate::ui::utils::truncate_str;
+use crate::tui::ui::utils::truncate_str;
 
 pub fn run(command: Option<HistoryCommands>) -> Result<()> {
     let cmd = command.unwrap_or(HistoryCommands::Summary {

@@ -6,10 +6,10 @@ use ratatui::{
     Frame,
 };
 
-use crate::app::App;
-use crate::config::EnergyUnit;
+use crate::tui::app::App;
+use crate::tui::config::EnergyUnit;
 use crate::data::{ChargeSession, SessionType};
-use crate::theme::ThemeColors;
+use crate::tui::theme::ThemeColors;
 
 use super::utils::format_energy_compact;
 

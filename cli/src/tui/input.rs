@@ -1,6 +1,6 @@
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 
-use crate::app::{Action, App, AppView};
+use crate::tui::app::{Action, App, AppView};
 
 pub mod keys {
     pub const HELP: &str = "?";

@@ -10,9 +10,9 @@ use ratatui::{
 };
 
 use super::cycles;
-use crate::app::{App, HistoryPeriod};
-use crate::input::keys;
-use crate::theme::ThemeColors;
+use crate::tui::app::{App, HistoryPeriod};
+use crate::tui::input::keys;
+use crate::tui::theme::ThemeColors;
 
 use super::utils::{
     centered_rect_percent, energy_unit_label, format_energy, format_energy_compact, truncate_str,

@@ -7,9 +7,9 @@ use ratatui::{
     Frame,
 };
 
-use crate::app::App;
+use crate::tui::app::App;
 use crate::data::history::HistoryMetric;
-use crate::theme::ThemeColors;
+use crate::tui::theme::ThemeColors;
 
 use super::utils::{
     color_for_percent, color_for_value, convert_temperature, format_temperature,

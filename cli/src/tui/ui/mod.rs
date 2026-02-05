@@ -18,7 +18,7 @@ use ratatui::{
     Frame,
 };
 
-use crate::app::{App, AppView};
+use crate::tui::app::{App, AppView};
 
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 

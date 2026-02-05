@@ -15,9 +15,9 @@ use crossterm::{
 use ratatui::prelude::*;
 use tracing::{debug, trace};
 
-use crate::config::UserConfig;
-use crate::input;
-use crate::ui;
+use crate::tui::config::UserConfig;
+use crate::tui::input;
+use crate::tui::ui;
 
 use super::App;
 

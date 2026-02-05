@@ -3,7 +3,8 @@
 //! This module replaces string-based settings matching with enum-based identifiers,
 //! making settings type-safe, DRY, and localization-friendly.
 
-use crate::app::App;
+use crate::tui::app::App;
+use crate::tui::config::{DataSizeUnit, EnergyUnit, TemperatureUnit};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum SettingId {
@@ -463,30 +464,30 @@ trait Cyclable: Copy {
     fn prev(&self) -> Self;
 }
 
-impl Cyclable for crate::config::EnergyUnit {
+impl Cyclable for EnergyUnit {
     fn next(&self) -> Self {
-        crate::config::EnergyUnit::next(self)
+        EnergyUnit::next(self)
     }
     fn prev(&self) -> Self {
-        crate::config::EnergyUnit::prev(self)
+        EnergyUnit::prev(self)
     }
 }
 
-impl Cyclable for crate::config::TemperatureUnit {
+impl Cyclable for TemperatureUnit {
     fn next(&self) -> Self {
-        crate::config::TemperatureUnit::next(self)
+        TemperatureUnit::next(self)
     }
     fn prev(&self) -> Self {
-        crate::config::TemperatureUnit::prev(self)
+        TemperatureUnit::prev(self)
     }
 }
 
-impl Cyclable for crate::config::DataSizeUnit {
+impl Cyclable for DataSizeUnit {
     fn next(&self) -> Self {
-        crate::config::DataSizeUnit::next(self)
+        DataSizeUnit::next(self)
     }
     fn prev(&self) -> Self {
-        crate::config::DataSizeUnit::prev(self)
+        DataSizeUnit::prev(self)
     }
 }
 

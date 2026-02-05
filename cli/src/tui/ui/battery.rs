@@ -6,10 +6,10 @@ use ratatui::{
     Frame,
 };
 
-use crate::app::App;
+use crate::tui::app::App;
 use crate::data::battery::ChargeState;
 use crate::data::power::PowerMode;
-use crate::theme::ThemeColors;
+use crate::tui::theme::ThemeColors;
 
 use super::utils::{color_for_percent, format_energy_ratio, format_temperature};
 

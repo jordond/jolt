@@ -3,8 +3,8 @@
 //! This module contains methods for the theme picker dialog,
 //! theme preview functionality, and the theme importer interface.
 
-use crate::config::{cache_dir, themes_dir};
-use crate::theme::ThemeColors;
+use crate::tui::config::{cache_dir, themes_dir};
+use crate::tui::theme::ThemeColors;
 use jolt_theme::cache::ThemeGroup;
 
 use super::types::AppView;

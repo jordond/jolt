@@ -6,10 +6,10 @@ use ratatui::{
     Frame,
 };
 
-use crate::app::App;
-use crate::input::keys;
-use crate::settings::{self, SettingsRow, SETTINGS_LAYOUT};
-use crate::theme::ThemeColors;
+use crate::tui::app::App;
+use crate::tui::input::keys;
+use crate::tui::settings::{self, SettingsRow, SETTINGS_LAYOUT};
+use crate::tui::theme::ThemeColors;
 
 use super::utils::format_data_size;
 

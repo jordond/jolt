@@ -5,7 +5,7 @@
 
 use tracing::info;
 
-use crate::config::themes_dir;
+use crate::tui::config::themes_dir;
 use crate::daemon::KillSignal;
 
 use super::types::{Action, AppView, MAX_REFRESH_MS, MIN_REFRESH_MS, REFRESH_STEP_MS};
@@ -82,7 +82,7 @@ impl App {
                     AppView::Settings => AppView::Main,
                     _ => {
                         self.refresh_daemon_status();
-                        self.settings_selected_item = crate::settings::first_selectable_index();
+                        self.settings_selected_item = crate::tui::settings::first_selectable_index();
                         AppView::Settings
                     }
                 };
@@ -390,11 +390,11 @@ impl App {
     fn handle_settings_action(&mut self, action: Action) {
         match action {
             Action::SettingsToggleValue => {
-                if let Some(id) = crate::settings::setting_id_at(self.settings_selected_item) {
-                    let outcome = crate::settings::setting_apply(
+                if let Some(id) = crate::tui::settings::setting_id_at(self.settings_selected_item) {
+                    let outcome = crate::tui::settings::setting_apply(
                         self,
                         id,
-                        crate::settings::SettingInput::Activate,
+                        crate::tui::settings::SettingInput::Activate,
                     );
                     if outcome.open_modal {
                         self.open_theme_picker_from_config();
@@ -402,11 +402,11 @@ impl App {
                 }
             }
             Action::SettingsIncrement => {
-                if let Some(id) = crate::settings::setting_id_at(self.settings_selected_item) {
-                    let outcome = crate::settings::setting_apply(
+                if let Some(id) = crate::tui::settings::setting_id_at(self.settings_selected_item) {
+                    let outcome = crate::tui::settings::setting_apply(
                         self,
                         id,
-                        crate::settings::SettingInput::Increment,
+                        crate::tui::settings::SettingInput::Increment,
                     );
                     if outcome.open_modal {
                         self.open_theme_picker_from_config();
@@ -414,11 +414,11 @@ impl App {
                 }
             }
             Action::SettingsDecrement => {
-                if let Some(id) = crate::settings::setting_id_at(self.settings_selected_item) {
-                    let outcome = crate::settings::setting_apply(
+                if let Some(id) = crate::tui::settings::setting_id_at(self.settings_selected_item) {
+                    let outcome = crate::tui::settings::setting_apply(
                         self,
                         id,
-                        crate::settings::SettingInput::Decrement,
+                        crate::tui::settings::SettingInput::Decrement,
                     );
                     if outcome.open_modal {
                         self.open_theme_picker_from_config();

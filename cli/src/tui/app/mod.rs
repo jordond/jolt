@@ -17,7 +17,7 @@ use std::time::Duration;
 use color_eyre::eyre::Result;
 use tracing::{debug, info};
 
-use crate::config::{GraphMetric, RuntimeConfig, UserConfig};
+use crate::tui::config::{GraphMetric, RuntimeConfig, UserConfig};
 use crate::daemon::CycleSummary;
 use crate::daemon::{DaemonClient, DaemonStatus, DataSnapshot, KillSignal};
 use crate::data::{
@@ -164,7 +164,7 @@ impl App {
             daily_cycles: Vec::new(),
             daemon_status: None,
             daemon_connected: false,
-            settings_selected_item: crate::settings::first_selectable_index(),
+            settings_selected_item: crate::tui::settings::first_selectable_index(),
             daemon_subscription: None,
             last_snapshot: None,
             using_daemon_data: false,
@@ -319,25 +319,25 @@ impl App {
             return;
         }
         let mut new_index = self.settings_selected_item - 1;
-        while new_index > 0 && crate::settings::is_section_header(new_index) {
+        while new_index > 0 && crate::tui::settings::is_section_header(new_index) {
             new_index -= 1;
         }
-        if !crate::settings::is_section_header(new_index) {
+        if !crate::tui::settings::is_section_header(new_index) {
             self.settings_selected_item = new_index;
         }
     }
 
     /// Moves the settings selection down, skipping section headers.
     pub fn move_settings_selection_down(&mut self) {
-        let max_index = crate::settings::row_count().saturating_sub(1);
+        let max_index = crate::tui::settings::row_count().saturating_sub(1);
         if self.settings_selected_item >= max_index {
             return;
         }
         let mut new_index = self.settings_selected_item + 1;
-        while new_index < max_index && crate::settings::is_section_header(new_index) {
+        while new_index < max_index && crate::tui::settings::is_section_header(new_index) {
             new_index += 1;
         }
-        if !crate::settings::is_section_header(new_index) {
+        if !crate::tui::settings::is_section_header(new_index) {
             self.settings_selected_item = new_index;
         }
     }

@@ -1,23 +1,19 @@
-mod app;
-mod cli;
-mod daemon;
-mod commands;
+mod tui;
 mod config;
+mod daemon;
 mod data;
-mod input;
 mod logging;
-mod settings;
-mod theme;
-mod ui;
 
-use app::run_tui;
 use clap::Parser;
 use color_eyre::eyre::Result;
 
-use cli::{Cli, Commands};
-use config::{ensure_dirs, LogLevel, UserConfig};
+use crate::tui::commands;
 use data::BatteryData;
 use logging::LogMode;
+use tui::cli::{Cli, Commands};
+use tui::config::UserConfig;
+use crate::config::ensure_dirs;
+use crate::logging::LogLevel;
 
 fn require_battery() {
     if !BatteryData::is_available() {
@@ -67,7 +63,7 @@ fn main() -> Result<()> {
         Commands::Ui => {
             require_battery();
             let _guard = logging::init(config.log_level, LogMode::File, log_level_override);
-            run_tui(config)
+            tui::app::run_tui(config)
         }
     }
 }
@@ -77,9 +73,9 @@ mod tests {
     use super::*;
     use clap::CommandFactory;
 
-    use crate::cli::{DaemonCommands, HistoryCommands, ThemeCommands};
-    use crate::commands::history::{escape_csv, get_date_range};
-    use crate::ui::utils::truncate_str;
+    use crate::tui::cli::{HistoryCommands, ThemeCommands};
+    use crate::tui::commands::history::{escape_csv, get_date_range};
+    use crate::tui::ui::utils::truncate_str;
 
     #[test]
     fn cli_configuration_is_valid() {

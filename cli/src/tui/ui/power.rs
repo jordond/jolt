@@ -6,8 +6,8 @@ use ratatui::{
     Frame,
 };
 
-use crate::app::App;
-use crate::theme::ThemeColors;
+use crate::tui::app::App;
+use crate::tui::theme::ThemeColors;
 
 use super::utils::color_for_value;
 

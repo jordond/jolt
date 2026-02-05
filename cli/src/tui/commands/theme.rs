@@ -2,8 +2,8 @@ use std::io::Write;
 
 use color_eyre::eyre::Result;
 
-use crate::cli::ThemeCommands;
-use crate::config;
+use crate::tui::cli::ThemeCommands;
+use crate::tui::config;
 
 pub fn run(command: Option<ThemeCommands>) -> Result<()> {
     let themes_dir = config::themes_dir();

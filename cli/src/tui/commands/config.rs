@@ -1,6 +1,6 @@
 use color_eyre::eyre::Result;
 
-use crate::config::{config_path, UserConfig};
+use crate::tui::config::{config_path, UserConfig};
 
 pub fn run(path: bool, reset: bool, edit: bool) -> Result<()> {
     let config_file = config_path();

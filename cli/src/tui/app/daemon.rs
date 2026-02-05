@@ -18,20 +18,8 @@ impl App {
         if self.try_subscribe_to_daemon() {
             return;
         }
-
-        if !crate::daemon::is_daemon_running() {
-            debug!("Daemon not running, attempting auto-start");
-            if self.auto_start_daemon() {
-                std::thread::sleep(Duration::from_millis(500));
-                for _ in 0..5 {
-                    if self.try_subscribe_to_daemon() {
-                        return;
-                    }
-                    std::thread::sleep(Duration::from_millis(200));
-                }
-                debug!("Failed to subscribe after auto-start");
-            }
-        }
+        
+        debug!("Failed to subscribe after auto-start");
     }
 
     /// Attempts to subscribe to the daemon for real-time updates.
@@ -81,41 +69,6 @@ impl App {
             return true;
         }
         false
-    }
-
-    /// Attempts to auto-start the daemon process.
-    /// Returns true if the spawn was initiated successfully.
-    fn auto_start_daemon(&self) -> bool {
-        let Ok(exe) = std::env::current_exe() else {
-            debug!("Failed to get current exe path");
-            return false;
-        };
-
-        let log_level = self.config.user_config.log_level;
-        let log_level_str = match log_level {
-            crate::config::LogLevel::Off => "off",
-            crate::config::LogLevel::Error => "error",
-            crate::config::LogLevel::Warn => "warn",
-            crate::config::LogLevel::Info => "info",
-            crate::config::LogLevel::Debug => "debug",
-            crate::config::LogLevel::Trace => "trace",
-        };
-
-        match std::process::Command::new(&exe)
-            .args(["daemon", "--log-level", log_level_str, "start"])
-            .stdout(std::process::Stdio::null())
-            .stderr(std::process::Stdio::null())
-            .spawn()
-        {
-            Ok(_) => {
-                debug!(log_level = log_level_str, "Daemon spawn initiated");
-                true
-            }
-            Err(e) => {
-                debug!("Failed to spawn daemon: {}", e);
-                false
-            }
-        }
     }
 
     /// Checks if daemon data is stale (hasn't been updated in over 2 seconds).

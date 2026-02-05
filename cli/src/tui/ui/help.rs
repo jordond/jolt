@@ -6,11 +6,11 @@ use ratatui::{
     Frame,
 };
 
-use crate::app::App;
+use crate::tui::app::App;
 use crate::daemon::KillSignal;
-use crate::input::KEY_BINDINGS;
-use crate::theme::ThemeColors;
-use crate::ui::VERSION;
+use crate::tui::input::KEY_BINDINGS;
+use crate::tui::theme::ThemeColors;
+use crate::tui::ui::VERSION;
 
 use super::utils::centered_rect;
 

@@ -1,5 +1,5 @@
 use std::sync::OnceLock;
-
+use serde::{Deserialize, Serialize};
 use tracing::Level;
 use tracing_appender::non_blocking::WorkerGuard;
 use tracing_appender::rolling::{RollingFileAppender, Rotation};
@@ -7,7 +7,7 @@ use tracing_subscriber::fmt::time::UtcTime;
 use tracing_subscriber::prelude::*;
 use tracing_subscriber::{fmt, EnvFilter};
 
-use crate::config::{runtime_dir, LogLevel};
+use crate::config::runtime_dir;
 
 static INIT: OnceLock<()> = OnceLock::new();
 
@@ -21,6 +21,45 @@ pub enum LogMode {
 pub struct LogGuard {
     _guard: Option<WorkerGuard>,
 }
+
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "lowercase")]
+pub enum LogLevel {
+    Off,
+    Error,
+    Warn,
+    #[default]
+    Info,
+    Debug,
+    Trace,
+}
+
+impl LogLevel {
+    pub fn as_tracing_level(self) -> Option<Level> {
+        match self {
+            LogLevel::Off => None,
+            LogLevel::Error => Some(Level::ERROR),
+            LogLevel::Warn => Some(Level::WARN),
+            LogLevel::Info => Some(Level::INFO),
+            LogLevel::Debug => Some(Level::DEBUG),
+            LogLevel::Trace => Some(Level::TRACE),
+        }
+    }
+
+    pub fn from_str(s: &str) -> Self {
+        match s.to_lowercase().as_str() {
+            "off" => LogLevel::Off,
+            "error" => LogLevel::Error,
+            "warn" | "warning" => LogLevel::Warn,
+            "info" => LogLevel::Info,
+            "debug" => LogLevel::Debug,
+            "trace" => LogLevel::Trace,
+            _ => LogLevel::Info,
+        }
+    }
+}
+
 
 pub fn init(level: LogLevel, mode: LogMode, cli_override: Option<LogLevel>) -> LogGuard {
     let mut guard = None;

@@ -1,7 +1,7 @@
 use chrono::{DateTime, Duration, Timelike, Utc};
 use tracing::debug;
 
-use crate::config::HistoryConfig;
+use crate::tui::config::HistoryConfig;
 use crate::data::{
     DailyCycle, DailyStat, HistoryStore, HistoryStoreError, HourlyStat, SessionType,
 };

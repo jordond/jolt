@@ -1,9 +1,7 @@
 mod daemon;
-mod cli;
 mod logging;
 mod data;
 mod config;
-mod theme;
 
 use std::time::Duration;
 use clap::Parser;
@@ -23,7 +21,7 @@ fn main() -> Result<()> {
     let _ = ensure_dirs();
     
     let cli = DaemonCli::parse();
-    let config = UserConfig::load();
+    let config = DaemonUserConfig::load();
     let log_level_override = cli.log_level.as_deref().map(LogLevel::from_str);
 
     let command = cli.command.unwrap_or_else(|| DaemonCommands::Start { foreground: true });
