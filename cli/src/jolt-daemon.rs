@@ -7,10 +7,7 @@ use std::time::Duration;
 use clap::Parser;
 use color_eyre::eyre::Result;
 
-use crate::daemon::{is_daemon_running, server::run_daemon, socket_path, DaemonClient};
-#[cfg(target_os = "macos")]
-use crate::service;
-
+use crate::daemon::{is_daemon_running, server::run_daemon, socket_path, DaemonClient, service::get_service_status};
 
 use data::BatteryData;
 use logging::{LogMode, LogLevel};
@@ -104,6 +101,10 @@ fn daemon_stop() -> Result<()> {
 fn daemon_status() -> Result<()> {
     println!("Daemon Status");
     println!("{}", "-".repeat(40));
+
+    let service_status = get_service_status();
+    println!("{}", service_status.display());
+    println!();
 
     if is_daemon_running() {
         match DaemonClient::connect() {

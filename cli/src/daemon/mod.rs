@@ -1,7 +1,6 @@
 mod client;
 mod protocol;
 pub mod server;
-#[cfg(target_os = "macos")]
 pub mod service;
 pub mod cli;
 

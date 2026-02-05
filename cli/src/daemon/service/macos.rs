@@ -1,31 +1,9 @@
-//! Service installation and management for auto-start on login.
-//!
-//! Supports:
-//! - macOS: LaunchAgent via launchd
-//! - Linux: systemd user service
-
 use std::path::PathBuf;
 
 use color_eyre::eyre::{eyre, Result};
 
-#[cfg(target_os = "macos")]
 const SERVICE_LABEL: &str = "sh.getjolt.daemon";
 
-#[derive(Debug, Clone)]
-pub struct ServiceStatus {
-    pub installed: bool,
-    pub enabled: bool,
-    pub running: bool,
-    pub config_path: PathBuf,
-    pub configured_exe: Option<PathBuf>,
-    pub warnings: Vec<String>,
-}
-
-
-
-// macOS: launchd LaunchAgent
-
-#[cfg(target_os = "macos")]
 fn macos_plist_path() -> PathBuf {
     let home = dirs::home_dir().unwrap_or_else(|| {
         PathBuf::from(std::env::var("HOME").expect("HOME environment variable not set"))
@@ -35,12 +13,10 @@ fn macos_plist_path() -> PathBuf {
         .join(format!("{}.plist", SERVICE_LABEL))
 }
 
-#[cfg(target_os = "macos")]
 fn macos_log_dir() -> PathBuf {
     crate::config::runtime_dir()
 }
 
-#[cfg(target_os = "macos")]
 fn generate_macos_plist(exe_path: &std::path::Path) -> String {
     let log_dir = macos_log_dir();
     format!(
@@ -78,7 +54,6 @@ fn generate_macos_plist(exe_path: &std::path::Path) -> String {
     )
 }
 
-#[cfg(target_os = "macos")]
 fn install_macos_service(force: bool) -> Result<()> {
     let plist_path = macos_plist_path();
     let exe_path = std::env::current_exe()?;
@@ -150,7 +125,6 @@ fn install_macos_service(force: bool) -> Result<()> {
     Ok(())
 }
 
-#[cfg(target_os = "macos")]
 fn uninstall_macos_service() -> Result<()> {
     let plist_path = macos_plist_path();
 
@@ -171,7 +145,6 @@ fn uninstall_macos_service() -> Result<()> {
     Ok(())
 }
 
-#[cfg(target_os = "macos")]
 fn unload_macos_service() -> Result<()> {
     let plist_path = macos_plist_path();
     let uid = get_uid();
@@ -198,7 +171,6 @@ fn unload_macos_service() -> Result<()> {
     Ok(())
 }
 
-#[cfg(target_os = "macos")]
 fn is_macos_service_loaded() -> bool {
     let output = std::process::Command::new("launchctl")
         .args(["list", SERVICE_LABEL])
@@ -207,7 +179,6 @@ fn is_macos_service_loaded() -> bool {
     matches!(output, Ok(o) if o.status.success())
 }
 
-#[cfg(target_os = "macos")]
 fn get_macos_service_status() -> ServiceStatus {
     let plist_path = macos_plist_path();
     let installed = plist_path.exists();
@@ -241,7 +212,6 @@ fn get_macos_service_status() -> ServiceStatus {
     }
 }
 
-#[cfg(target_os = "macos")]
 fn extract_exe_from_plist(content: &str) -> Option<PathBuf> {
     let start = content.find("<array>")?;
     let end = content[start..].find("</array>")?;
@@ -254,7 +224,6 @@ fn extract_exe_from_plist(content: &str) -> Option<PathBuf> {
     Some(PathBuf::from(exe_str))
 }
 
-#[cfg(target_os = "macos")]
 fn get_uid() -> u32 {
     // SAFETY: `libc::getuid` is a simple read-only syscall that returns the
     // calling process's user ID. It does not dereference pointers or rely on
@@ -265,7 +234,6 @@ fn get_uid() -> u32 {
 #[cfg(test)]
 mod tests {
     use super::*;
-
 
     #[cfg(target_os = "macos")]
     #[test]
