@@ -17,7 +17,7 @@ use std::time::Duration;
 use color_eyre::eyre::Result;
 use tracing::{debug, info};
 
-use crate::tui::config::{GraphMetric, RuntimeConfig, UserConfig};
+use crate::tui::config::RuntimeConfig;
 use crate::daemon::CycleSummary;
 use crate::daemon::{DaemonClient, DaemonStatus, DataSnapshot, KillSignal};
 use crate::data::{
@@ -28,6 +28,7 @@ use jolt_theme::cache::ThemeGroup;
 use jolt_theme::NamedTheme;
 
 pub use types::{Action, AppView, HistoryPeriod, SortColumn};
+use crate::config::{GraphMetric, UserConfig};
 
 /// How many ticks between forecast refreshes.
 const FORECAST_REFRESH_TICKS: u32 = 10;

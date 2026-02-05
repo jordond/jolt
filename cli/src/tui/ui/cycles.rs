@@ -7,7 +7,7 @@ use ratatui::{
 };
 
 use crate::tui::app::App;
-use crate::tui::config::EnergyUnit;
+use crate::config::EnergyUnit;
 use crate::data::{ChargeSession, SessionType};
 use crate::tui::theme::ThemeColors;
 

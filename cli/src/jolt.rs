@@ -11,7 +11,7 @@ use crate::tui::commands;
 use data::BatteryData;
 use logging::LogMode;
 use tui::cli::{Cli, Commands};
-use tui::config::UserConfig;
+use crate::config::UserConfig;
 use crate::config::ensure_dirs;
 use crate::logging::LogLevel;
 

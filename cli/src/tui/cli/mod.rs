@@ -1,9 +1,6 @@
-mod daemon;
 mod history;
 mod theme;
 
-pub use daemon::DaemonCommands;
-pub use daemon::DaemonCli;
 pub use history::HistoryCommands;
 pub use theme::ThemeCommands;
 

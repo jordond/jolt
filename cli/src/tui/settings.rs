@@ -4,7 +4,7 @@
 //! making settings type-safe, DRY, and localization-friendly.
 
 use crate::tui::app::App;
-use crate::tui::config::{DataSizeUnit, EnergyUnit, TemperatureUnit};
+use crate::config::{DataSizeUnit, EnergyUnit, TemperatureUnit};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum SettingId {

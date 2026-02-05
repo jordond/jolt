@@ -4,7 +4,7 @@ use color_eyre::eyre::Result;
 
 use crate::data::{BatteryData, PowerData};
 use crate::tui::config;
-use crate::tui::config::{config_path, UserConfig};
+use crate::config::{config_path, UserConfig};
 
 pub fn run() -> Result<()> {
     println!("jolt debug information");

@@ -7,21 +7,21 @@ use std::time::Duration;
 use clap::Parser;
 use color_eyre::eyre::Result;
 
-use crate::daemon::{is_daemon_running, run_daemon, socket_path, DaemonClient};
+use crate::daemon::{is_daemon_running, server::run_daemon, socket_path, DaemonClient};
 
 
 use data::BatteryData;
-use logging::LogMode;
-use config::{ensure_dirs, LogLevel, UserConfig};
-use cli::{DaemonCli, DaemonCommands};
-
+use logging::{LogMode, LogLevel};
+use config::ensure_dirs;
+use crate::config::UserConfig;
+use crate::daemon::cli::{DaemonCli, DaemonCommands};
 
 fn main() -> Result<()> {
     color_eyre::install()?;
     let _ = ensure_dirs();
     
     let cli = DaemonCli::parse();
-    let config = DaemonUserConfig::load();
+    let config = UserConfig::load();
     let log_level_override = cli.log_level.as_deref().map(LogLevel::from_str);
 
     let command = cli.command.unwrap_or_else(|| DaemonCommands::Start { foreground: true });

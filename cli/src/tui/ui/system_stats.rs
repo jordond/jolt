@@ -7,7 +7,7 @@ use ratatui::{
 };
 
 use crate::tui::app::App;
-use crate::tui::config::DataSizeUnit;
+use crate::config::DataSizeUnit;
 use crate::tui::theme::ThemeColors;
 
 use super::utils::{color_for_value, format_data_size};

@@ -3,7 +3,7 @@ use std::time::Duration;
 use bytesize::ByteSize;
 use ratatui::{layout::Rect, style::Color};
 
-use crate::tui::config::{DataSizeUnit, EnergyUnit, TemperatureUnit};
+use crate::config::{DataSizeUnit, EnergyUnit, TemperatureUnit};
 use crate::tui::theme::ThemeColors;
 
 const NOMINAL_VOLTAGE: f32 = 11.4;

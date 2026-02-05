@@ -9,7 +9,7 @@ use tokio::net::UnixListener;
 use tokio::sync::mpsc;
 use tracing::{debug, error, info, trace, warn};
 
-use crate::config::runtime_dir;
+use crate::config::{runtime_dir, HistoryConfig, UserConfig};
 use crate::daemon::protocol::{
     BatterySnapshot, BatteryState, ChargeSession, DaemonRequest, DaemonResponse, DaemonStatus,
     DailyCycle, DailyStat, DailyTopProcess, DataSnapshot, ForecastSnapshot, HourlyStat,

@@ -3,7 +3,7 @@ use std::time::{Duration, Instant};
 use chrono::Utc;
 use tracing::{debug, trace};
 
-use crate::tui::config::HistoryConfig;
+use crate::config::HistoryConfig;
 use crate::data::{
     BatteryData, BatteryHealthSnapshot, ChargingState, CycleSnapshot, DailyTopProcess,
     HistoryStore, HistoryStoreError, PowerData, ProcessData, Sample, SessionEvent, SessionTracker,
