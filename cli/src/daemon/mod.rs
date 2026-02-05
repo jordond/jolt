@@ -1,7 +1,8 @@
 mod client;
 mod protocol;
-mod server;
+pub mod server;
 pub mod service;
+pub mod cli;
 
 pub use client::{ClientError, DaemonClient};
 #[allow(unused_imports)]
@@ -12,7 +13,7 @@ pub use jolt_protocol::{
     PowerSnapshot, ProcessSnapshot, ProcessState, Sample, SessionType, SystemSnapshot,
     SystemStatsSnapshot, MAX_SUBSCRIBERS, MIN_SUPPORTED_VERSION, PROTOCOL_VERSION,
 };
-pub use server::run_daemon;
+
 #[allow(unused_imports)]
 pub use server::DaemonError;
 
