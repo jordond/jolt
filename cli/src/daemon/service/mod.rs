@@ -60,17 +60,6 @@ impl ServiceStatus {
     }
 }
 
-fn warn_if_dev_binary(exe_path: &std::path::Path) {
-    let exe_str = exe_path.to_string_lossy();
-    if exe_str.contains("/target/debug/") || exe_str.contains("/target/release/") {
-        eprintln!(
-            "Warning: Using development binary at {}\n\
-             Consider installing jolt to a stable location (e.g., /usr/local/bin/jolt)",
-            exe_path.display()
-        );
-    }
-}
-
 #[cfg(target_os = "macos")]
 pub fn install_service(force: bool) -> Result<()> {
     install_macos_service(force)

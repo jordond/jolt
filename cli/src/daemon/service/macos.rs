@@ -171,6 +171,17 @@ pub fn unload_macos_service() -> Result<()> {
     Ok(())
 }
 
+fn warn_if_dev_binary(exe_path: &std::path::Path) {
+    let exe_str = exe_path.to_string_lossy();
+    if exe_str.contains("/target/debug/") || exe_str.contains("/target/release/") {
+        eprintln!(
+            "Warning: Using development binary at {}\n\
+             Consider installing jolt to a stable location (e.g., /usr/local/bin/jolt)",
+            exe_path.display()
+        );
+    }
+}
+
 fn is_macos_service_loaded() -> bool {
     let output = std::process::Command::new("launchctl")
         .args(["list", SERVICE_LABEL])
