@@ -4,19 +4,21 @@
 //! - macOS: LaunchAgent via launchd
 //! - Linux: systemd user service
 
-#[cfg(target_os = "macos")]
-pub(super) mod macos;
 #[cfg(target_os = "linux")]
 pub(super) mod linux;
+#[cfg(target_os = "macos")]
+pub(super) mod macos;
 
-use std::path::PathBuf;
 use color_eyre::eyre::Result;
+use std::path::PathBuf;
 
 #[cfg(target_os = "linux")]
-use crate::daemon::service::linux::{get_linux_service_status as _get_service_status};
+use crate::daemon::service::linux::get_linux_service_status as _get_service_status;
 
 #[cfg(target_os = "macos")]
-use crate::daemon::service::macos::{get_mocos_service_status as _get_service_status, install_macos_service, uninstall_macos_service};
+use crate::daemon::service::macos::{
+    get_mocos_service_status as _get_service_status, install_macos_service, uninstall_macos_service,
+};
 
 #[derive(Debug, Clone)]
 pub struct ServiceStatus {
@@ -98,18 +100,20 @@ pub fn get_service_status() -> ServiceStatus {
 }
 
 pub fn disable_service() -> Result<()> {
-    #[cfg(target_os = "linux")] {
+    #[cfg(target_os = "linux")]
+    {
         linux::disable_linux_service()
     }
-    #[cfg(target_os = "macos")] {
+    #[cfg(target_os = "macos")]
+    {
         macos::unload_macos_service()
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use std::path::PathBuf;
     use crate::daemon::service::ServiceStatus;
+    use std::path::PathBuf;
 
     #[test]
     fn test_service_status_display() {

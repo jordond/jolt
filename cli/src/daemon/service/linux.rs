@@ -1,11 +1,10 @@
 // Linux: systemd user service
 
-use std::path::PathBuf;
-use color_eyre::eyre::{eyre, Result};
 use crate::daemon::service::ServiceStatus;
+use color_eyre::eyre::{eyre, Result};
+use std::path::PathBuf;
 
 const SYSTEMD_SERVICE_NAME: &str = "jolt-daemon.service";
-
 
 fn linux_service_path() -> PathBuf {
     let config_dir = dirs::config_dir().unwrap_or_else(|| {
@@ -15,7 +14,6 @@ fn linux_service_path() -> PathBuf {
 
     config_dir.join("systemd/user").join(SYSTEMD_SERVICE_NAME)
 }
-
 
 pub fn disable_linux_service() -> Result<()> {
     let status = std::process::Command::new("systemctl")
@@ -29,7 +27,6 @@ pub fn disable_linux_service() -> Result<()> {
     Ok(())
 }
 
-
 fn is_systemd_available() -> bool {
     std::process::Command::new("systemctl")
         .args(["--user", "status"])
@@ -37,7 +34,6 @@ fn is_systemd_available() -> bool {
         .map(|o| o.status.code() != Some(127))
         .unwrap_or(false)
 }
-
 
 pub fn is_linux_service_enabled() -> bool {
     let output = std::process::Command::new("systemctl")
@@ -47,7 +43,6 @@ pub fn is_linux_service_enabled() -> bool {
     matches!(output, Ok(o) if o.status.success())
 }
 
-
 pub fn is_linux_service_active() -> bool {
     let output = std::process::Command::new("systemctl")
         .args(["--user", "is-active", SYSTEMD_SERVICE_NAME])
@@ -55,7 +50,6 @@ pub fn is_linux_service_active() -> bool {
 
     matches!(output, Ok(o) if o.status.success())
 }
-
 
 pub fn get_linux_service_status() -> ServiceStatus {
     let service_path = linux_service_path();
@@ -98,7 +92,6 @@ pub fn get_linux_service_status() -> ServiceStatus {
     }
 }
 
-
 fn extract_exe_from_systemd_service(content: &str) -> Option<PathBuf> {
     for line in content.lines() {
         if let Some(exec_start) = line.strip_prefix("ExecStart=") {
@@ -112,8 +105,8 @@ fn extract_exe_from_systemd_service(content: &str) -> Option<PathBuf> {
 
 #[cfg(test)]
 mod tests {
-    use std::path::PathBuf;
     use super::*;
+    use std::path::PathBuf;
 
     #[test]
     fn test_extract_exe_from_systemd_service() {

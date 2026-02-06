@@ -8,7 +8,7 @@ pub enum DaemonCommands {
     },
 
     Stop,
-    
+
     Status,
     Disable,
 
