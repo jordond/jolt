@@ -1,78 +1,8 @@
-//! Service installation and management for auto-start on login.
-//!
-//! Supports:
-//! - macOS: LaunchAgent via launchd
-
 use std::path::PathBuf;
 
 use color_eyre::eyre::{eyre, Result};
 
 const SERVICE_LABEL: &str = "sh.getjolt.daemon";
-
-#[derive(Debug, Clone)]
-pub struct ServiceStatus {
-    pub installed: bool,
-    pub enabled: bool,
-    pub running: bool,
-    pub config_path: PathBuf,
-    pub configured_exe: Option<PathBuf>,
-    pub warnings: Vec<String>,
-}
-
-impl ServiceStatus {
-    pub fn display(&self) -> String {
-        let mut lines = vec![
-            format!(
-                "Service installed: {}",
-                if self.installed { "yes" } else { "no" }
-            ),
-            format!(
-                "Service enabled:   {}",
-                if self.enabled { "yes" } else { "no" }
-            ),
-            format!(
-                "Service running:   {}",
-                if self.running { "yes" } else { "no" }
-            ),
-            format!("Config path:       {}", self.config_path.display()),
-        ];
-
-        if let Some(exe) = &self.configured_exe {
-            lines.push(format!("Configured exe:    {}", exe.display()));
-        }
-
-        for warning in &self.warnings {
-            lines.push(format!("Warning:           {}", warning));
-        }
-
-        lines.join("\n")
-    }
-}
-
-fn warn_if_dev_binary(exe_path: &std::path::Path) {
-    let exe_str = exe_path.to_string_lossy();
-    if exe_str.contains("/target/debug/") || exe_str.contains("/target/release/") {
-        eprintln!(
-            "Warning: Using development binary at {}\n\
-             Consider installing jolt to a stable location (e.g., /usr/local/bin/jolt)",
-            exe_path.display()
-        );
-    }
-}
-
-pub fn install_service(force: bool) -> Result<()> {
-    install_macos_service(force)
-}
-
-pub fn uninstall_service() -> Result<()> {
-    uninstall_macos_service()
-}
-
-pub fn get_service_status() -> ServiceStatus {
-    get_macos_service_status()
-}
-
-// macOS: launchd LaunchAgent
 
 fn macos_plist_path() -> PathBuf {
     let home = dirs::home_dir().unwrap_or_else(|| {
@@ -215,7 +145,7 @@ fn uninstall_macos_service() -> Result<()> {
     Ok(())
 }
 
-fn unload_macos_service() -> Result<()> {
+pub fn unload_macos_service() -> Result<()> {
     let plist_path = macos_plist_path();
     let uid = get_uid();
 
@@ -294,7 +224,6 @@ fn extract_exe_from_plist(content: &str) -> Option<PathBuf> {
     Some(PathBuf::from(exe_str))
 }
 
-#[cfg(target_os = "macos")]
 fn get_uid() -> u32 {
     // SAFETY: `libc::getuid` is a simple read-only syscall that returns the
     // calling process's user ID. It does not dereference pointers or rely on
@@ -307,32 +236,12 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_service_status_display() {
-        let status = ServiceStatus {
-            installed: true,
-            enabled: true,
-            running: false,
-            config_path: PathBuf::from("/test/path"),
-            configured_exe: Some(PathBuf::from("/usr/local/bin/jolt")),
-            warnings: vec!["Test warning".to_string()],
-        };
-
-        let display = status.display();
-        assert!(display.contains("Service installed: yes"));
-        assert!(display.contains("Service enabled:   yes"));
-        assert!(display.contains("Service running:   no"));
-        assert!(display.contains("Test warning"));
-    }
-
-    #[cfg(target_os = "macos")]
-    #[test]
     fn test_macos_plist_path() {
         let path = macos_plist_path();
         assert!(path.to_string_lossy().contains("LaunchAgents"));
         assert!(path.to_string_lossy().contains("sh.getjolt.daemon.plist"));
     }
 
-    #[cfg(target_os = "macos")]
     #[test]
     fn test_generate_macos_plist() {
         let exe = PathBuf::from("/usr/local/bin/jolt");
@@ -343,7 +252,6 @@ mod tests {
         assert!(plist.contains("KeepAlive"));
     }
 
-    #[cfg(target_os = "macos")]
     #[test]
     fn test_extract_exe_from_plist() {
         let plist = r#"<array>

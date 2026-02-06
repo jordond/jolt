@@ -8,8 +8,7 @@ pub enum DaemonCommands {
     },
 
     Stop,
-
-    #[cfg(target_os = "macos")]
+    
     Status,
 
     #[cfg(target_os = "macos")]

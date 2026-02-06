@@ -68,7 +68,6 @@ pub fn run(
                 }
             }
         }
-        #[cfg(target_os = "macos")]
         DaemonCommands::Status => {
             println!("Daemon Status");
             println!("{}", "-".repeat(40));
