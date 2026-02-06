@@ -651,9 +651,19 @@ impl MacOSPower {
         if let Ok(output) = Command::new("pmset").args(["-g"]).output() {
             let stdout = String::from_utf8_lossy(&output.stdout);
 
-            if stdout.contains("lowpowermode 1") {
+            let check_mode = |key: &str| {
+                stdout.lines().any(|line| {
+                    let mut parts = line.split_whitespace();
+                    matches!(
+                        (parts.next(), parts.next()),
+                        (Some(k), Some("1")) if k == key
+                    )
+                })
+            };
+
+            if check_mode("lowpowermode") {
                 self.info.power_mode = PowerMode::LowPower;
-            } else if stdout.contains("highpowermode 1") {
+            } else if check_mode("highpowermode") {
                 self.info.power_mode = PowerMode::HighPerformance;
             } else {
                 self.info.power_mode = PowerMode::Automatic;
