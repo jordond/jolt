@@ -2,6 +2,8 @@ use std::path::PathBuf;
 
 use color_eyre::eyre::{eyre, Result};
 
+use crate::daemon::service::ServiceStatus;
+
 const SERVICE_LABEL: &str = "sh.getjolt.daemon";
 
 fn macos_plist_path() -> PathBuf {
@@ -54,7 +56,7 @@ fn generate_macos_plist(exe_path: &std::path::Path) -> String {
     )
 }
 
-fn install_macos_service(force: bool) -> Result<()> {
+pub fn install_macos_service(force: bool) -> Result<()> {
     let plist_path = macos_plist_path();
     let exe_path = std::env::current_exe()?;
 
@@ -125,7 +127,7 @@ fn install_macos_service(force: bool) -> Result<()> {
     Ok(())
 }
 
-fn uninstall_macos_service() -> Result<()> {
+pub fn uninstall_macos_service() -> Result<()> {
     let plist_path = macos_plist_path();
 
     if !plist_path.exists() {
@@ -145,7 +147,7 @@ fn uninstall_macos_service() -> Result<()> {
     Ok(())
 }
 
-pub fn unload_macos_service() -> Result<()> {
+pub(super) fn unload_macos_service() -> Result<()> {
     let plist_path = macos_plist_path();
     let uid = get_uid();
 
@@ -190,7 +192,7 @@ fn is_macos_service_loaded() -> bool {
     matches!(output, Ok(o) if o.status.success())
 }
 
-fn get_macos_service_status() -> ServiceStatus {
+pub(super) fn get_macos_service_status() -> ServiceStatus {
     let plist_path = macos_plist_path();
     let installed = plist_path.exists();
     let enabled = is_macos_service_loaded();
