@@ -17,7 +17,7 @@ use crate::daemon::service::linux::get_linux_service_status as _get_service_stat
 
 #[cfg(target_os = "macos")]
 use crate::daemon::service::macos::{
-    get_mocos_service_status as _get_service_status, install_macos_service, uninstall_macos_service,
+    get_macos_service_status as _get_service_status, install_macos_service, uninstall_macos_service,
 };
 
 #[derive(Debug, Clone)]
