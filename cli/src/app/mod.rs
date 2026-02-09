@@ -175,7 +175,7 @@ impl App {
             snapshot_rx: None,
         };
 
-        app.try_connect_daemon();
+        app.try_subscribe_to_daemon();
 
         Ok(app)
     }

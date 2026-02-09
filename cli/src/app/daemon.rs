@@ -12,17 +12,9 @@ use super::App;
 use crate::daemon::{ClientError, DaemonClient, DataSnapshot};
 
 impl App {
-    /// Attempts to connect to the daemon and subscribe for real-time updates.
-    /// If the daemon is not running, attempts to auto-start it.
-    pub(crate) fn try_connect_daemon(&mut self) {
-        if self.try_subscribe_to_daemon() {
-            return;
-        }
-    }
-
     /// Attempts to subscribe to the daemon for real-time updates.
     /// Returns true if subscription was successful.
-    fn try_subscribe_to_daemon(&mut self) -> bool {
+    pub(crate) fn try_subscribe_to_daemon(&mut self) -> bool {
         let client = match DaemonClient::connect_with_version_check() {
             Ok(c) => c,
             Err(ClientError::VersionMismatch(e)) => {
