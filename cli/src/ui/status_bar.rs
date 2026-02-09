@@ -68,7 +68,7 @@ pub fn render_status_bar(frame: &mut Frame, area: Rect, app: &App, theme: &Theme
         left_spans.push(Span::styled(format!(" {}", desc), theme.muted_style()));
     }
 
-    let background_recording = app.config.user_config.history.background_recording;
+    let background_recording = crate::daemon::service::get_service_status().enabled;
 
     let mut right_spans: Vec<Span> = Vec::new();
 

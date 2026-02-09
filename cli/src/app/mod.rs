@@ -343,20 +343,13 @@ impl App {
     }
 
     /// Performs cleanup before the application exits.
-    ///
-    /// This optionally shuts down the daemon if background recording is disabled,
-    /// and unsubscribes from daemon updates.
     pub fn cleanup(&mut self) {
         // Drop the snapshot receiver to signal background thread to exit
         self.snapshot_rx = None;
 
         // Connect with a new client for cleanup operations
         if let Ok(mut client) = DaemonClient::connect() {
-            if !self.config.user_config.history.background_recording {
-                let _ = client.shutdown();
-            } else {
-                let _ = client.unsubscribe();
-            }
+            let _ = client.unsubscribe();
         }
 
         self.daemon_subscription = None;
