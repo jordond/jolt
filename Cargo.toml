@@ -44,7 +44,7 @@ sysinfo = "0.38.1"
 systemstat = "0.2.5"
 core-foundation = "0.10.1"
 core-foundation-sys = "0.8.7"
-libc = "0.2.180"
+libc = "0.2.181"
 
 # Config/Storage
 toml = "0.9.11"
