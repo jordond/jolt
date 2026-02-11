@@ -19,7 +19,7 @@
     "@astrojs/starlight": "^0.37.6",
     "@fontsource/inter": "^5.2.8",
     "@fontsource/jetbrains-mono": "^5.2.8",
-    "astro": "^5.17.1",
+    "astro": "^5.17.2",
     "sharp": "^0.34.5"
   },
   "devDependencies": {
