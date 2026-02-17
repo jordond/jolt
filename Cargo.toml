@@ -41,7 +41,7 @@ tracing-appender = "0.2.4"
 
 # System
 sysinfo = "0.38.2"
-systemstat = "0.2.5"
+systemstat = "0.2.6"
 core-foundation = "0.10.1"
 core-foundation-sys = "0.8.7"
 libc = "0.2.182"
