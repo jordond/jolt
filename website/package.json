@@ -16,7 +16,7 @@
   },
   "dependencies": {
     "@astrojs/sitemap": "^3.7.1",
-    "@astrojs/starlight": "^0.37.6",
+    "@astrojs/starlight": "^0.38.1",
     "@fontsource/inter": "^5.2.8",
     "@fontsource/jetbrains-mono": "^5.2.8",
     "astro": "^5.18.1",
