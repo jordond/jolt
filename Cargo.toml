@@ -36,7 +36,7 @@ clap = { version = "4.5.60", features = ["derive"] }
 
 # Logging
 tracing = "0.1.44"
-tracing-subscriber = { version = "0.3.22", features = ["env-filter", "time"] }
+tracing-subscriber = { version = "0.3.23", features = ["env-filter", "time"] }
 tracing-appender = "0.2.4"
 
 # System
