@@ -19,12 +19,12 @@
     "@astrojs/starlight": "^0.38.1",
     "@fontsource/inter": "^5.2.8",
     "@fontsource/jetbrains-mono": "^5.2.8",
-    "astro": "^6.0.4",
+    "astro": "^6.0.6",
     "sharp": "^0.34.5"
   },
   "devDependencies": {
-    "@typescript-eslint/eslint-plugin": "^8.57.0",
-    "@typescript-eslint/parser": "^8.57.0",
+    "@typescript-eslint/eslint-plugin": "^8.57.1",
+    "@typescript-eslint/parser": "^8.57.1",
     "eslint": "^10.0.3",
     "eslint-plugin-astro": "^1.6.0",
     "globals": "^17.4.0",
