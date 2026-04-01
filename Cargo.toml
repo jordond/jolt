@@ -47,7 +47,7 @@ core-foundation-sys = "0.8.7"
 libc = "0.2.183"
 
 # Config/Storage
-toml = "1.0.7"
+toml = "1.1.2"
 dirs = "6"
 rusqlite = { version = "0.39.0", features = ["bundled"] }
 plist = "1.8.0"
