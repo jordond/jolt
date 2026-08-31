@@ -15,11 +15,11 @@
     "check": "astro check"
   },
   "dependencies": {
-    "@astrojs/sitemap": "^3.7.1",
+    "@astrojs/sitemap": "^3.7.4",
     "@astrojs/starlight": "^0.38.3",
     "@fontsource/inter": "^5.2.8",
     "@fontsource/jetbrains-mono": "^5.2.8",
-    "astro": "^6.0.6",
+    "astro": "^6.4.8",
     "sharp": "^0.34.5"
   },
   "devDependencies": {
