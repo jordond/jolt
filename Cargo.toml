@@ -14,51 +14,51 @@ categories = ["command-line-utilities", "os"]
 
 [workspace.dependencies]
 # Serialization
-serde = { version = "1.0.228", features = ["derive"] }
-serde_json = "1.0.149"
-chrono = { version = "0.4.44", features = ["serde"] }
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = "1.0.151"
+chrono = { version = "0.4.45", features = ["serde"] }
 
 # Async
-tokio = { version = "1.50.0", features = ["full"] }
-tokio-stream = "0.1.18"
-futures = "0.3.32"
+tokio = { version = "1.53.1", features = ["full"] }
+tokio-stream = "0.1.19"
+futures = "0.3.34"
 
 # Error handling
 color-eyre = "0.6.5"
-thiserror = "2.0.18"
+thiserror = "2.0.20"
 
 # TUI
 ratatui = { version = "0.30", features = ["crossterm"] }
 crossterm = "0.29"
 
 # CLI
-clap = { version = "4.6.0", features = ["derive"] }
+clap = { version = "4.6.6", features = ["derive"] }
 
 # Logging
 tracing = "0.1.44"
 tracing-subscriber = { version = "0.3.23", features = ["env-filter", "time"] }
-tracing-appender = "0.2.4"
+tracing-appender = "0.2.5"
 
 # System
-sysinfo = "0.38.4"
-systemstat = "0.2.6"
+sysinfo = "0.39.6"
+systemstat = "0.2.7"
 core-foundation = "0.10.1"
 core-foundation-sys = "0.8.7"
-libc = "0.2.183"
+libc = "0.2.189"
 
 # Config/Storage
-toml = "1.1.2"
+toml = "1.1.5"
 dirs = "6"
-rusqlite = { version = "0.39.0", features = ["bundled"] }
-plist = "1.8.0"
+rusqlite = { version = "0.40.2", features = ["bundled"] }
+plist = "1.10.0"
 
 # Network/Other
-ureq = "3.3.0"
+ureq = "3.4.0"
 daemonize = "0.5"
 
 # Formatting
-bytesize = "2.3.1"
-humantime = "2.3.0"
+bytesize = "2.7.0"
+humantime = "2.4.0"
 
 # Internal crates (version required for crates.io publishing)
 jolt-protocol = { path = "crates/protocol", version = "1.2.0" }
@@ -66,7 +66,7 @@ jolt-theme = { path = "crates/theme", version = "1.2.0" }
 jolt-platform = { path = "crates/platform", version = "1.2.0" }
 
 # Battery (starship-battery fixes macOS issues: https://github.com/svartalf/rust-battery/issues/102)
-starship-battery = "0.10.3"
+starship-battery = "0.11.1"
 
 [profile.release]
 lto = true
