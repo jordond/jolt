@@ -31,7 +31,7 @@
     "globals": "^17.12.0",
     "prettier": "^3.9.6",
     "prettier-plugin-astro": "^0.14.1",
-    "typescript": "^6"
+    "typescript": "^6.0.3"
   },
   "prettier": {
     "plugins": [
