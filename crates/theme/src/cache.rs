@@ -139,7 +139,7 @@ pub fn group_schemes(schemes: &[String]) -> Vec<ThemeGroup> {
     }
 
     let mut groups: Vec<ThemeGroup> = grouped.into_values().collect();
-    groups.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
+    groups.sort_by_key(|a| a.name.to_lowercase());
     groups
 }
 
