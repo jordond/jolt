@@ -400,7 +400,6 @@ mod tests {
             database_size_bytes: 0,
             version: version.to_string(),
             subscriber_count: 0,
-            history_enabled: false,
             protocol_version,
             min_supported_version,
         }

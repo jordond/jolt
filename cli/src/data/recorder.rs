@@ -55,10 +55,6 @@ impl Recorder {
     }
 
     pub fn should_record(&self) -> bool {
-        if !self.config.background_recording {
-            return false;
-        }
-
         match self.last_sample_time {
             Some(last) => last.elapsed() >= Duration::from_secs(self.config.sample_interval_secs),
             None => true,
