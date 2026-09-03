@@ -28,7 +28,7 @@ color-eyre = "0.6.5"
 thiserror = "2.0.20"
 
 # TUI
-ratatui = { version = "0.30", features = ["crossterm"] }
+ratatui = { version = "0.30.2", features = ["crossterm"] }
 crossterm = "0.29"
 
 # CLI
