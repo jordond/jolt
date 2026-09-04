@@ -11,7 +11,7 @@ serde = { workspace = true }
 serde_json = { workspace = true }
 toml = "1.1.5"
 plist = "1.10.0"
-ureq = "3.3.0"
+ureq = "3.4.0"
 thiserror = { workspace = true }
 
 [dev-dependencies]
