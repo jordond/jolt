@@ -142,7 +142,7 @@ jobs:
     if: ${{ !github.event.release.prerelease }}
     steps:
       - name: Release to Homebrew tap
-        uses: Justintime50/homebrew-releaser@v3
+        uses: Justintime50/homebrew-releaser@v4.0.0
         with:
           homebrew_owner: jordond
           homebrew_tap: homebrew-tap
