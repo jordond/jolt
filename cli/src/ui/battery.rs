@@ -11,7 +11,9 @@ use crate::data::battery::ChargeState;
 use crate::data::power::PowerMode;
 use crate::theme::ThemeColors;
 
-use super::utils::{color_for_percent, format_energy_ratio, format_temperature};
+use super::utils::{
+    color_for_percent, format_energy_ratio, format_percent, format_temperature, sanitize_percent,
+};
 
 /// Returns the icon for the given power mode.
 fn power_mode_icon(mode: PowerMode) -> &'static str {
@@ -72,10 +74,14 @@ fn render_battery_gauge(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeC
     let gauge_color = color_for_percent(percent, 50.0, 20.0, theme);
     let unfilled_color = darken_color(theme.border, 0.6);
 
+    // `Gauge` panics unless the ratio is within 0..=1, and `f32::clamp`
+    // propagates NaN, so the reading has to be sanitized before it gets here.
+    let ratio = f64::from(sanitize_percent(percent)) / 100.0;
+
     let gauge = Gauge::default()
         .gauge_style(Style::default().fg(gauge_color).bg(unfilled_color))
-        .ratio((percent / 100.0).clamp(0.0, 1.0) as f64)
-        .label(format!("{:.0}%", percent))
+        .ratio(ratio)
+        .label(format_percent(percent, 0))
         .use_unicode(true);
 
     frame.render_widget(gauge, area);
@@ -226,7 +232,7 @@ fn render_battery_info_card(
     let mut right_spans = vec![
         Span::styled("Health: ", theme.muted_style()),
         Span::styled(
-            format!("{:.0}%", app.battery.health_percent()),
+            format_percent(app.battery.health_percent(), 0),
             Style::default()
                 .fg(health_color)
                 .add_modifier(Modifier::BOLD),

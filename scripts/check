@@ -54,7 +54,7 @@ fi
 
 if [ "$1" = "--test" ] || [ "$1" = "-t" ]; then
     print_step "Running tests..."
-    if cargo test; then
+    if cargo test --workspace; then
         print_success "Tests OK"
     else
         print_error "Tests failed"
