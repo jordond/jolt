@@ -48,7 +48,7 @@ libc = "0.2.189"
 
 # Config/Storage
 toml = "1.1.5"
-dirs = "6"
+dirs = "7.0.0"
 rusqlite = { version = "0.40.2", features = ["bundled"] }
 plist = "1.10.0"
 
