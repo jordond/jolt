@@ -50,7 +50,7 @@ libc = "0.2.189"
 toml = "1.1.6"
 dirs = "6"
 rusqlite = { version = "0.40.2", features = ["bundled"] }
-plist = "1.10.0"
+plist = "1.10.1"
 
 # Network/Other
 ureq = "3.4.0"
