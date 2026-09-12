@@ -10,7 +10,7 @@ description = "Theme system for terminal TUI applications with iTerm2 import sup
 serde = { workspace = true }
 serde_json = { workspace = true }
 toml = "1.1.6"
-plist = "1.10.0"
+plist = "1.10.1"
 ureq = "3.4.0"
 thiserror = { workspace = true }
 
