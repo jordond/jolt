@@ -68,8 +68,7 @@ pub fn render(frame: &mut Frame, app: &App, theme: &ThemeColors) {
 }
 
 fn render_status_section(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeColors) {
-    let history_cfg = &app.config.user_config.history;
-    let background_enabled = history_cfg.background_recording;
+    let background_enabled = crate::daemon::service::get_service_status().enabled;
     let (bg_status, bg_color) = if background_enabled {
         ("On", theme.success)
     } else {

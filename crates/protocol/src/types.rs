@@ -233,7 +233,6 @@ pub struct DaemonStatus {
     pub database_size_bytes: u64,
     pub version: String,
     pub subscriber_count: usize,
-    pub history_enabled: bool,
     pub protocol_version: u32,
     pub min_supported_version: u32,
 }
@@ -248,7 +247,6 @@ impl Default for DaemonStatus {
             database_size_bytes: 0,
             version: String::new(),
             subscriber_count: 0,
-            history_enabled: false,
             protocol_version: PROTOCOL_VERSION,
             min_supported_version: MIN_SUPPORTED_VERSION,
         }

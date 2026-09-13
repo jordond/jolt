@@ -22,7 +22,6 @@ pub enum SettingId {
     TemperatureUnit,
     DataSizeUnit,
     // Recording
-    BackgroundRecording,
     SampleInterval,
     RawRetention,
     HourlyRetention,
@@ -126,10 +125,6 @@ pub const SETTINGS_LAYOUT: &[SettingsRow] = &[
     },
     SettingsRow::Section("Recording"),
     SettingsRow::Item {
-        id: SettingId::BackgroundRecording,
-        label: "Background Recording",
-    },
-    SettingsRow::Item {
         id: SettingId::SampleInterval,
         label: "Sample Interval (s)",
     },
@@ -171,9 +166,6 @@ pub fn setting_value(app: &App, id: SettingId) -> String {
         SettingId::EnergyUnit => app.config.user_config.units.energy.label().to_string(),
         SettingId::TemperatureUnit => app.config.user_config.units.temperature.label().to_string(),
         SettingId::DataSizeUnit => app.config.user_config.units.data_size.label().to_string(),
-        SettingId::BackgroundRecording => {
-            bool_label(app.config.user_config.history.background_recording)
-        }
         SettingId::SampleInterval => app
             .config
             .user_config
@@ -291,12 +283,6 @@ pub fn setting_apply(app: &mut App, id: SettingId, input: SettingInput) -> Setti
             input,
             |a| a.config.user_config.units.data_size,
             |a, v| a.config.user_config.units.data_size = v,
-        ),
-        SettingId::BackgroundRecording => apply_bool(
-            app,
-            input,
-            |a| a.config.user_config.history.background_recording,
-            |a, v| a.config.user_config.history.background_recording = v,
         ),
         SettingId::SampleInterval => apply_int(
             app,

@@ -164,7 +164,6 @@ fn sample_daemon_status() -> DaemonStatus {
         database_size_bytes: 1024000,
         version: "0.1.0".to_string(),
         subscriber_count: 2,
-        history_enabled: true,
         protocol_version: PROTOCOL_VERSION,
         min_supported_version: MIN_SUPPORTED_VERSION,
     }

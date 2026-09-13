@@ -506,7 +506,6 @@ impl DaemonState {
             database_size_bytes: self.recorder.store().size_bytes().unwrap_or(0),
             version: env!("CARGO_PKG_VERSION").to_string(),
             subscriber_count,
-            history_enabled: self.config.background_recording,
             protocol_version: PROTOCOL_VERSION,
             min_supported_version: MIN_SUPPORTED_VERSION,
         }
