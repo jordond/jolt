@@ -12,11 +12,13 @@ use crate::theme::ThemeColors;
 
 use super::utils::{
     centered_rect, color_for_percent, color_for_value, convert_temperature, format_energy,
-    format_temperature, format_temperature_short,
+    format_percent, format_temperature, format_temperature_short, sanitize_percent,
 };
 
 fn text_gauge(percent: f32, width: usize, color: Color) -> Span<'static> {
-    let filled = ((percent / 100.0) * width as f32) as usize;
+    // Sanitize first: a NaN or out-of-range reading would otherwise render a
+    // bar that is empty or wider than `width`.
+    let filled = ((sanitize_percent(percent) / 100.0) * width as f32) as usize;
     let empty = width.saturating_sub(filled);
     let gauge_str = format!("{}{}", "█".repeat(filled), "░".repeat(empty));
     Span::styled(gauge_str, Style::default().fg(color))
@@ -108,7 +110,7 @@ fn render_charge_info(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeCol
         Line::from(vec![
             Span::styled("Charge:     ", theme.muted_style()),
             Span::styled(
-                format!("{:.1}%", percent),
+                format_percent(percent, 1),
                 Style::default()
                     .fg(percent_color)
                     .add_modifier(Modifier::BOLD),
@@ -152,7 +154,7 @@ fn render_health_info(frame: &mut Frame, area: Rect, app: &App, theme: &ThemeCol
         Line::from(vec![
             Span::styled("Health:     ", theme.muted_style()),
             Span::styled(
-                format!("{:.1}%", health),
+                format_percent(health, 1),
                 Style::default()
                     .fg(health_color)
                     .add_modifier(Modifier::BOLD),

@@ -26,8 +26,38 @@ pub fn centered_rect_percent(area: Rect, width_percent: u16, height_percent: u16
     Rect::new(x, y, width, height)
 }
 
+/// Clamp a percentage into the 0-100 range, mapping non-finite values to 0.
+///
+/// Some power sources report a zero maximum capacity, which makes the
+/// underlying `energy / energy_full` division produce NaN. `f32::clamp`
+/// propagates NaN, so any widget that asserts on its input (such as
+/// `Gauge::ratio`) must be fed through this first.
+pub fn sanitize_percent(percent: f32) -> f32 {
+    if percent.is_finite() {
+        percent.clamp(0.0, 100.0)
+    } else {
+        0.0
+    }
+}
+
+/// Format a percentage with the given precision, or "—" when it is not finite.
+///
+/// Unlike [`sanitize_percent`] the value is not clamped: a battery legitimately
+/// reporting above 100% health should still be shown as-is.
+pub fn format_percent(percent: f32, precision: usize) -> String {
+    if percent.is_finite() {
+        format!("{:.*}%", precision, percent)
+    } else {
+        "—".to_string()
+    }
+}
+
 /// Returns success/warning/danger color based on percent vs thresholds (higher is better).
+///
+/// Non-finite percentages are treated as 0 so a broken reading renders as
+/// `danger` instead of relying on NaN comparison semantics.
 pub fn color_for_percent(percent: f32, high: f32, low: f32, theme: &ThemeColors) -> Color {
+    let percent = sanitize_percent(percent);
     if percent > high {
         theme.success
     } else if percent > low {
@@ -141,6 +171,99 @@ pub fn truncate_str(s: &str, max_len: usize) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn theme() -> ThemeColors {
+        ThemeColors::from(jolt_theme::ThemeColors::default())
+    }
+
+    // Percent sanitization tests (guards against panicking gauge widgets)
+    #[test]
+    fn test_sanitize_percent_passes_through_valid_values() {
+        assert_eq!(sanitize_percent(0.0), 0.0);
+        assert_eq!(sanitize_percent(42.5), 42.5);
+        assert_eq!(sanitize_percent(100.0), 100.0);
+    }
+
+    #[test]
+    fn test_sanitize_percent_maps_non_finite_to_zero() {
+        // Reported by machines with no real battery: 0.0 / 0.0 energy ratio.
+        assert_eq!(sanitize_percent(f32::NAN), 0.0);
+        assert_eq!(sanitize_percent(f32::INFINITY), 0.0);
+        assert_eq!(sanitize_percent(f32::NEG_INFINITY), 0.0);
+    }
+
+    #[test]
+    fn test_sanitize_percent_clamps_out_of_range() {
+        assert_eq!(sanitize_percent(-1.0), 0.0);
+        assert_eq!(sanitize_percent(-500.0), 0.0);
+        assert_eq!(sanitize_percent(101.0), 100.0);
+        assert_eq!(sanitize_percent(500.0), 100.0);
+    }
+
+    #[test]
+    fn test_sanitize_percent_always_yields_a_valid_gauge_ratio() {
+        for percent in [
+            f32::NAN,
+            f32::INFINITY,
+            f32::NEG_INFINITY,
+            -500.0,
+            -0.1,
+            0.0,
+            50.0,
+            100.0,
+            100.1,
+            500.0,
+        ] {
+            let ratio = f64::from(sanitize_percent(percent)) / 100.0;
+            assert!(
+                (0.0..=1.0).contains(&ratio),
+                "ratio {ratio} out of range for percent {percent}"
+            );
+        }
+    }
+
+    #[test]
+    fn test_format_percent_renders_finite_values() {
+        assert_eq!(format_percent(0.0, 0), "0%");
+        assert_eq!(format_percent(42.4, 0), "42%");
+        assert_eq!(format_percent(42.45, 1), "42.5%");
+        // Health above 100% is a real reading and must not be clamped away.
+        assert_eq!(format_percent(101.0, 0), "101%");
+    }
+
+    #[test]
+    fn test_format_percent_renders_non_finite_as_dash() {
+        assert_eq!(format_percent(f32::NAN, 0), "—");
+        assert_eq!(format_percent(f32::INFINITY, 1), "—");
+        assert_eq!(format_percent(f32::NEG_INFINITY, 0), "—");
+    }
+
+    #[test]
+    fn test_color_for_percent_treats_non_finite_as_danger() {
+        let theme = theme();
+        assert_eq!(
+            color_for_percent(f32::NAN, 50.0, 20.0, &theme),
+            theme.danger
+        );
+        assert_eq!(
+            color_for_percent(f32::NEG_INFINITY, 50.0, 20.0, &theme),
+            theme.danger
+        );
+        assert_eq!(
+            color_for_percent(f32::INFINITY, 50.0, 20.0, &theme),
+            theme.danger
+        );
+    }
+
+    #[test]
+    fn test_color_for_percent_thresholds() {
+        let theme = theme();
+        assert_eq!(color_for_percent(80.0, 50.0, 20.0, &theme), theme.success);
+        assert_eq!(color_for_percent(30.0, 50.0, 20.0, &theme), theme.warning);
+        assert_eq!(color_for_percent(10.0, 50.0, 20.0, &theme), theme.danger);
+        // Out-of-range highs clamp down to 100 and stay in the success band.
+        assert_eq!(color_for_percent(500.0, 50.0, 20.0, &theme), theme.success);
+    }
 
     // Energy conversion tests (Wh to mAh using 11.4V nominal)
     #[test]

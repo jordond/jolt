@@ -154,16 +154,84 @@ pub trait BatteryProvider {
     }
 
     /// Check if a battery is available on this system.
+    ///
+    /// A power source only counts as a battery when its readings are usable.
+    /// Machines with no real battery (desktop Macs, pseudo power sources) can
+    /// still expose a power source whose maximum capacity is zero, which makes
+    /// the `energy / energy_full` state-of-charge division produce NaN. Those
+    /// are reported as "no battery" so callers take their existing no-battery
+    /// path instead of rendering a degraded UI.
     fn is_available() -> bool
     where
         Self: Sized,
     {
+        use starship_battery::units::energy::watt_hour;
+        use starship_battery::units::ratio::percent;
         use starship_battery::Manager;
+
         Manager::new()
             .ok()
             .and_then(|m| m.batteries().ok())
             .and_then(|mut b| b.next())
             .and_then(|b| b.ok())
-            .is_some()
+            .is_some_and(|battery| {
+                has_usable_readings(
+                    battery.state_of_charge().get::<percent>(),
+                    battery.energy_full().get::<watt_hour>(),
+                )
+            })
+    }
+}
+
+/// Whether a power source's readings describe a battery jolt can display.
+///
+/// A charge percentage is only meaningful when it is finite and non-negative.
+/// A maximum capacity of zero (or a non-finite one) means the source is not a
+/// real battery, and it is also what makes `state_of_charge()` return NaN,
+/// which downstream gauge widgets refuse to render.
+fn has_usable_readings(charge_percent: f32, max_capacity_wh: f32) -> bool {
+    charge_percent.is_finite()
+        && charge_percent >= 0.0
+        && max_capacity_wh.is_finite()
+        && max_capacity_wh > 0.0
+}
+
+#[cfg(test)]
+mod tests {
+    use super::has_usable_readings;
+
+    #[test]
+    fn accepts_a_real_battery() {
+        assert!(has_usable_readings(0.0, 52.6));
+        assert!(has_usable_readings(63.5, 52.6));
+        assert!(has_usable_readings(100.0, 52.6));
+    }
+
+    #[test]
+    fn rejects_non_finite_charge_percent() {
+        // 0.0 / 0.0 on a machine whose power source reports no capacity.
+        assert!(!has_usable_readings(f32::NAN, 52.6));
+        assert!(!has_usable_readings(f32::INFINITY, 52.6));
+        assert!(!has_usable_readings(f32::NEG_INFINITY, 52.6));
+    }
+
+    #[test]
+    fn rejects_out_of_range_charge_percent() {
+        assert!(!has_usable_readings(-0.1, 52.6));
+        assert!(!has_usable_readings(-100.0, 52.6));
+    }
+
+    #[test]
+    fn rejects_unusable_max_capacity() {
+        assert!(!has_usable_readings(63.5, 0.0));
+        assert!(!has_usable_readings(63.5, -1.0));
+        assert!(!has_usable_readings(63.5, f32::NAN));
+        assert!(!has_usable_readings(63.5, f32::INFINITY));
+    }
+
+    #[test]
+    fn rejects_a_pseudo_power_source() {
+        // Desktop Macs: zero energy and zero max capacity, so the ratio is NaN.
+        assert!(!has_usable_readings(f32::NAN, 0.0));
     }
 }
